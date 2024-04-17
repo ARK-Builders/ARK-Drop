@@ -7,10 +7,13 @@ import com.arkbuilders.arkdrop.Greeting
 
 fun NavGraphBuilder.navRegistration(navController: NavController) {
     composable(TransfersDestination.route) {
-        Greeting(name = "Timer dest")
+        Greeting(name = "TransfersDestination")
 
     }
+    composable(HistoryDestination.route) {
+        Greeting(name = "HistoryDestination")
+    }
     composable(SettingsDestination.route) {
-        Greeting(name = "Timer report 2")
+        Greeting(name = "SettingsDestination")
     }
 }

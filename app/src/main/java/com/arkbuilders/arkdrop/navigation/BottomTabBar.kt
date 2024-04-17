@@ -19,7 +19,7 @@ import com.hieuwu.gofocus.presentation.navigation.navigateSingleTopTo
 @Composable
 fun BottomTab(currentDestination: NavDestination?, navController: NavController) {
     NavigationBar(
-        containerColor = Color.White
+        containerColor = Color.White,
     ) {
         bottomTabRowScreens.forEach { screen ->
             val isSelected = currentDestination?.route == screen.route

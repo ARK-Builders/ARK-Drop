@@ -4,11 +4,11 @@ import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import com.arkbuilders.arkdrop.Greeting
+import com.arkbuilders.arkdrop.presentation.filestransfers.FilesTransferScreen
 
 fun NavGraphBuilder.navRegistration(navController: NavController) {
     composable(TransfersDestination.route) {
-        Greeting(name = "TransfersDestination")
-
+        FilesTransferScreen()
     }
     composable(HistoryDestination.route) {
         Greeting(name = "HistoryDestination")

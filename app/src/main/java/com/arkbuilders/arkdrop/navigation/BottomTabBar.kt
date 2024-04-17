@@ -8,8 +8,10 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination
+import androidx.navigation.compose.rememberNavController
 import com.hieuwu.gofocus.presentation.navigation.navigateSingleTopTo
 
 @Composable
@@ -41,4 +43,10 @@ fun BottomTab(currentDestination: NavDestination?, navController: NavController)
             )
         }
     }
+}
+
+@Preview
+@Composable
+fun BottomTabPreview() {
+    BottomTab(currentDestination = null, navController = rememberNavController())
 }

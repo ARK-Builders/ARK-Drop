@@ -1,8 +1,12 @@
 package com.arkbuilders.arkdrop.navigation
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.SwapVert
+import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.SwapVert
 import androidx.compose.ui.graphics.vector.ImageVector
 
 
@@ -16,26 +20,26 @@ interface BottomTabDestination : Destination {
     val inActiveIcon: ImageVector
 }
 
-object TimerDestination : BottomTabDestination {
+object TransfersDestination : BottomTabDestination {
     // Put information needed to navigate here
-    override val route = "timer"
-    override val activeIcon = Icons.Filled.CheckCircle
-    override val inActiveIcon: ImageVector = Icons.Outlined.Check
-    override val title = "Timer"
+    override val route = "transfer"
+    override val activeIcon = Icons.Filled.SwapVert
+    override val inActiveIcon: ImageVector = Icons.Outlined.SwapVert
+    override val title = "Transfer"
 }
 
-object TimerReportDestination : BottomTabDestination {
-    override val route = "timer_report"
-    override val activeIcon = Icons.Filled.CheckCircle
-    override val inActiveIcon: ImageVector = Icons.Outlined.Check
-    override val title = "Reports"
+object HistoryDestination : BottomTabDestination {
+    override val route = "history"
+    override val activeIcon = Icons.Filled.History
+    override val inActiveIcon: ImageVector = Icons.Outlined.History
+    override val title = "History"
 }
 
-object TimerReportDestination2 : BottomTabDestination {
-    override val route = "timer_report"
-    override val activeIcon = Icons.Filled.CheckCircle
-    override val inActiveIcon: ImageVector = Icons.Outlined.Check
-    override val title = "Reports"
+object SettingsDestination : BottomTabDestination {
+    override val route = "settings"
+    override val activeIcon = Icons.Filled.Person
+    override val inActiveIcon: ImageVector = Icons.Outlined.Person
+    override val title = "Settings"
 }
 
-val bottomTabRowScreens = listOf(TimerDestination, TimerReportDestination2)
+val bottomTabRowScreens = listOf(TransfersDestination, HistoryDestination, SettingsDestination)

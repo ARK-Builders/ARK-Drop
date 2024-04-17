@@ -6,11 +6,11 @@ import androidx.navigation.compose.composable
 import com.arkbuilders.arkdrop.Greeting
 
 fun NavGraphBuilder.navRegistration(navController: NavController) {
-    composable(TimerDestination.route) {
+    composable(TransfersDestination.route) {
         Greeting(name = "Timer dest")
 
     }
-    composable(TimerReportDestination2.route) {
+    composable(SettingsDestination.route) {
         Greeting(name = "Timer report 2")
     }
 }

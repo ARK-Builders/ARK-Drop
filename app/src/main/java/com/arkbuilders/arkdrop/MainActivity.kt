@@ -15,7 +15,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.arkbuilders.arkdrop.navigation.BottomTab
-import com.arkbuilders.arkdrop.navigation.TimerDestination
+import com.arkbuilders.arkdrop.navigation.TransfersDestination
 import com.arkbuilders.arkdrop.ui.theme.ARKDropTheme
 import com.arkbuilders.arkdrop.navigation.navRegistration
 
@@ -39,7 +39,7 @@ class MainActivity : ComponentActivity() {
                     }) { innerPadding ->
                     NavHost(
                         navController,
-                        startDestination = TimerDestination.route,
+                        startDestination = TransfersDestination.route,
                         Modifier.padding(innerPadding)
                     ) {
                         navRegistration(navController)

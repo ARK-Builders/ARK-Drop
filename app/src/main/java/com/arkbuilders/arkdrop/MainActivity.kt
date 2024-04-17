@@ -16,8 +16,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.arkbuilders.arkdrop.navigation.BottomTab
 import com.arkbuilders.arkdrop.navigation.TransfersDestination
-import com.arkbuilders.arkdrop.ui.theme.ARKDropTheme
 import com.arkbuilders.arkdrop.navigation.navRegistration
+import com.arkbuilders.arkdrop.ui.theme.ARKDropTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

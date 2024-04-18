@@ -66,13 +66,12 @@ dependencies {
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
 
-    val cameraxVersion = "1.4.0-alpha05"
-    implementation("androidx.camera:camera-core:${cameraxVersion}")
-    implementation("androidx.camera:camera-camera2:${cameraxVersion}")
-    implementation("androidx.camera:camera-lifecycle:${cameraxVersion}")
-    implementation("androidx.camera:camera-view:${cameraxVersion}")
-    implementation ("androidx.camera:camera-mlkit-vision:${cameraxVersion}")
-    implementation("com.google.mlkit:barcode-scanning:17.2.0")
+    implementation(libs.androidx.camera.core)
+    implementation(libs.androidx.camera.camera2)
+    implementation(libs.androidx.camera.lifecycle)
+    implementation(libs.androidx.camera.view)
+    implementation (libs.androidx.camera.mlkit.vision)
+    implementation(libs.barcode.scanning)
 
     testImplementation(libs.junit)
 

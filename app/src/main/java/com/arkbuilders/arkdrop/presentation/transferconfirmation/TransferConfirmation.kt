@@ -1,10 +1,6 @@
 package com.arkbuilders.arkdrop.presentation.transferconfirmation
 
-import android.content.Context
-import androidx.camera.core.ImageAnalysis
-import androidx.camera.mlkit.vision.MlKitAnalyzer
-import androidx.camera.view.CameraController
-import androidx.camera.view.LifecycleCameraController
+import android.content.Intent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -45,14 +41,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.arkbuilders.arkdrop.R
+import com.arkbuilders.arkdrop.presentation.qrcodescanner.QRCodeScannerActivity
 import com.arkbuilders.arkdrop.ui.theme.BlueDark600
-import com.google.mlkit.vision.barcode.BarcodeScannerOptions
-import com.google.mlkit.vision.barcode.BarcodeScanning
-import com.google.mlkit.vision.barcode.common.Barcode
 
 @Composable
 fun TransferConfirmation(
@@ -93,7 +86,7 @@ fun TransferConfirmation(
                 onClick = {
                     // Launch camera for QR scanning
 //                    launcher.launch(Uri.parse("image/*"))
-                    startCamera(context)
+                    context.startActivity(Intent(context, QRCodeScannerActivity::class.java))
                 },
                 colors = ButtonDefaults.textButtonColors(
                     contentColor = BlueDark600
@@ -192,36 +185,6 @@ private fun extractText(isShown: Boolean): String {
 
 private fun maskedText(isShown: Boolean): String {
     return if (isShown) "23" else "• •"
-}
-
-
-private fun startCamera(context: Context) {
-    var cameraController = LifecycleCameraController(context)
-
-    val options = BarcodeScannerOptions.Builder()
-        .setBarcodeFormats(Barcode.FORMAT_QR_CODE)
-        .build()
-    val barcodeScanner = BarcodeScanning.getClient(options)
-
-    cameraController.setImageAnalysisAnalyzer(
-        ContextCompat.getMainExecutor(context),
-        MlKitAnalyzer(
-            listOf(barcodeScanner),
-            ImageAnalysis.COORDINATE_SYSTEM_VIEW_REFERENCED,
-            ContextCompat.getMainExecutor(context)
-        ) { result: MlKitAnalyzer.Result? ->
-            val barcodeResults = result?.getValue(barcodeScanner)
-            if ((barcodeResults == null) ||
-                (barcodeResults.size == 0) ||
-                (barcodeResults.first() == null)
-            ) {
-                return@MlKitAnalyzer
-            }
-
-        }
-    )
-
-//    cameraController.bindToLifecycle(this)
 }
 
 

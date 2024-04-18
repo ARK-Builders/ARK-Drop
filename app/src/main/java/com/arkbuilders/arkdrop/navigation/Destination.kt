@@ -42,4 +42,9 @@ object SettingsDestination : BottomTabDestination {
     override val title = "Settings"
 }
 
+object TransferConfirmationDestination:Destination {
+    override val route: String = "transfer_confirmation"
+    override val title: String = "Transfer confirmation"
+}
+
 val bottomTabRowScreens = listOf(TransfersDestination, HistoryDestination, SettingsDestination)

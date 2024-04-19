@@ -1,5 +1,6 @@
 package com.arkbuilders.arkdrop.presentation.filestransfers
 
+import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -29,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -38,6 +40,7 @@ import androidx.navigation.compose.rememberNavController
 import com.arkbuilders.arkdrop.R
 import com.arkbuilders.arkdrop.navigation.TransferConfirmationDestination
 import com.arkbuilders.arkdrop.presentation.filestransfers.composables.UserWelcomeHeader
+import com.arkbuilders.arkdrop.presentation.qrcodescanner.QRCodeScannerActivity
 import com.arkbuilders.arkdrop.ui.theme.BlueDark600
 
 @Composable
@@ -108,11 +111,16 @@ fun FilesTransferScreen(
                 Spacer(modifier = modifier.width(ButtonDefaults.IconSpacing))
                 Text("Send")
             }
+            val context = LocalContext.current
             Button(
                 modifier = modifier
                     .weight(1.0f)
                     .padding(8.dp),
-                onClick = { /*TODO*/ },
+                onClick = {
+                    Intent(context, QRCodeScannerActivity::class.java).run {
+                        context.startActivity(this)
+                    }
+                },
                 colors = ButtonDefaults.buttonColors(
                     containerColor = BlueDark600,
                 ),

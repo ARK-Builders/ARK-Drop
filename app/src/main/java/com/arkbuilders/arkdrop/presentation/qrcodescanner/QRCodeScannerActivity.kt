@@ -26,13 +26,12 @@ import java.util.concurrent.Executors
 
 class QRCodeScannerActivity : AppCompatActivity() {
 
-    private val button: Button = findViewById(R.id.backButton)
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_qrcode_scanner)
+        val button: Button = findViewById(R.id.backButton)
         button.setOnClickListener {
             finish()
         }

@@ -36,7 +36,7 @@ fun UserWelcomeHeader(modifier: Modifier = Modifier) {
             )
         }
         Image(
-            painter = painterResource(id = R.drawable.ic_launcher_background),
+            painter = painterResource(id = R.drawable.avatar_mock),
             contentDescription = null,
             modifier = modifier
                 .size(64.dp)

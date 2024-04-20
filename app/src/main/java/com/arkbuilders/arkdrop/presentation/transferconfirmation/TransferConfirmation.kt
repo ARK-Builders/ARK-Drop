@@ -19,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.QrCode2
 import androidx.compose.material.icons.outlined.QrCodeScanner
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
@@ -157,8 +158,8 @@ fun TransferConfirmation(
                 Text(extractText(isConfirmationCodeShown.value))
             }
             Spacer(modifier = modifier.height(64.dp))
-            Image(
-                painter = painterResource(id = R.drawable.ic_launcher_background),
+            Icon(
+                imageVector = Icons.Outlined.QrCode2,
                 modifier = modifier.size(320.dp),
                 contentDescription = null
             )

@@ -42,6 +42,7 @@ import com.arkbuilders.arkdrop.R
 import com.arkbuilders.arkdrop.presentation.navigation.TransferConfirmationDestination
 import com.arkbuilders.arkdrop.presentation.feature.filestransfers.composables.UserWelcomeHeader
 import com.arkbuilders.arkdrop.presentation.feature.qrcodescanner.QRCodeScannerActivity
+import com.arkbuilders.arkdrop.presentation.permission.PermissionManager
 import com.arkbuilders.arkdrop.ui.theme.BlueDark600
 
 @Composable
@@ -118,8 +119,12 @@ fun FilesTransferScreen(
                     .weight(1.0f)
                     .padding(8.dp),
                 onClick = {
-                    Intent(context, QRCodeScannerActivity::class.java).run {
-                        context.startActivity(this)
+                    if (PermissionManager.isCameraPermissionGranted(context)) {
+                        Intent(context, QRCodeScannerActivity::class.java).run {
+                            context.startActivity(this)
+                        }
+                    } else {
+                        PermissionManager.requestCameraPermission()
                     }
                 },
                 colors = ButtonDefaults.buttonColors(

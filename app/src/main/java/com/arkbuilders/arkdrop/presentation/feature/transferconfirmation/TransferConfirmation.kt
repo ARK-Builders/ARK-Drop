@@ -49,6 +49,7 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.arkbuilders.arkdrop.R
 import com.arkbuilders.arkdrop.presentation.feature.qrcodescanner.QRCodeScannerActivity
+import com.arkbuilders.arkdrop.presentation.permission.PermissionManager
 import com.arkbuilders.arkdrop.ui.theme.BlueDark600
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -86,12 +87,16 @@ fun TransferConfirmation(
                     TextButton(
                         onClick = {
                             // Launch camera for QR scanning
-                            context.startActivity(
-                                Intent(
-                                    context,
-                                    QRCodeScannerActivity::class.java
+                            if (PermissionManager.isCameraPermissionGranted(context)) {
+                                context.startActivity(
+                                    Intent(
+                                        context,
+                                        QRCodeScannerActivity::class.java
+                                    )
                                 )
-                            )
+                            } else {
+                                PermissionManager.requestCameraPermission()
+                            }
                         },
                         colors = ButtonDefaults.textButtonColors(
                             contentColor = BlueDark600
@@ -127,7 +132,10 @@ fun TransferConfirmation(
             ) {
                 Icon(imageVector = Icons.Outlined.Lock, contentDescription = null)
                 Spacer(modifier = modifier.width(12.dp))
-                Text(stringResource(R.string.transfer_confirmation_confirmation_code), style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    stringResource(R.string.transfer_confirmation_confirmation_code),
+                    style = MaterialTheme.typography.bodyLarge
+                )
             }
             Spacer(modifier = modifier.height(12.dp))
             Text(

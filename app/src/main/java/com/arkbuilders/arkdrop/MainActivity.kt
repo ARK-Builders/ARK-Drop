@@ -1,10 +1,5 @@
 package com.arkbuilders.arkdrop
 
-import android.Manifest.permission.CAMERA
-import android.Manifest.permission.READ_MEDIA_IMAGES
-import android.Manifest.permission.READ_MEDIA_VIDEO
-import android.Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED
-import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -23,6 +18,7 @@ import androidx.navigation.compose.rememberNavController
 import com.arkbuilders.arkdrop.presentation.navigation.BottomTab
 import com.arkbuilders.arkdrop.presentation.navigation.TransfersDestination
 import com.arkbuilders.arkdrop.presentation.navigation.navRegistration
+import com.arkbuilders.arkdrop.presentation.permission.PermissionManager
 import com.arkbuilders.arkdrop.ui.theme.ARKDropTheme
 
 class MainActivity : ComponentActivity() {
@@ -35,24 +31,8 @@ class MainActivity : ComponentActivity() {
                 // See the permission example in the Android platform samples: https://github.com/android/platform-samples
             }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            requestPermissions.launch(
-                arrayOf(
-                    READ_MEDIA_IMAGES,
-                    READ_MEDIA_VIDEO,
-                    READ_MEDIA_VISUAL_USER_SELECTED,
-                    CAMERA,
-                )
-            )
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            requestPermissions.launch(
-                arrayOf(
-                    READ_MEDIA_IMAGES,
-                    READ_MEDIA_VIDEO,
-                    CAMERA,
-                )
-            )
-        }
+        PermissionManager.initialize(requestPermissions)
+        PermissionManager.requestPermission(baseContext)
         setContent {
             ARKDropTheme {
                 // A surface container using the 'background' color from the theme

@@ -3,6 +3,7 @@ package com.arkbuilders.arkdrop.presentation.feature.transferconfirmation
 import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -49,6 +50,7 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.arkbuilders.arkdrop.R
 import com.arkbuilders.arkdrop.presentation.feature.qrcodescanner.QRCodeScannerActivity
+import com.arkbuilders.arkdrop.presentation.navigation.TransferProgressDestination
 import com.arkbuilders.arkdrop.presentation.permission.PermissionManager
 import com.arkbuilders.arkdrop.ui.theme.BlueDark600
 
@@ -172,7 +174,11 @@ fun TransferConfirmation(
             )
             Spacer(modifier = modifier.height(24.dp))
             Text(
-                modifier = modifier.fillMaxWidth(),
+                modifier = modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        navController.navigate(TransferProgressDestination.route)
+                    },
                 text = stringResource(id = R.string.waiting_for_connect),
                 textAlign = TextAlign.Center,
                 style = MaterialTheme.typography.titleMedium

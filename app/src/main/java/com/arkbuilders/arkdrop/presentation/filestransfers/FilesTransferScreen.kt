@@ -32,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -77,7 +78,7 @@ fun FilesTransferScreen(
             modifier = modifier
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp),
-            text = "Seamless to transfer your files",
+            text = stringResource(R.string.files_transfer_seamless_to_transfer_your_files),
             style = MaterialTheme.typography.titleLarge,
             textAlign = TextAlign.Center,
         )
@@ -87,7 +88,7 @@ fun FilesTransferScreen(
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp),
             textAlign = TextAlign.Center,
-            text = "Simple, fast, and limitless start sharing your files now.",
+            text = stringResource(R.string.files_transfer_simple_fast_and_limitless_start_sharing_your_files_now),
         )
         Row(
             modifier = modifier
@@ -109,7 +110,7 @@ fun FilesTransferScreen(
             ) {
                 Icon(imageVector = Icons.Filled.ArrowCircleUp, contentDescription = null)
                 Spacer(modifier = modifier.width(ButtonDefaults.IconSpacing))
-                Text("Send")
+                Text(stringResource(R.string.files_transfer_send))
             }
             val context = LocalContext.current
             Button(
@@ -127,7 +128,7 @@ fun FilesTransferScreen(
             ) {
                 Icon(imageVector = Icons.Filled.ArrowCircleDown, contentDescription = null)
                 Spacer(modifier = modifier.width(ButtonDefaults.IconSpacing))
-                Text("Receive")
+                Text(stringResource(R.string.files_transfer_receive))
             }
         }
     }

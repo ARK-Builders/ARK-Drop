@@ -1,3 +1,14 @@
 <resources>
     <string name="app_name">ARK Drop</string>
+    <string name="files_transfer_seamless_to_transfer_your_files">Seamless to transfer your files</string>
+    <string name="files_transfer_simple_fast_and_limitless_start_sharing_your_files_now">Simple, fast, and limitless start sharing your files now.</string>
+    <string name="files_transfer_receive">Receive</string>
+    <string name="files_transfer_hi_user">Hi, Alice</string>
+    <string name="files_transfer_welcome_back">Welcome back!</string>
+    <string name="files_transfer_send">Send</string>
+    <string name="qr_code_scanner_scan_qr_code_on_another_device">Scan QR-Code on another device</string>
+    <string name="waiting_for_connect">Waiting for connect...</string>
+    <string name="transfer_confirmation_confirmation_code">Confirmation code</string>
+    <string name="scan">Scan</string>
+    <string name="back">Back</string>
 </resources>

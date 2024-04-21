@@ -33,7 +33,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:padding="12dp"
-            android:text="Waiting for connect..."
+            android:text="@string/waiting_for_connect"
             android:textColor="@color/white" />
 
         <com.google.android.material.textview.MaterialTextView
@@ -42,7 +42,7 @@
             android:background="@drawable/border_radius"
             android:paddingHorizontal="16dp"
             android:paddingVertical="8dp"
-            android:text="Scan QR-Code on another device"
+            android:text="@string/qr_code_scanner_scan_qr_code_on_another_device"
             android:textColor="@color/dark_blue" />
 
     </LinearLayout>

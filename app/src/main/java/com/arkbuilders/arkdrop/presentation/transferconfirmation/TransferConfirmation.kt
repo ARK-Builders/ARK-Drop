@@ -1,7 +1,6 @@
 package com.arkbuilders.arkdrop.presentation.transferconfirmation
 
 import android.content.Intent
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -41,7 +40,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -79,7 +78,7 @@ fun TransferConfirmation(
                             contentDescription = null
                         )
                         Spacer(modifier = modifier.width(ButtonDefaults.IconSpacing))
-                        Text("Back")
+                        Text(stringResource(R.string.back))
                     }
                 },
                 actions = {
@@ -103,7 +102,7 @@ fun TransferConfirmation(
                             contentDescription = null
                         )
                         Spacer(modifier = modifier.width(ButtonDefaults.IconSpacing))
-                        Text("Scan")
+                        Text(stringResource(R.string.scan))
                     }
                 }
             )
@@ -128,7 +127,7 @@ fun TransferConfirmation(
             ) {
                 Icon(imageVector = Icons.Outlined.Lock, contentDescription = null)
                 Spacer(modifier = modifier.width(12.dp))
-                Text("Confirmation code", style = MaterialTheme.typography.bodyLarge)
+                Text(stringResource(R.string.transfer_confirmation_confirmation_code), style = MaterialTheme.typography.bodyLarge)
             }
             Spacer(modifier = modifier.height(12.dp))
             Text(
@@ -166,7 +165,7 @@ fun TransferConfirmation(
             Spacer(modifier = modifier.height(24.dp))
             Text(
                 modifier = modifier.fillMaxWidth(),
-                text = "Waiting for connect...",
+                text = stringResource(id = R.string.waiting_for_connect),
                 textAlign = TextAlign.Center,
                 style = MaterialTheme.typography.titleMedium
             )

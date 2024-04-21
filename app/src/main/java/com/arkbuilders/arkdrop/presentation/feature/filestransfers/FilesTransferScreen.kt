@@ -1,4 +1,4 @@
-package com.arkbuilders.arkdrop.presentation.filestransfers
+package com.arkbuilders.arkdrop.presentation.feature.filestransfers
 
 import android.content.Intent
 import android.net.Uri
@@ -39,9 +39,9 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.arkbuilders.arkdrop.R
-import com.arkbuilders.arkdrop.navigation.TransferConfirmationDestination
-import com.arkbuilders.arkdrop.presentation.filestransfers.composables.UserWelcomeHeader
-import com.arkbuilders.arkdrop.presentation.qrcodescanner.QRCodeScannerActivity
+import com.arkbuilders.arkdrop.presentation.navigation.TransferConfirmationDestination
+import com.arkbuilders.arkdrop.presentation.feature.filestransfers.composables.UserWelcomeHeader
+import com.arkbuilders.arkdrop.presentation.feature.qrcodescanner.QRCodeScannerActivity
 import com.arkbuilders.arkdrop.ui.theme.BlueDark600
 
 @Composable

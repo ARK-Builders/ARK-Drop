@@ -1,4 +1,4 @@
-package com.arkbuilders.arkdrop.presentation.qrcodescanner
+package com.arkbuilders.arkdrop.presentation.feature.qrcodescanner
 
 import android.content.Intent
 import android.graphics.Rect

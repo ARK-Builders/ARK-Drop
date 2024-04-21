@@ -1,4 +1,4 @@
-package com.arkbuilders.arkdrop.navigation
+package com.arkbuilders.arkdrop.presentation.navigation
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.History
@@ -42,7 +42,7 @@ object SettingsDestination : BottomTabDestination {
     override val title = "Settings"
 }
 
-object TransferConfirmationDestination:Destination {
+object TransferConfirmationDestination: Destination {
     override val route: String = "transfer_confirmation"
     override val title: String = "Transfer confirmation"
 }

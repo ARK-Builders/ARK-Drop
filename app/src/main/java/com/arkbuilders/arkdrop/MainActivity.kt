@@ -20,9 +20,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.arkbuilders.arkdrop.navigation.BottomTab
-import com.arkbuilders.arkdrop.navigation.TransfersDestination
-import com.arkbuilders.arkdrop.navigation.navRegistration
+import com.arkbuilders.arkdrop.presentation.navigation.BottomTab
+import com.arkbuilders.arkdrop.presentation.navigation.TransfersDestination
+import com.arkbuilders.arkdrop.presentation.navigation.navRegistration
 import com.arkbuilders.arkdrop.ui.theme.ARKDropTheme
 
 class MainActivity : ComponentActivity() {

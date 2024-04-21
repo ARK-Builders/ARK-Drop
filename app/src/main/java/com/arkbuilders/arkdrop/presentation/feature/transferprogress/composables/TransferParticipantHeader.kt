@@ -1,4 +1,4 @@
-package com.arkbuilders.arkdrop.presentation.transferprogress.composables
+package com.arkbuilders.arkdrop.presentation.feature.transferprogress.composables
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement

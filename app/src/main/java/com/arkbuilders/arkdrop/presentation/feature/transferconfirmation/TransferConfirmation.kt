@@ -1,4 +1,4 @@
-package com.arkbuilders.arkdrop.presentation.transferconfirmation
+package com.arkbuilders.arkdrop.presentation.feature.transferconfirmation
 
 import android.content.Intent
 import androidx.compose.foundation.background
@@ -48,7 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.arkbuilders.arkdrop.R
-import com.arkbuilders.arkdrop.presentation.qrcodescanner.QRCodeScannerActivity
+import com.arkbuilders.arkdrop.presentation.feature.qrcodescanner.QRCodeScannerActivity
 import com.arkbuilders.arkdrop.ui.theme.BlueDark600
 
 @OptIn(ExperimentalMaterial3Api::class)

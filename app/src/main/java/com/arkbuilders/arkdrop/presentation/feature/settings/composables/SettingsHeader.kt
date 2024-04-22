@@ -26,6 +26,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.arkbuilders.arkdrop.R
+import com.arkbuilders.arkdrop.ui.theme.Background
 import com.arkbuilders.arkdrop.ui.theme.BlueDark600
 
 @Composable
@@ -48,7 +49,7 @@ fun SettingsHeader(modifier: Modifier = Modifier) {
             modifier = modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(16.dp))
-                .background(Color(0xFFFCFCFD).copy(alpha = 0.2f))
+                .background(Background.copy(alpha = 0.2f))
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {

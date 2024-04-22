@@ -52,6 +52,7 @@ import com.arkbuilders.arkdrop.R
 import com.arkbuilders.arkdrop.presentation.feature.qrcodescanner.QRCodeScannerActivity
 import com.arkbuilders.arkdrop.presentation.navigation.TransferProgressDestination
 import com.arkbuilders.arkdrop.presentation.permission.PermissionManager
+import com.arkbuilders.arkdrop.ui.theme.Background
 import com.arkbuilders.arkdrop.ui.theme.BlueDark600
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -121,7 +122,7 @@ fun TransferConfirmation(
         Column(
             modifier = modifier
                 .fillMaxSize()
-                .background(Color(0xFFFCFCFD))
+                .background(Background)
                 .padding(padding)
                 .padding(horizontal = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally

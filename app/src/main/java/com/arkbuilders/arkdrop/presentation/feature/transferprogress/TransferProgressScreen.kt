@@ -38,6 +38,7 @@ import androidx.navigation.compose.rememberNavController
 import com.arkbuilders.arkdrop.presentation.feature.transferprogress.composables.FileItem
 import com.arkbuilders.arkdrop.presentation.feature.transferprogress.composables.FileTransferAlertDialog
 import com.arkbuilders.arkdrop.presentation.feature.transferprogress.composables.TransferParticipantHeader
+import com.arkbuilders.arkdrop.ui.theme.Background
 import com.arkbuilders.arkdrop.ui.theme.BlueDark600
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -71,7 +72,7 @@ fun TransferProgressScreen(
     ) { padding ->
         Column(
             modifier = modifier
-                .background(Color(0xFFFCFCFD))
+                .background(Background)
                 .fillMaxSize()
                 .padding(padding),
             horizontalAlignment = Alignment.CenterHorizontally

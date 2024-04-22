@@ -28,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.arkbuilders.arkdrop.presentation.feature.settings.composables.SettingsHeader
+import com.arkbuilders.arkdrop.ui.theme.Background
 import com.arkbuilders.arkdrop.ui.theme.LightBlack
 
 @Composable
@@ -35,7 +36,7 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFFFCFCFD)),
+            .background(Background),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         SettingsHeader()

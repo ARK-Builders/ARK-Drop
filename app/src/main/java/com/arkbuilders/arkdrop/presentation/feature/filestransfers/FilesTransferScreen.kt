@@ -43,6 +43,7 @@ import com.arkbuilders.arkdrop.presentation.navigation.TransferConfirmationDesti
 import com.arkbuilders.arkdrop.presentation.feature.filestransfers.composables.UserWelcomeHeader
 import com.arkbuilders.arkdrop.presentation.feature.qrcodescanner.QRCodeScannerActivity
 import com.arkbuilders.arkdrop.presentation.permission.PermissionManager
+import com.arkbuilders.arkdrop.ui.theme.Background
 import com.arkbuilders.arkdrop.ui.theme.BlueDark600
 
 @Composable
@@ -58,7 +59,7 @@ fun FilesTransferScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFFFCFCFD))
+            .background(Background)
     ) {
         UserWelcomeHeader(modifier = modifier)
         HorizontalDivider(

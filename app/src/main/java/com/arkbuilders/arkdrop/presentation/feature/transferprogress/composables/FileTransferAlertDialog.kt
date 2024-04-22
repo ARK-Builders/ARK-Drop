@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import com.arkbuilders.arkdrop.ui.theme.Background
 import com.arkbuilders.arkdrop.ui.theme.DarkRed
 
 @Composable
@@ -48,7 +49,7 @@ fun FileTransferAlertDialog(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(
-                        Color(0xFFFCFCFD)
+                        Background
                     )
                     .padding(16.dp)
             ) {

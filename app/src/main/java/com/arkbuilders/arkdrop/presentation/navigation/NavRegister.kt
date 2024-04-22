@@ -5,6 +5,7 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import com.arkbuilders.arkdrop.Greeting
 import com.arkbuilders.arkdrop.presentation.feature.filestransfers.FilesTransferScreen
+import com.arkbuilders.arkdrop.presentation.feature.settings.SettingsScreen
 import com.arkbuilders.arkdrop.presentation.feature.transferconfirmation.TransferConfirmation
 import com.arkbuilders.arkdrop.presentation.feature.transferprogress.TransferProgressScreen
 
@@ -16,7 +17,7 @@ fun NavGraphBuilder.navRegistration(navController: NavController) {
         Greeting(name = "HistoryDestination")
     }
     composable(SettingsDestination.route) {
-        Greeting(name = "SettingsDestination")
+        SettingsScreen()
     }
     composable(TransferConfirmationDestination.route) {
         TransferConfirmation(navController = navController)

@@ -7,7 +7,7 @@
     <string name="files_transfer_welcome_back">Welcome back!</string>
     <string name="files_transfer_send">Send</string>
     <string name="qr_code_scanner_scan_qr_code_on_another_device">Scan QR-Code on another device</string>
-    <string name="waiting_for_connect">Waiting for connect...</string>
+    <string name="waiting_for_connect">Waiting for connect…</string>
     <string name="transfer_confirmation_confirmation_code">Confirmation code</string>
     <string name="scan">Scan</string>
     <string name="back">Back</string>

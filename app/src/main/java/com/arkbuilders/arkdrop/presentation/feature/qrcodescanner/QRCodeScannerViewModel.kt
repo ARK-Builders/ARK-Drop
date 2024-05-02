@@ -9,18 +9,17 @@ import com.google.mlkit.vision.barcode.common.Barcode
 
 class QRCodeScannerViewModel(barcode: Barcode) {
 
-    var boundingRect: Rect = barcode.boundingBox!!
+    var boundingRect: Rect? = barcode.boundingBox
     var qrContent: String = ""
     var qrCodeTouchCallback = { v: View, e: MotionEvent -> false } //no-op
 
     init {
         when (barcode.valueType) {
             Barcode.TYPE_URL -> {
-                qrContent = barcode.url!!.url!!
+                qrContent = barcode.url?.url ?: ""
                 qrCodeTouchCallback = { v: View, e: MotionEvent ->
-                    if (e.action == MotionEvent.ACTION_DOWN && boundingRect.contains(
-                            e.getX().toInt(), e.getY().toInt()
-                        )
+                    if (e.action == MotionEvent.ACTION_DOWN
+                        && boundingRect?.contains(e.x.toInt(), e.y.toInt()) == true
                     ) {
                         val openBrowserIntent = Intent(Intent.ACTION_VIEW)
                         openBrowserIntent.data = Uri.parse(qrContent)

@@ -7,8 +7,8 @@ import android.widget.Button
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.camera.core.ImageAnalysis
 import androidx.camera.mlkit.vision.MlKitAnalyzer
-import androidx.camera.view.CameraController
 import androidx.camera.view.LifecycleCameraController
 import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
@@ -20,12 +20,9 @@ import com.google.mlkit.vision.barcode.BarcodeScanner
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
 
 
 class QRCodeScannerActivity : AppCompatActivity() {
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,12 +46,8 @@ class QRCodeScannerActivity : AppCompatActivity() {
                 this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS
             )
         }
-
-        cameraExecutor = Executors.newSingleThreadExecutor()
     }
 
-
-    private lateinit var cameraExecutor: ExecutorService
     private lateinit var barcodeScanner: BarcodeScanner
 
     private fun startCamera() {
@@ -70,7 +63,7 @@ class QRCodeScannerActivity : AppCompatActivity() {
             ContextCompat.getMainExecutor(this),
             MlKitAnalyzer(
                 listOf(barcodeScanner),
-                CameraController.COORDINATE_SYSTEM_VIEW_REFERENCED,
+                ImageAnalysis.COORDINATE_SYSTEM_VIEW_REFERENCED ,
                 ContextCompat.getMainExecutor(this)
             ) { result: MlKitAnalyzer.Result? ->
                 val barcodeResults = result?.getValue(barcodeScanner)
@@ -82,10 +75,13 @@ class QRCodeScannerActivity : AppCompatActivity() {
 
                 val qrCodeViewModel = QRCodeScannerViewModel(barcodeResults[0])
                 val qrCodeDrawable = QRCodeDrawable(qrCodeViewModel)
-
-                previewView.setOnTouchListener(qrCodeViewModel.qrCodeTouchCallback)
-                previewView.overlay.clear()
-                previewView.overlay.add(qrCodeDrawable)
+                previewView.apply {
+                    setOnTouchListener(qrCodeViewModel.qrCodeTouchCallback)
+                    overlay.apply {
+                        clear()
+                        add(qrCodeDrawable)
+                    }
+                }
             }
         )
 
@@ -101,12 +97,10 @@ class QRCodeScannerActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        cameraExecutor.shutdown()
         barcodeScanner.close()
     }
 
     companion object {
-        private const val TAG = "CameraX-MLKit"
         private const val REQUEST_CODE_PERMISSIONS = 10
         private val REQUIRED_PERMISSIONS =
             mutableListOf(

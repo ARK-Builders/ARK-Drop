@@ -14,7 +14,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.outlined.Link
@@ -57,7 +59,7 @@ import com.arkbuilders.arkdrop.ui.theme.BlueDark600
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TransferConfirmation(
+fun TransferConfirmationScreen(
     modifier: Modifier = Modifier,
     navController: NavController
 ) {
@@ -122,6 +124,7 @@ fun TransferConfirmation(
         Column(
             modifier = modifier
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
                 .background(Background)
                 .padding(padding)
                 .padding(horizontal = 16.dp),
@@ -226,5 +229,5 @@ private fun maskedText(isShown: Boolean): String {
 @Preview
 @Composable
 private fun PreviewTransferConfirmation() {
-    TransferConfirmation(navController = rememberNavController())
+    TransferConfirmationScreen(navController = rememberNavController())
 }

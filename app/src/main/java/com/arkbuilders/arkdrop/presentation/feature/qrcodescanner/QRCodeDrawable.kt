@@ -8,7 +8,7 @@ import android.graphics.PixelFormat
 import android.graphics.Rect
 import android.graphics.drawable.Drawable
 
-class QRCodeDrawable(qrCodeViewModel: QRCodeScannerViewModel) : Drawable() {
+class QRCodeDrawable(private val qrCodeViewModel: QRCodeScannerViewModel) : Drawable() {
     private val boundingRectPaint = Paint().apply {
         style = Paint.Style.STROKE
         color = Color.YELLOW
@@ -28,26 +28,30 @@ class QRCodeDrawable(qrCodeViewModel: QRCodeScannerViewModel) : Drawable() {
         textSize = 36F
     }
 
-    private val qrCodeViewModel = qrCodeViewModel
     private val contentPadding = 25
     private var textWidth = contentTextPaint.measureText(qrCodeViewModel.qrContent).toInt()
 
     override fun draw(canvas: Canvas) {
-        canvas.drawRect(qrCodeViewModel.boundingRect, boundingRectPaint)
-        canvas.drawRect(
-            Rect(
-                qrCodeViewModel.boundingRect.left,
-                qrCodeViewModel.boundingRect.bottom + contentPadding/2,
-                qrCodeViewModel.boundingRect.left + textWidth + contentPadding*2,
-                qrCodeViewModel.boundingRect.bottom + contentTextPaint.textSize.toInt() + contentPadding),
-            contentRectPaint
-        )
-        canvas.drawText(
-            qrCodeViewModel.qrContent,
-            (qrCodeViewModel.boundingRect.left + contentPadding).toFloat(),
-            (qrCodeViewModel.boundingRect.bottom + contentPadding*2).toFloat(),
-            contentTextPaint
-        )
+        qrCodeViewModel.boundingRect?.let { rect ->
+            canvas.apply {
+                drawRect(rect, boundingRectPaint)
+                drawRect(
+                    Rect(
+                        rect.left,
+                        rect.bottom + contentPadding / 2,
+                        rect.left + textWidth + contentPadding * 2,
+                        rect.bottom + contentTextPaint.textSize.toInt() + contentPadding
+                    ),
+                    contentRectPaint
+                )
+                drawText(
+                    qrCodeViewModel.qrContent,
+                    (rect.left + contentPadding).toFloat(),
+                    (rect.bottom + contentPadding * 2).toFloat(),
+                    contentTextPaint
+                )
+            }
+        }
     }
 
     override fun setAlpha(alpha: Int) {

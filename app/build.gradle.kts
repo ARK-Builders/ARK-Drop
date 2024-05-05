@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "com.arkbuilders.arkdrop"
+    namespace = "dev.arkbuilders.arkdrop"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.arkbuilders.arkdrop"
+        applicationId = "dev.arkbuilders.arkdrop"
         minSdk = 31
         targetSdk = 34
         versionCode = 1

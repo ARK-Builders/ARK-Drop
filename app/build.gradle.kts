@@ -1,11 +1,15 @@
+import org.gradle.api.internal.artifacts.dsl.dependencies.DependenciesExtensionModule.module
+
 plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.jetbrainsKotlinAndroid)
+    id("org.mozilla.rust-android-gradle.rust-android")
 }
 
 android {
     namespace = "dev.arkbuilders.arkdrop"
     compileSdk = 34
+    ndkVersion = "26.3.11579264"
 
     defaultConfig {
         applicationId = "dev.arkbuilders.arkdrop"
@@ -49,6 +53,13 @@ android {
     }
 }
 
+cargo {
+    pythonCommand = "python3"
+    module  = "../sendme"
+    libname = "sendme"
+    targets = listOf("arm64", "x86", "x86_64", "arm")
+}
+
 dependencies {
 
     implementation(libs.androidx.core.ktx)
@@ -70,7 +81,7 @@ dependencies {
     implementation(libs.androidx.camera.camera2)
     implementation(libs.androidx.camera.lifecycle)
     implementation(libs.androidx.camera.view)
-    implementation (libs.androidx.camera.mlkit.vision)
+    implementation(libs.androidx.camera.mlkit.vision)
     implementation(libs.barcode.scanning)
 
     testImplementation(libs.junit)

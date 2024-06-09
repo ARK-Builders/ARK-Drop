@@ -55,7 +55,7 @@ android {
 
 cargo {
     pythonCommand = "python3"
-    module  = "../sendme"
+    module = "../sendme"
     libname = "sendme"
     targets = listOf("arm64", "x86", "x86_64", "arm")
 }

@@ -1,21 +1,23 @@
 plugins {
+    kotlin("kapt") version "2.2.0"
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    id("com.google.dagger.hilt.android") version "2.56.2"
 }
 
 android {
     namespace = "dev.arkbuilders.drop.app"
     compileSdk = 36
 
-    signingConfigs {
-        create("release") {
-            keyAlias = System.getenv("KEY_ALIAS")
-            keyPassword = System.getenv("KEY_PASSWORD")
-            storePassword = System.getenv("KEYSTORE_PASSWORD")
-            storeFile = file(System.getenv("KEYSTORE_PATH"))
-        }
-    }
+//    signingConfigs {
+//        create("release") {
+//            keyAlias = System.getenv("KEY_ALIAS")
+//            keyPassword = System.getenv("KEY_PASSWORD")
+//            storePassword = System.getenv("KEYSTORE_PASSWORD")
+//            storeFile = file(System.getenv("KEYSTORE_PATH"))
+//        }
+//    }
 
     defaultConfig {
         applicationId = "dev.arkbuilders.drop.app"
@@ -40,7 +42,7 @@ android {
         release {
             signingConfig = signingConfigs.getByName("testRelease")
             isMinifyEnabled = false
-            signingConfig = signingConfigs.getByName("release")
+//            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
             )
@@ -107,6 +109,23 @@ dependencies {
     implementation(libs.mlkit.barcode.scanning)
     implementation(libs.accompanist.permissions)
 
+    // DAGGER SETUP
+    implementation("com.google.dagger:hilt-android:2.56.2")
+    kapt("com.google.dagger:hilt-compiler:2.56.2")
+
+    // For instrumentation tests
+    androidTestImplementation("com.google.dagger:hilt-android-testing:2.56.2")
+    kaptAndroidTest("com.google.dagger:hilt-compiler:2.56.2")
+
+    // For local unit tests
+    testImplementation("com.google.dagger:hilt-android-testing:2.56.2")
+    kaptTest("com.google.dagger:hilt-compiler:2.56.2")
+
+    // EXTRA ICONS
+    implementation("br.com.devsrsouza.compose.icons:simple-icons:1.1.0")
+    implementation("br.com.devsrsouza.compose.icons:font-awesome:1.1.0")
+    implementation("br.com.devsrsouza.compose.icons:tabler-icons:1.1.0")
+
     // DEVELOPMENT SETUP
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
@@ -115,6 +134,10 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+}
+
+kapt {
+    correctErrorTypes = true
 }
 
 tasks.named<Delete>("clean") {

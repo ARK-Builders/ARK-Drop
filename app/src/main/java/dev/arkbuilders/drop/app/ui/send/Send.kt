@@ -27,13 +27,19 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -47,6 +53,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.createBitmap
@@ -66,6 +73,7 @@ import dev.arkbuilders.drop.SenderProfile
 import dev.arkbuilders.drop.sendFiles
 import kotlinx.coroutines.delay
 import java.io.InputStream
+import java.text.DecimalFormat
 import java.util.UUID
 import kotlin.random.Random
 
@@ -136,11 +144,18 @@ data class FileState(
     val total: ULong,
 )
 
+fun formatFileSize(bytes: ULong): String {
+    val df = DecimalFormat("#.#")
+    return when {
+        bytes < 1024u -> "${bytes} B"
+        bytes < 1024u * 1024u -> "${df.format(bytes.toDouble() / 1024)} KB"
+        bytes < 1024u * 1024u * 1024u -> "${df.format(bytes.toDouble() / (1024 * 1024))} MB"
+        else -> "${df.format(bytes.toDouble() / (1024 * 1024 * 1024))} GB"
+    }
+}
+
 @Composable
-fun Send(modifier: Modifier = Modifier, navController: NavController) {/* TODO:
-    *   - Handle upload of files with same name.
-    *   - Update file progress handling.
-    */
+fun Send(modifier: Modifier = Modifier, navController: NavController) {
     var isSending by remember { mutableStateOf(false) }
     var isCancelled by remember { mutableStateOf(false) }
     var visibleConfirmation by remember { mutableStateOf(false) }
@@ -170,9 +185,11 @@ fun Send(modifier: Modifier = Modifier, navController: NavController) {/* TODO:
             ), files = files
         )
     }
+
     LaunchedEffect(filePickerLauncher) {
         filePickerLauncher.launch("*/*")
     }
+
     LaunchedEffect(request.value) {
         if (request.value == null) return@LaunchedEffect
         bubble.value = sendFiles(request.value!!)
@@ -188,12 +205,14 @@ fun Send(modifier: Modifier = Modifier, navController: NavController) {/* TODO:
             }"
         )
     }
+
     LaunchedEffect(isCancelled) {
         if (isCancelled) {
             bubble.value?.cancel()
             navController.popBackStack()
         }
     }
+
     LaunchedEffect(Unit) {
         while (!isCancelled) {
             if (!isSending && subscriber.connectingEvent != null) {
@@ -217,150 +236,270 @@ fun Send(modifier: Modifier = Modifier, navController: NavController) {/* TODO:
         }
     }
 
-    if (bitmap.value == null || bubble.value == null) {
-        Box(
-            modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center
+    Column(
+        modifier = modifier.fillMaxSize()
+    ) {
+        // Top bar with close button
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            CircularProgressIndicator()
-        }
-    } else if (isSending) {
-        Column(
-            modifier = modifier
-                .fillMaxSize()
-                .padding(horizontal = 24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Spacer(Modifier.height(24.dp))
-            Row(
-                horizontalArrangement = Arrangement.spacedBy((-12).dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    Icons.Default.Person,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(64.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
-                )
-                Icon(
-                    Icons.Outlined.Person,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(64.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f))
-                )
+            IconButton(onClick = {
+                isCancelled = true
+            }) {
+                Icon(Icons.Default.Close, contentDescription = "Close")
             }
-            Spacer(Modifier.height(16.dp))
-            Text("Wait a moment while transferring…", fontSize = 18.sp)
-            Text("Sending to Jane Doe", color = MaterialTheme.colorScheme.primary)
-            Spacer(Modifier.height(24.dp))
-            Column(
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.fillMaxWidth()
+            Text(
+                "Transferring Files",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Medium
+            )
+            Spacer(modifier = Modifier.width(48.dp)) // Balance the close button
+        }
+
+        if (bitmap.value == null || bubble.value == null) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
             ) {
+                CircularProgressIndicator()
+            }
+        } else if (isSending) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Spacer(Modifier.height(32.dp))
+
+                // User avatars
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy((-12).dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(80.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.Person,
+                            contentDescription = null,
+                            modifier = Modifier.size(40.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .size(80.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.2f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Outlined.Person,
+                            contentDescription = null,
+                            modifier = Modifier.size(40.dp),
+                            tint = MaterialTheme.colorScheme.secondary
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(24.dp))
+
+                Text(
+                    "Wait a moment while transferring…",
+                    style = MaterialTheme.typography.headlineSmall,
+                    textAlign = TextAlign.Center,
+                    fontWeight = FontWeight.Medium
+                )
+
+                Spacer(Modifier.height(8.dp))
+
+                Text(
+                    "Sending to Bob",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Medium
+                )
+
+                Spacer(Modifier.height(32.dp))
+
+                // File transfer progress
                 fileStates.value.forEach { fileState ->
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .border(
-                                1.dp,
-                                MaterialTheme.colorScheme.outline,
-                                RoundedCornerShape(8.dp)
+                            .background(
+                                MaterialTheme.colorScheme.surface,
+                                RoundedCornerShape(16.dp)
                             )
-                            .padding(12.dp)
+                            .padding(16.dp)
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween,
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text(fileState.name, fontSize = 16.sp)
-                        }
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            "${fileState.sent} of ${fileState.total} • ${
-                                (fileState.total - fileState.sent).div(
-                                    bytesPerSecond + 1u
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .background(
+                                            MaterialTheme.colorScheme.error.copy(alpha = 0.1f),
+                                            RoundedCornerShape(8.dp)
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        Icons.Default.Close,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.error,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+
+                                Column {
+                                    Text(
+                                        fileState.name,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                    Text(
+                                        "${formatFileSize(fileState.sent)} of ${formatFileSize(fileState.total)} • ${
+                                            if (bytesPerSecond > 0u) {
+                                                "${(fileState.total - fileState.sent) / bytesPerSecond} secs left"
+                                            } else {
+                                                "calculating..."
+                                            }
+                                        }",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+
+                            IconButton(
+                                onClick = { /* Handle file removal */ }
+                            ) {
+                                Icon(
+                                    Icons.Default.Close,
+                                    contentDescription = "Remove file",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
-                            } seconds left",
-                            fontSize = 14.sp
-                        )
-                        Spacer(Modifier.height(8.dp))
+                            }
+                        }
+
+                        Spacer(Modifier.height(12.dp))
+
                         LinearProgressIndicator(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(4.dp),
+                                .height(6.dp)
+                                .clip(RoundedCornerShape(3.dp)),
                             progress = {
-                                fileState.sent.toFloat().div(fileState.total.toFloat())
-                            })
+                                if (fileState.total > 0u) {
+                                    fileState.sent.toFloat() / fileState.total.toFloat()
+                                } else {
+                                    0f
+                                }
+                            }
+                        )
                     }
+
+                    Spacer(Modifier.height(16.dp))
+                }
+
+                // Send more button
+                OutlinedButton(
+                    onClick = {
+                        filePickerLauncher.launch("*/*")
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Icon(
+                        Icons.Default.Add,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text("Send more")
                 }
             }
-        }
-    } else {
-        Column(
-            modifier = modifier
-                .fillMaxSize()
-                .padding(horizontal = 24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Spacer(Modifier.height(32.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    Icons.Outlined.Lock,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onBackground
-                )
-                Spacer(Modifier.width(8.dp))
-                Text("Confirmation code", fontSize = 18.sp)
-            }
-            Spacer(Modifier.height(16.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                bubble.value!!.getConfirmation().toUInt().toString().padStart(2, '0').toCharArray()
-                    .forEach { char ->
-                        Box(
-                            modifier = Modifier
-                                .size(48.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(MaterialTheme.colorScheme.surfaceVariant),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            if (visibleConfirmation) {
-                                Text(char.toString(), fontSize = 24.sp)
-                            } else {
-                                Text("·", fontSize = 24.sp, fontWeight = FontWeight.Bold)
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Spacer(Modifier.height(32.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Outlined.Lock,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onBackground
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text("Confirmation code", fontSize = 18.sp)
+                }
+                Spacer(Modifier.height(16.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    bubble.value!!.getConfirmation().toUInt().toString().padStart(2, '0').toCharArray()
+                        .forEach { char ->
+                            Box(
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (visibleConfirmation) {
+                                    Text(char.toString(), fontSize = 24.sp)
+                                } else {
+                                    Text("·", fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                                }
                             }
                         }
-                    }
+                }
+                Spacer(Modifier.height(8.dp))
+                TextButton(onClick = {
+                    visibleConfirmation = !visibleConfirmation
+                }) {
+                    Text(if (visibleConfirmation) "Hide" else "Show")
+                }
+                Spacer(Modifier.height(32.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1f)
+                        .padding(16.dp)
+                        .border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(12.dp)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Image(
+                        modifier = Modifier.padding(16.dp),
+                        bitmap = bitmap.value!!.asImageBitmap(),
+                        contentDescription = "Send Files QR Code"
+                    )
+                }
+                Spacer(Modifier.height(16.dp))
+                Text("Waiting for connection…", fontSize = 16.sp)
             }
-            Spacer(Modifier.height(8.dp))
-            TextButton(onClick = {
-                visibleConfirmation = !visibleConfirmation
-            }) {
-                Text(if (visibleConfirmation) "Hide" else "Show")
-            }
-            Spacer(Modifier.height(32.dp))
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(1f)
-                    .padding(16.dp)
-                    .border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(12.dp)),
-                contentAlignment = Alignment.Center,
-            ) {
-                Image(
-                    modifier = Modifier.padding(16.dp),
-                    bitmap = bitmap.value!!.asImageBitmap(),
-                    contentDescription = "Send Files QR Code"
-                )
-            }
-            Spacer(Modifier.height(16.dp))
-            Text("Waiting for connection…", fontSize = 16.sp)
         }
     }
-
 }
 
 private fun createConfirmations(actualConfirmation: UByte): List<UByte> {

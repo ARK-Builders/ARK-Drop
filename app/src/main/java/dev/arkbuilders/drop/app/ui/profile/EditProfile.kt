@@ -162,7 +162,7 @@ fun AvatarPickerSheet(
     context: Context,
     defaultAvatars: List<Avatar>,
     customAvatars: List<Avatar>,
-    selectedAvatar: Avatar,
+    selectedAvatar: Avatar?,
     onSelect: (Avatar) -> Unit,
     onCreateNew: () -> Unit,
     onDismiss: () -> Unit
@@ -211,7 +211,7 @@ fun AvatarPickerSheet(
             items(defaultAvatars) { avatar ->
                 AvatarItem(
                     avatar = avatar,
-                    isSelected = avatar.id == selectedAvatar.id,
+                    isSelected = avatar.id == selectedAvatar?.id,
                     onClick = { onSelect(avatar) }
                 )
             }
@@ -220,7 +220,7 @@ fun AvatarPickerSheet(
             items(customAvatars) { avatar ->
                 AvatarItem(
                     avatar = avatar,
-                    isSelected = avatar.id == selectedAvatar.id,
+                    isSelected = avatar.id == selectedAvatar?.id,
                     onClick = { onSelect(avatar) }
                 )
             }
@@ -402,13 +402,12 @@ fun EditProfile(
     var profile by remember { mutableStateOf(profileManager.loadOrDefault()) }
 
     // Find current avatar based on profile data
-    var selectedAvatarImage by remember {
+    var selectedAvatar by remember {
         mutableStateOf(
             if (profile.avatarB64.isNotEmpty() == true) {
                 // If we have a custom avatar, we'll need to handle this differently
                 // For now, default to first avatar
-                defaultAvatars.first()
-
+                null
             } else {
                 defaultAvatars.first()
             }
@@ -451,32 +450,6 @@ fun EditProfile(
             }
         )
 
-        // Avatar Picker Bottom Sheet
-        if (sheetVisible) {
-            ModalBottomSheet(
-                onDismissRequest = { sheetVisible = false }
-            ) {
-                AvatarPickerSheet(
-                    context = context,
-                    defaultAvatars = defaultAvatars,
-                    customAvatars = customAvatars,
-                    selectedAvatar = selectedAvatarImage,
-                    onSelect = { avatar ->
-                        selectedAvatarImage = avatar
-                        // Update profile with new avatar Base64
-                        val avatarBase64 = AvatarUtils.getDefaultAvatarBase64(context, avatar.id)
-                        profile = profile.copy(avatarB64 = avatarBase64)
-                        sheetVisible = false
-                    },
-                    onCreateNew = {
-                        showAvatarCreator = true
-                        sheetVisible = false
-                    },
-                    onDismiss = { sheetVisible = false }
-                )
-            }
-        }
-
         Spacer(modifier = Modifier.height(48.dp))
 
         // Name Input
@@ -499,6 +472,32 @@ fun EditProfile(
         )
 
         Spacer(modifier = Modifier.weight(1f))
+    }
+
+    // Avatar Picker Bottom Sheet
+    if (sheetVisible) {
+        ModalBottomSheet(
+            onDismissRequest = { sheetVisible = false }
+        ) {
+            AvatarPickerSheet(
+                context = context,
+                defaultAvatars = defaultAvatars,
+                customAvatars = customAvatars,
+                selectedAvatar = selectedAvatar,
+                onSelect = { avatar ->
+                    selectedAvatar = avatar
+                    // Update profile with new avatar Base64
+                    val avatarBase64 = AvatarUtils.getDefaultAvatarBase64(context, avatar.id)
+                    profile = profile.copy(avatarB64 = avatarBase64)
+                    sheetVisible = false
+                },
+                onCreateNew = {
+                    showAvatarCreator = true
+                    sheetVisible = false
+                },
+                onDismiss = { sheetVisible = false }
+            )
+        }
     }
 
     // Avatar Creator Sheet
@@ -524,7 +523,7 @@ fun EditProfile(
                     customAvatars = customAvatars + newAvatar
 
                     // Set as selected avatar
-                    selectedAvatarImage = newAvatar
+                    selectedAvatar = newAvatar
 
                     // Update profile with custom avatar Base64
                     profile = profile.copy(avatarB64 = customAvatar.base64)

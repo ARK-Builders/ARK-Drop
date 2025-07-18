@@ -3,6 +3,8 @@ package dev.arkbuilders.drop.app
 import android.content.Context
 import android.os.Environment
 import dagger.hilt.android.qualifiers.ApplicationContext
+import dev.arkbuilders.drop.ReceiverProfile
+import dev.arkbuilders.drop.SenderProfile
 import java.io.File
 import java.util.UUID
 import javax.inject.Inject
@@ -27,6 +29,9 @@ class FileManager @Inject constructor(
             val file = receiveDir.resolve(chunk.name)
             file.appendBytes(chunk.data.map { it.toByte() }.toByteArray())
         }
+
+        SenderProfile(name="")
+        ReceiverProfile
     }
 }
 

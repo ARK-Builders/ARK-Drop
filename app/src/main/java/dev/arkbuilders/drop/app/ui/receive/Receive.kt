@@ -78,6 +78,9 @@ import dev.arkbuilders.drop.ReceiveFilesReceivingEvent
 import dev.arkbuilders.drop.ReceiveFilesRequest
 import dev.arkbuilders.drop.ReceiveFilesSubscriber
 import dev.arkbuilders.drop.ReceiverProfile
+import dev.arkbuilders.drop.app.Profile
+import dev.arkbuilders.drop.app.ProfileManager
+import dev.arkbuilders.drop.app.ui.profile.AvatarUtils
 import dev.arkbuilders.drop.receiveFiles
 import kotlinx.coroutines.delay
 import java.text.DecimalFormat
@@ -91,11 +94,13 @@ fun Receive(
     onBack: () -> Unit = {},
     onReceive: (List<ReceiverChunk>) -> Unit = {},
     onScanQRCode: (Uri) -> Unit = {},
+    profileManager: ProfileManager
 ) {
+    val profile = remember { profileManager.loadOrDefault() }
     var selectedConfirmation by remember { mutableStateOf<UByte?>(null) }
 
     if (ticket != null && selectedConfirmation != null) {
-        ReceiveFiles(ticket, selectedConfirmation!!, onBack, onReceive)
+        ReceiveFiles(ticket, selectedConfirmation!!, onBack, onReceive, profile)
     } else if (confirmations.isEmpty()) {
         ScanQRCode(onScanQRCode)
     } else {
@@ -155,12 +160,13 @@ fun ReceiveFiles(
     ticket: String,
     confirmation: UByte,
     onBack: () -> Unit = {},
-    onReceive: (List<ReceiverChunk>) -> Unit = {}
+    onReceive: (List<ReceiverChunk>) -> Unit = {},
+    profile: Profile
 ) {
     val subscriber = remember { ReceiveFilesSubscriberImpl() }
     val request = remember {
         ReceiveFilesRequest(
-            ticket, confirmation, profile = ReceiverProfile("John Doe")
+            ticket, confirmation, profile = ReceiverProfile(name = profile.name)
         )
     }
     val fileStates = remember { mutableStateOf<List<FileState>>(emptyList()) }
@@ -300,7 +306,7 @@ fun ReceiveFiles(
                 Spacer(Modifier.height(32.dp))
 
                 Text(
-                    text = "File has been received from Alice!",
+                    text = "File has been received from ${"TODO: NAME"}!",
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Medium,
                     textAlign = TextAlign.Center
@@ -509,7 +515,11 @@ fun ReceiveFiles(
                                         fontWeight = FontWeight.Medium
                                     )
                                     Text(
-                                        "${formatFileSize(fileState.received)} of ${formatFileSize(fileState.total)} • ${
+                                        "${formatFileSize(fileState.received)} of ${
+                                            formatFileSize(
+                                                fileState.total
+                                            )
+                                        } • ${
                                             if (bytesPerSecond > 0u) {
                                                 "${(fileState.total - fileState.received) / bytesPerSecond} secs left"
                                             } else {

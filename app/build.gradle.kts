@@ -1,3 +1,15 @@
+import com.android.build.gradle.internal.tasks.factory.dependsOn
+import java.util.Properties
+
+val localProps = Properties().apply {
+    file("$rootDir/local.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
+}
+fun localProp(key: String): String? = localProps.getProperty(key)
+val devKeystorePath = "${layout.buildDirectory}/drop-keystore.jks"
+val devKeystorePassword = localProp("dev.keystore.password") ?: "defaultPassword123"
+val devKeyAlias = "drop-key"
+val devDname = localProp("dev.keystore.dname") ?: "CN=Unknown, OU=Dev, O=Unknown, L=City, ST=State, C=XX"
+
 plugins {
     kotlin("kapt") version "2.2.0"
     alias(libs.plugins.android.application)
@@ -12,10 +24,10 @@ android {
 
     signingConfigs {
         create("release") {
-            keyAlias = System.getenv("KEY_ALIAS")
-            keyPassword = System.getenv("KEY_PASSWORD")
-            storePassword = System.getenv("KEYSTORE_PASSWORD")
-            storeFile = file(System.getenv("KEYSTORE_PATH"))
+            keyAlias = System.getenv("KEY_ALIAS") ?: devKeyAlias
+            keyPassword = System.getenv("KEY_PASSWORD") ?: devKeystorePassword
+            storePassword = System.getenv("KEYSTORE_PASSWORD") ?: devKeystorePassword
+            storeFile = file(System.getenv("KEYSTORE_PATH") ?: devKeystorePath)
         }
     }
 
@@ -143,3 +155,22 @@ kapt {
 tasks.named<Delete>("clean") {
     delete(fileTree("$projectDir/src/main/jniLibs"))
 }
+
+tasks.register<Exec>("generateDevKeystore") {
+    val keystoreFile = file(devKeystorePath)
+    if (!keystoreFile.exists()) {
+        commandLine = listOf(
+            "keytool", "-genkeypair",
+            "-alias", devKeyAlias,
+            "-keyalg", "RSA",
+            "-keysize", "2048",
+            "-validity", "10000",
+            "-keystore", devKeystorePath,
+            "-storepass", devKeystorePassword,
+            "-keypass", devKeystorePassword,
+            "-dname", devDname
+        )
+    }
+}
+
+tasks.named("preBuild").dependsOn("generateDevKeystore")

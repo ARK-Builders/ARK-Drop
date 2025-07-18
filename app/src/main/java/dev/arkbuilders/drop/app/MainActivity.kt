@@ -20,6 +20,9 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var fileManager: FileManager
 
+    @Inject
+    lateinit var profileManager: ProfileManager
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -30,7 +33,8 @@ class MainActivity : ComponentActivity() {
                     DropNavHost(
                         navController = navController,
                         modifier = Modifier.padding(innerPadding),
-                        fileManager = fileManager
+                        fileManager = fileManager,
+                        profileManager = profileManager
                     )
                 }
             }

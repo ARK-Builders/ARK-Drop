@@ -17,9 +17,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -27,10 +24,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -38,23 +37,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
-import compose.icons.FontAwesomeIcons
-import compose.icons.SimpleIcons
 import compose.icons.TablerIcons
-import compose.icons.fontawesomeicons.Regular
-import compose.icons.fontawesomeicons.Solid
-import compose.icons.fontawesomeicons.solid.Download
-import compose.icons.fontawesomeicons.solid.Share
 import compose.icons.tablericons.ArrowDownCircle
 import compose.icons.tablericons.ArrowUpCircle
-import compose.icons.tablericons.Send
+import dev.arkbuilders.drop.app.Profile
+import dev.arkbuilders.drop.app.ProfileManager
 import dev.arkbuilders.drop.app.R
 import dev.arkbuilders.drop.app.navigation.DropDestination
 import dev.arkbuilders.drop.app.ui.components.navigation.DropBottomNavigation
+import dev.arkbuilders.drop.app.ui.profile.AvatarUtils
 import dev.arkbuilders.drop.app.ui.theme.Typography
 
 @Composable
-fun Home(modifier: Modifier = Modifier, navController: NavController) {
+fun Home(modifier: Modifier = Modifier, navController: NavController, profileManager: ProfileManager) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
@@ -73,7 +68,7 @@ fun Home(modifier: Modifier = Modifier, navController: NavController) {
         ) {
             val innerModifier = Modifier.padding(horizontal = 24.dp)
             Spacer(modifier = Modifier.height(24.dp))
-            TopBar(modifier = innerModifier)
+            TopBar(modifier = innerModifier, profileManager = profileManager)
             HorizontalDivider(modifier = Modifier.padding(vertical = 24.dp))
             Hero(modifier = innerModifier.padding(0.dp, 30.dp))
             CTA(modifier = innerModifier, navController = navController)
@@ -88,14 +83,15 @@ fun Home(modifier: Modifier = Modifier, navController: NavController) {
 }
 
 @Composable
-fun TopBar(modifier: Modifier = Modifier) {
+fun TopBar(modifier: Modifier = Modifier, profileManager: ProfileManager) {
+    val profile = remember { profileManager.loadOrDefault() }
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column {
-            Text("Hi Bob,", fontSize = 16.sp, color = Color.Black)
+            Text("Hi ${profile.name}", fontSize = 16.sp, color = Color.Black)
             Text(
                 "Welcome back!",
                 fontSize = 22.sp,
@@ -103,12 +99,12 @@ fun TopBar(modifier: Modifier = Modifier) {
                 color = Color.Black
             )
         }
-        Image(
-            painter = painterResource(R.drawable.avatar_placeholder),
-            contentDescription = null,
+        AvatarUtils.AvatarImage(
+            base64String = profile.avatarB64,
             modifier = Modifier
                 .size(48.dp)
-                .clip(CircleShape)
+                .clip(CircleShape),
+            placeholder = painterResource(R.drawable.avatar_00)
         )
     }
 }

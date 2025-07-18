@@ -5,13 +5,14 @@ val localProps = Properties().apply {
     file("$rootDir/local.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
 }
 fun localProp(key: String): String? = localProps.getProperty(key)
-val devKeystorePath = "${layout.buildDirectory}/drop-keystore.jks"
+val devKeystorePath = "${layout.buildDirectory.asFile.get().absolutePath}/drop-keystore.jks"
 val devKeystorePassword = localProp("dev.keystore.password") ?: "defaultPassword123"
 val devKeyAlias = "drop-key"
 val devDname = localProp("dev.keystore.dname") ?: "CN=Unknown, OU=Dev, O=Unknown, L=City, ST=State, C=XX"
 
 plugins {
     kotlin("kapt") version "2.2.0"
+    kotlin("plugin.serialization") version "1.9.23"
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
@@ -146,6 +147,13 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+
+    // File-system profile manager
+    implementation("io.coil-kt:coil-compose:2.5.0")
+    implementation("androidx.compose.foundation:foundation:1.4.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+
+
 }
 
 kapt {
@@ -158,8 +166,10 @@ tasks.named<Delete>("clean") {
 
 tasks.register<Exec>("generateDevKeystore") {
     val keystoreFile = file(devKeystorePath)
-    if (!keystoreFile.exists()) {
-        commandLine = listOf(
+    commandLine = if (keystoreFile.exists()) {
+        listOf("echo", "\"Development keystore already exists.\"")
+    } else {
+        listOf(
             "keytool", "-genkeypair",
             "-alias", devKeyAlias,
             "-keyalg", "RSA",

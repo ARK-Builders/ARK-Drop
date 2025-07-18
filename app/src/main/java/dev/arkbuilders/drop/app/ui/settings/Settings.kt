@@ -3,7 +3,6 @@ package dev.arkbuilders.drop.app.ui.settings
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -19,8 +18,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -28,11 +25,10 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -45,12 +41,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
-import compose.icons.AllIcons
 import compose.icons.FontAwesomeIcons
 import compose.icons.SimpleIcons
-import compose.icons.fontawesomeicons.Regular
 import compose.icons.fontawesomeicons.Solid
-import compose.icons.fontawesomeicons.regular.ListAlt
 import compose.icons.fontawesomeicons.solid.Globe
 import compose.icons.simpleicons.Bitcoin
 import compose.icons.simpleicons.Buymeacoffee
@@ -58,13 +51,20 @@ import compose.icons.simpleicons.Discord
 import compose.icons.simpleicons.Ethereum
 import compose.icons.simpleicons.Patreon
 import compose.icons.simpleicons.Telegram
-import compose.icons.simpleicons.Webmin
+import dev.arkbuilders.drop.app.Profile
+import dev.arkbuilders.drop.app.ProfileManager
 import dev.arkbuilders.drop.app.R
 import dev.arkbuilders.drop.app.navigation.DropDestination
 import dev.arkbuilders.drop.app.ui.components.navigation.DropBottomNavigation
+import dev.arkbuilders.drop.app.ui.profile.AvatarUtils
 
 @Composable
-fun Settings(modifier: Modifier = Modifier, navController: NavController) {
+fun Settings(
+    modifier: Modifier = Modifier,
+    navController: NavController,
+    profileManager: ProfileManager
+) {
+    val profile = remember { profileManager.loadOrDefault() }
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
@@ -85,9 +85,9 @@ fun Settings(modifier: Modifier = Modifier, navController: NavController) {
                 fontWeight = FontWeight.Bold,
                 color = Color.White
             )
-            
+
             Spacer(modifier = Modifier.height(24.dp))
-            
+
             // User profile card
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -100,24 +100,23 @@ fun Settings(modifier: Modifier = Modifier, navController: NavController) {
                         .padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Image(
-                        painter = painterResource(R.drawable.avatar_placeholder),
-                        contentDescription = null,
+                    AvatarUtils.AvatarImage(
+                        base64String = profile.avatarB64,
                         modifier = Modifier
                             .size(56.dp)
                             .clip(CircleShape)
                     )
-                    
+
                     Spacer(modifier = Modifier.width(16.dp))
-                    
+
                     Text(
-                        text = "Gilbert",
+                        text = profile.name,
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Medium,
                         color = Color.White,
                         modifier = Modifier.weight(1f)
                     )
-                    
+
                     IconButton(
                         onClick = {
                             navController.navigate(DropDestination.EditProfile.route)
@@ -132,7 +131,7 @@ fun Settings(modifier: Modifier = Modifier, navController: NavController) {
                 }
             }
         }
-        
+
         // Main content with white background
         Column(
             modifier = Modifier
@@ -147,7 +146,7 @@ fun Settings(modifier: Modifier = Modifier, navController: NavController) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(modifier = Modifier.height(24.dp))
-            
+
             // App info section
             Text(
                 text = "ARK Drop",
@@ -156,27 +155,27 @@ fun Settings(modifier: Modifier = Modifier, navController: NavController) {
                 color = Color.Black,
                 textAlign = TextAlign.Center
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             Text(
                 text = "Version 1.0.0.1",
                 fontSize = 14.sp,
                 color = Color.Gray,
                 textAlign = TextAlign.Center
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             Text(
                 text = "ARK Builders • Copyright ©2024",
                 fontSize = 14.sp,
                 color = Color.Gray,
                 textAlign = TextAlign.Center
             )
-            
+
             Spacer(modifier = Modifier.height(24.dp))
-            
+
             // Social links
             Row(
                 horizontalArrangement = Arrangement.spacedBy(32.dp)
@@ -197,13 +196,13 @@ fun Settings(modifier: Modifier = Modifier, navController: NavController) {
                     onClick = { /* Open discord */ }
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(48.dp))
-            
+
             HorizontalDivider(color = Color.Gray.copy(alpha = 0.2f))
-            
+
             Spacer(modifier = Modifier.height(32.dp))
-            
+
             // Support section
             Text(
                 text = "Support us",
@@ -212,18 +211,18 @@ fun Settings(modifier: Modifier = Modifier, navController: NavController) {
                 color = Color.Black,
                 modifier = Modifier.fillMaxWidth()
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             Text(
                 text = "We greatly appreciate every bit of support!",
                 fontSize = 14.sp,
                 color = Color.Gray,
                 modifier = Modifier.fillMaxWidth()
             )
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             // Support buttons
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -242,9 +241,9 @@ fun Settings(modifier: Modifier = Modifier, navController: NavController) {
                     onClick = { /* Ethereum donation */ }
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -262,9 +261,9 @@ fun Settings(modifier: Modifier = Modifier, navController: NavController) {
                     onClick = { /* Buy coffee */ }
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(32.dp))
-            
+
             // Contribute section
             Text(
                 text = "Contribute with us",
@@ -273,9 +272,9 @@ fun Settings(modifier: Modifier = Modifier, navController: NavController) {
                 color = Color.Black,
                 modifier = Modifier.fillMaxWidth()
             )
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -294,7 +293,7 @@ fun Settings(modifier: Modifier = Modifier, navController: NavController) {
                         fontSize = 12.sp
                     )
                 }
-                
+
                 Button(
                     onClick = { /* See bounties */ },
                     colors = ButtonDefaults.buttonColors(
@@ -310,10 +309,10 @@ fun Settings(modifier: Modifier = Modifier, navController: NavController) {
                     )
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(32.dp))
         }
-        
+
         DropBottomNavigation(
             navController = navController,
             currentRoute = currentRoute
@@ -346,9 +345,9 @@ fun SocialButton(
                 modifier = Modifier.size(24.dp)
             )
         }
-        
+
         Spacer(modifier = Modifier.height(4.dp))
-        
+
         Text(
             text = text,
             fontSize = 12.sp,

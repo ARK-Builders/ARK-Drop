@@ -8,6 +8,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navDeepLink
 import dev.arkbuilders.drop.app.FileChunk
 import dev.arkbuilders.drop.app.FileManager
+import dev.arkbuilders.drop.app.ProfileManager
 import dev.arkbuilders.drop.app.ui.home.Home
 import dev.arkbuilders.drop.app.ui.profile.EditProfile
 import dev.arkbuilders.drop.app.ui.receive.Receive
@@ -19,7 +20,8 @@ import dev.arkbuilders.drop.app.ui.settings.Settings
 fun DropNavHost(
     navController: NavHostController,
     modifier: Modifier = Modifier,
-    fileManager: FileManager
+    fileManager: FileManager,
+    profileManager: ProfileManager
 ) {
     NavHost(
         modifier = modifier,
@@ -27,11 +29,11 @@ fun DropNavHost(
         startDestination = DropDestination.Home.route
     ) {
         composable(DropDestination.Home.route) {
-            Home(navController = navController)
+            Home(navController = navController, profileManager = profileManager)
         }
         
         composable(DropDestination.Send.route) {
-            Send(navController = navController)
+            Send(navController = navController, profileManager = profileManager)
         }
         
         composable(DropDestination.History.route) {
@@ -39,15 +41,11 @@ fun DropNavHost(
         }
         
         composable(DropDestination.Settings.route) {
-            Settings(navController = navController)
-        }
-
-        composable(DropDestination.Settings.route) {
-            Settings(navController = navController)
+            Settings(navController = navController, profileManager = profileManager)
         }
 
         composable(DropDestination.EditProfile.route) {
-            EditProfile(navController = navController)
+            EditProfile(navController = navController, profileManager = profileManager)
         }
 
         composable(
@@ -74,7 +72,8 @@ fun DropNavHost(
                 },
                 onScanQRCode = { deepLink ->
                     navController.navigate(deepLink)
-                }
+                },
+                profileManager = profileManager
             )
         }
     }

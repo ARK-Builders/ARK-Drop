@@ -71,6 +71,9 @@ import dev.arkbuilders.drop.SendFilesSubscriber
 import dev.arkbuilders.drop.SenderFile
 import dev.arkbuilders.drop.SenderFileData
 import dev.arkbuilders.drop.SenderProfile
+import dev.arkbuilders.drop.app.Profile
+import dev.arkbuilders.drop.app.ProfileManager
+import dev.arkbuilders.drop.app.ui.profile.AvatarUtils
 import dev.arkbuilders.drop.sendFiles
 import kotlinx.coroutines.delay
 import java.io.InputStream
@@ -156,7 +159,8 @@ fun formatFileSize(bytes: ULong): String {
 }
 
 @Composable
-fun Send(modifier: Modifier = Modifier, navController: NavController) {
+fun Send(modifier: Modifier = Modifier, navController: NavController, profileManager: ProfileManager) {
+    val profile = remember { profileManager.loadOrDefault() }
     var isSending by remember { mutableStateOf(false) }
     var isCancelled by remember { mutableStateOf(false) }
     var isCompleted by remember { mutableStateOf(false) }
@@ -184,7 +188,7 @@ fun Send(modifier: Modifier = Modifier, navController: NavController) {
         fileStates.value = files.map { FileState(it.name, 0u, it.data.len()) }
         request.value = SendFilesRequest(
             profile = SenderProfile(
-                name = "John Doe"
+                name = profile.name,
             ), files = files
         )
     }
@@ -313,7 +317,7 @@ fun Send(modifier: Modifier = Modifier, navController: NavController) {
                 Spacer(Modifier.height(32.dp))
 
                 Text(
-                    text = "File has been sent to Bob!",
+                    text = "File has been sent to ${subscriber.connectingEvent?.receiver?.name ?: "Unknown"}!",
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Medium,
                     textAlign = TextAlign.Center

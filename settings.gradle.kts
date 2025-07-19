@@ -27,8 +27,8 @@ dependencyResolutionManagement {
         mavenCentral()
         maven { url = uri("https://jitpack.io") }
         maven {
-            name = "drop-core GitHub Packages"
-            url = uri("https://maven.pkg.github.com/oluiscabral/drop-core")
+            name = "ark-core GitHub Packages"
+            url = uri("https://maven.pkg.github.com/Ark-Builders/ark-core")
             credentials {
                 username = "token"
                 password = githubToken

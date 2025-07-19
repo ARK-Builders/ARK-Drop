@@ -32,7 +32,6 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -159,7 +158,12 @@ fun formatFileSize(bytes: ULong): String {
 }
 
 @Composable
-fun Send(modifier: Modifier = Modifier, navController: NavController, profileManager: ProfileManager) {
+fun Send(
+    modifier: Modifier = Modifier,
+    navController: NavController,
+    profileManager: ProfileManager
+) {
+    val context = navController.context
     val profile = remember { profileManager.loadOrDefault() }
     var isSending by remember { mutableStateOf(false) }
     var isCancelled by remember { mutableStateOf(false) }
@@ -446,12 +450,8 @@ fun Send(modifier: Modifier = Modifier, navController: NavController, profileMan
                             .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            Icons.Default.Person,
-                            contentDescription = null,
-                            modifier = Modifier.size(40.dp),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
+                        val sendingTo = Profile(name = subscriber.connectingEvent?.receiver?.name ?: "Unknown", avatarB64 = AvatarUtils.getDefaultAvatarBase64(context))
+                        AvatarUtils.AvatarImage()
                     }
                     Box(
                         modifier = Modifier
@@ -481,7 +481,7 @@ fun Send(modifier: Modifier = Modifier, navController: NavController, profileMan
                 Spacer(Modifier.height(8.dp))
 
                 Text(
-                    "Sending to Bob",
+                    "Sending to ${subscriber.connectingEvent?.receiver?.name ?: "Unknown"}",
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Medium
@@ -533,7 +533,11 @@ fun Send(modifier: Modifier = Modifier, navController: NavController, profileMan
                                         fontWeight = FontWeight.Medium
                                     )
                                     Text(
-                                        "${formatFileSize(fileState.sent)} of ${formatFileSize(fileState.total)} • ${
+                                        "${formatFileSize(fileState.sent)} of ${
+                                            formatFileSize(
+                                                fileState.total
+                                            )
+                                        } • ${
                                             if (bytesPerSecond > 0u) {
                                                 "${(fileState.total - fileState.sent) / bytesPerSecond} secs left"
                                             } else {
@@ -615,7 +619,8 @@ fun Send(modifier: Modifier = Modifier, navController: NavController, profileMan
                 }
                 Spacer(Modifier.height(16.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    bubble.value!!.getConfirmation().toUInt().toString().padStart(2, '0').toCharArray()
+                    bubble.value!!.getConfirmation().toUInt().toString().padStart(2, '0')
+                        .toCharArray()
                         .forEach { char ->
                             Box(
                                 modifier = Modifier
@@ -675,7 +680,11 @@ private fun createQRCodeBitmap(data: String, size: Int = 920): Bitmap {
     return createBitmap(size, size, Bitmap.Config.RGB_565).apply {
         for (x in 0 until size) {
             for (y in 0 until size) {
-                set(x, y, if (matrix[x, y]) android.graphics.Color.BLACK else android.graphics.Color.WHITE)
+                set(
+                    x,
+                    y,
+                    if (matrix[x, y]) android.graphics.Color.BLACK else android.graphics.Color.WHITE
+                )
             }
         }
     }

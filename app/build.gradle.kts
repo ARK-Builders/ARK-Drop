@@ -92,7 +92,7 @@ dependencies {
         }
     }
     //noinspection Aligned16KB
-    implementation("dev.arkbuilders:drop:1.1.4") {
+    implementation("dev.arkbuilders:drop:16385430661") {
         artifact {
             extension = "aar"
             type = "aar"
@@ -155,6 +155,9 @@ tasks.named<Delete>("clean") {
 }
 
 tasks.register<Exec>("generateDevKeystore") {
+    doFirst {
+            mkdir(layout.buildDirectory)
+    }
     val keystoreFile = file(devKeystorePath)
     commandLine = if (keystoreFile.exists()) {
         listOf("echo", "\"Development keystore already exists.\"")

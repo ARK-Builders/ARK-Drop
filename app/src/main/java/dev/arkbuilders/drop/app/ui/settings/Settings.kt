@@ -25,6 +25,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -71,9 +72,9 @@ fun Settings(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFF4285F4))
+            .background(MaterialTheme.colorScheme.primary)
     ) {
-        // Header section with blue background
+        // Header section with primary color background
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -83,7 +84,7 @@ fun Settings(
                 text = "Settings",
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = MaterialTheme.colorScheme.onPrimary
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -92,7 +93,9 @@ fun Settings(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.15f))
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.15f)
+                )
             ) {
                 Row(
                     modifier = Modifier
@@ -113,7 +116,7 @@ fun Settings(
                         text = profile.name,
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Medium,
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.weight(1f)
                     )
 
@@ -125,20 +128,20 @@ fun Settings(
                         Icon(
                             imageVector = Icons.Default.Edit,
                             contentDescription = "Edit",
-                            tint = Color.White
+                            tint = MaterialTheme.colorScheme.onPrimary
                         )
                     }
                 }
             }
         }
 
-        // Main content with white background
+        // Main content with surface background
         Column(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
                 .background(
-                    Color.White,
+                    MaterialTheme.colorScheme.surface,
                     RoundedCornerShape(topStart = 0.dp, topEnd = 0.dp)
                 )
                 .padding(24.dp)
@@ -152,7 +155,7 @@ fun Settings(
                 text = "ARK Drop",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.Black,
+                color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center
             )
 
@@ -161,7 +164,7 @@ fun Settings(
             Text(
                 text = "Version 1.0.0.1",
                 fontSize = 14.sp,
-                color = Color.Gray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
             )
 
@@ -170,7 +173,7 @@ fun Settings(
             Text(
                 text = "ARK Builders • Copyright ©2024",
                 fontSize = 14.sp,
-                color = Color.Gray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
             )
 
@@ -199,7 +202,7 @@ fun Settings(
 
             Spacer(modifier = Modifier.height(48.dp))
 
-            HorizontalDivider(color = Color.Gray.copy(alpha = 0.2f))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
 
             Spacer(modifier = Modifier.height(32.dp))
 
@@ -208,7 +211,7 @@ fun Settings(
                 text = "Support us",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.Black,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -217,7 +220,7 @@ fun Settings(
             Text(
                 text = "We greatly appreciate every bit of support!",
                 fontSize = 14.sp,
-                color = Color.Gray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -269,7 +272,7 @@ fun Settings(
                 text = "Contribute with us",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.Black,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -282,14 +285,14 @@ fun Settings(
                 Button(
                     onClick = { /* Discover issues */ },
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.Gray.copy(alpha = 0.1f)
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
                     ),
                     shape = RoundedCornerShape(8.dp),
                     modifier = Modifier.weight(1f)
                 ) {
                     Text(
                         text = "Discover issues to work on",
-                        color = Color.Black,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 12.sp
                     )
                 }
@@ -297,14 +300,14 @@ fun Settings(
                 Button(
                     onClick = { /* See bounties */ },
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.Gray.copy(alpha = 0.1f)
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
                     ),
                     shape = RoundedCornerShape(8.dp),
                     modifier = Modifier.weight(1f)
                 ) {
                     Text(
                         text = "See open bounties",
-                        color = Color.Gray,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 12.sp
                     )
                 }
@@ -334,14 +337,14 @@ fun SocialButton(
             modifier = Modifier
                 .size(48.dp)
                 .background(
-                    Color.Gray.copy(alpha = 0.1f),
+                    MaterialTheme.colorScheme.surfaceVariant,
                     CircleShape
                 )
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = text,
-                tint = Color.Gray,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(24.dp)
             )
         }
@@ -351,7 +354,7 @@ fun SocialButton(
         Text(
             text = text,
             fontSize = 12.sp,
-            color = Color.Gray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
     }
@@ -367,7 +370,7 @@ fun SupportButton(
     Button(
         onClick = onClick,
         colors = ButtonDefaults.buttonColors(
-            containerColor = Color.Gray.copy(alpha = 0.1f)
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
         ),
         shape = RoundedCornerShape(8.dp),
         modifier = modifier
@@ -379,13 +382,13 @@ fun SupportButton(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = Color.Gray,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(16.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = text,
-                color = Color.Black,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 12.sp
             )
         }

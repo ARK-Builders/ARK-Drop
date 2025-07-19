@@ -66,7 +66,7 @@ data class Avatar(
     val isCustom: Boolean = false
 )
 
-// Predefined avatars with nice background colors
+// Predefined avatars with theme-aware background colors
 val defaultAvatars = listOf(
     Avatar("avatar_00", R.drawable.avatar_00, null, Color(0xFFE8F5E8)),
     Avatar("avatar_01", R.drawable.avatar_01, null, Color(0xFFE0E0E0)),
@@ -97,7 +97,7 @@ fun EditProfileHeader(
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                 contentDescription = "Back",
-                tint = Color.Black
+                tint = MaterialTheme.colorScheme.onSurface
             )
         }
 
@@ -105,7 +105,7 @@ fun EditProfileHeader(
             text = "Edit Profile",
             fontSize = 20.sp,
             fontWeight = FontWeight.Medium,
-            color = Color.Black
+            color = MaterialTheme.colorScheme.onSurface
         )
 
         Spacer(modifier = Modifier.size(24.dp))
@@ -143,14 +143,14 @@ fun AvatarSection(
                 text = "Change Avatar",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium,
-                color = Color.Black
+                color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(modifier = Modifier.width(8.dp))
             Icon(
                 imageVector = Icons.AutoMirrored.Default.KeyboardArrowRight,
                 contentDescription = null,
                 modifier = Modifier.size(20.dp),
-                tint = Color.Gray
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -181,12 +181,14 @@ fun AvatarPickerSheet(
             Text(
                 text = "Select Avatar",
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface
             )
             IconButton(onClick = onDismiss) {
                 Icon(
                     imageVector = Icons.Default.Clear,
-                    contentDescription = "Close"
+                    contentDescription = "Close",
+                    tint = MaterialTheme.colorScheme.onSurface
                 )
             }
         }
@@ -238,7 +240,7 @@ fun CreateNewAvatarButton(
         modifier = Modifier
             .size(72.dp)
             .clip(CircleShape)
-            .background(Color(0xFFF0F0F0))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
@@ -246,7 +248,7 @@ fun CreateNewAvatarButton(
             imageVector = Icons.Default.Add,
             contentDescription = "Create new avatar",
             modifier = Modifier.size(24.dp),
-            tint = Color.Gray
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
@@ -262,8 +264,8 @@ fun AvatarItem(
             .size(72.dp)
             .clip(CircleShape)
             .background(
-                if (isSelected) avatar.bgColor.copy(alpha = 0.8f)
-                else avatar.bgColor
+                if (isSelected) MaterialTheme.colorScheme.primaryContainer
+                else MaterialTheme.colorScheme.surfaceVariant
             )
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
@@ -290,7 +292,7 @@ fun AvatarItem(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(
-                        Color.Black.copy(alpha = 0.2f),
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
                         CircleShape
                     ),
                 contentAlignment = Alignment.Center
@@ -298,7 +300,7 @@ fun AvatarItem(
                 Icon(
                     imageVector = Icons.Default.Edit,
                     contentDescription = "Selected",
-                    tint = Color.White,
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -317,7 +319,7 @@ fun NameInput(
             .fillMaxWidth()
             .height(56.dp)
             .background(
-                color = Color(0xFFF5F5F5),
+                color = MaterialTheme.colorScheme.surfaceVariant,
                 shape = RoundedCornerShape(16.dp)
             )
             .padding(horizontal = 16.dp),
@@ -332,7 +334,7 @@ fun NameInput(
                 onValueChange = onValueChange,
                 textStyle = TextStyle(
                     fontSize = 16.sp,
-                    color = Color.Black
+                    color = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier.weight(1f),
                 singleLine = true,
@@ -340,7 +342,7 @@ fun NameInput(
                     if (value.isEmpty()) {
                         Text(
                             text = "Enter your name",
-                            color = Color.Gray,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 16.sp
                         )
                     }
@@ -356,7 +358,7 @@ fun NameInput(
                     Icon(
                         imageVector = Icons.Default.Clear,
                         contentDescription = "Clear",
-                        tint = Color.Gray,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -375,13 +377,13 @@ fun SaveButton(
             .fillMaxWidth()
             .height(56.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = Color(0xFF4285F4)
+            containerColor = MaterialTheme.colorScheme.primary
         ),
         shape = RoundedCornerShape(16.dp)
     ) {
         Text(
             text = "Save",
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onPrimary,
             fontSize = 16.sp,
             fontWeight = FontWeight.Medium
         )
@@ -396,6 +398,7 @@ fun EditProfile(
     profileManager: ProfileManager
 ) {
     val context = navController.context
+    val bgColor = MaterialTheme.colorScheme.surfaceVariant
     var sheetVisible by remember { mutableStateOf(false) }
 
     // Load existing profile or create default
@@ -428,7 +431,7 @@ fun EditProfile(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(MaterialTheme.colorScheme.surface)
             .padding(horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -445,7 +448,7 @@ fun EditProfile(
             avatarImage = {
                 AvatarUtils.AvatarImage(
                     base64String = profile.avatarB64,
-                        modifier = Modifier.size(80.dp)
+                    modifier = Modifier.size(80.dp)
                 )
             }
         )
@@ -512,7 +515,7 @@ fun EditProfile(
                         id = customAvatar.id,
                         drawableRes = null,
                         bitmap = customAvatar.bitmap,
-                        bgColor = Color(0xFFE3F2FD), // Default background for custom avatars
+                        bgColor = bgColor,
                         isCustom = true
                     )
 

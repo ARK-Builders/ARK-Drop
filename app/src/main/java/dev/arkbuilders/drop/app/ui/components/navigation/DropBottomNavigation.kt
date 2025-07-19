@@ -1,6 +1,7 @@
 package dev.arkbuilders.drop.app.ui.components.navigation
 
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
@@ -16,10 +17,10 @@ fun DropBottomNavigation(
     currentRoute: String? = null
 ) {
     val items = BottomNavigationItems.getItems(currentRoute)
-    
+
     NavigationBar(
-        containerColor = Color.White,
-        contentColor = Color.Gray
+        containerColor = MaterialTheme.colorScheme.surface,
+        contentColor = MaterialTheme.colorScheme.onSurface
     ) {
         items.forEach { item ->
             NavigationBarItem(
@@ -27,13 +28,19 @@ fun DropBottomNavigation(
                     Icon(
                         imageVector = item.icon,
                         contentDescription = item.label,
-                        tint = if (item.isSelected) Color(0xFF4285F4) else Color.Gray
+                        tint = if (item.isSelected)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 },
                 label = {
                     Text(
                         text = item.label,
-                        color = if (item.isSelected) Color(0xFF4285F4) else Color.Gray,
+                        color = if (item.isSelected)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 12.sp
                     )
                 },
@@ -50,11 +57,11 @@ fun DropBottomNavigation(
                     }
                 },
                 colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = Color(0xFF4285F4),
-                    selectedTextColor = Color(0xFF4285F4),
-                    unselectedIconColor = Color.Gray,
-                    unselectedTextColor = Color.Gray,
-                    indicatorColor = Color.Transparent
+                    selectedIconColor = MaterialTheme.colorScheme.primary,
+                    selectedTextColor = MaterialTheme.colorScheme.primary,
+                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    indicatorColor = MaterialTheme.colorScheme.secondaryContainer
                 )
             )
         }

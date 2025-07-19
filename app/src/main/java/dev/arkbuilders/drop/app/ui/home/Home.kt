@@ -21,6 +21,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -56,7 +57,7 @@ fun Home(modifier: Modifier = Modifier, navController: NavController, profileMan
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(Color.White),
+            .background(MaterialTheme.colorScheme.background),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // Main content
@@ -69,7 +70,10 @@ fun Home(modifier: Modifier = Modifier, navController: NavController, profileMan
             val innerModifier = Modifier.padding(horizontal = 24.dp)
             Spacer(modifier = Modifier.height(24.dp))
             TopBar(modifier = innerModifier, profileManager = profileManager)
-            HorizontalDivider(modifier = Modifier.padding(vertical = 24.dp))
+            HorizontalDivider(
+                modifier = Modifier.padding(vertical = 24.dp),
+                color = MaterialTheme.colorScheme.outline
+            )
             Hero(modifier = innerModifier.padding(0.dp, 30.dp))
             CTA(modifier = innerModifier, navController = navController)
         }
@@ -91,12 +95,16 @@ fun TopBar(modifier: Modifier = Modifier, profileManager: ProfileManager) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column {
-            Text("Hi ${profile.name}", fontSize = 16.sp, color = Color.Black)
+            Text(
+                "Hi ${profile.name}",
+                fontSize = 16.sp,
+                color = MaterialTheme.colorScheme.onBackground
+            )
             Text(
                 "Welcome back!",
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.Black
+                color = MaterialTheme.colorScheme.onBackground
             )
         }
         AvatarUtils.AvatarImage(
@@ -118,13 +126,17 @@ fun Hero(modifier: Modifier = Modifier) {
                     .size((200 + it * 60).dp)
                     .clip(CircleShape)
                     .background(Color.Transparent)
-                    .border(width = 1.dp, color = Color.LightGray, shape = CircleShape)
+                    .border(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                        shape = CircleShape
+                    )
             )
         }
         Icon(
             painter = painterResource(R.drawable.ic_link),
             contentDescription = null,
-            tint = Color.DarkGray,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(36.dp)
         )
         Image(
@@ -133,7 +145,7 @@ fun Hero(modifier: Modifier = Modifier) {
             modifier = Modifier
                 .size(30.dp)
                 .absoluteOffset(y = (-100).dp)
-                .background(Color.White, CircleShape)
+                .background(MaterialTheme.colorScheme.surface, CircleShape)
         )
         Image(
             painter = painterResource(R.drawable.ic_music),
@@ -141,7 +153,7 @@ fun Hero(modifier: Modifier = Modifier) {
             modifier = Modifier
                 .size(30.dp)
                 .absoluteOffset(x = (126).dp, y = (-30).dp)
-                .background(Color.White, CircleShape)
+                .background(MaterialTheme.colorScheme.surface, CircleShape)
         )
         Image(
             painter = painterResource(R.drawable.ic_document),
@@ -149,7 +161,7 @@ fun Hero(modifier: Modifier = Modifier) {
             modifier = Modifier
                 .size(30.dp)
                 .absoluteOffset(x = (70).dp, y = (70).dp)
-                .background(Color.White, CircleShape)
+                .background(MaterialTheme.colorScheme.surface, CircleShape)
         )
         Image(
             painter = painterResource(R.drawable.ic_image),
@@ -157,7 +169,7 @@ fun Hero(modifier: Modifier = Modifier) {
             modifier = Modifier
                 .size(30.dp)
                 .absoluteOffset(x = (-70).dp, y = (70).dp)
-                .background(Color.White, CircleShape)
+                .background(MaterialTheme.colorScheme.surface, CircleShape)
         )
         Image(
             painter = painterResource(R.drawable.ic_video),
@@ -165,7 +177,7 @@ fun Hero(modifier: Modifier = Modifier) {
             modifier = Modifier
                 .size(30.dp)
                 .absoluteOffset(x = (-126).dp, y = (-30).dp)
-                .background(Color.White, CircleShape)
+                .background(MaterialTheme.colorScheme.surface, CircleShape)
         )
     }
 }
@@ -187,16 +199,15 @@ fun CTAHeading(modifier: Modifier = Modifier) {
         Text(
             modifier = innerModifier,
             text = "Seamless to transfer your files",
-            style = Typography.titleMedium,
+            style = Typography.titleMedium.copy(color = MaterialTheme.colorScheme.onBackground),
             textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             modifier = innerModifier,
             text = "Simple, fast, and limitless start sharing your files now.",
-            style = Typography.bodyMedium,
-            textAlign = TextAlign.Center,
-            color = Color.Gray
+            style = Typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
+            textAlign = TextAlign.Center
         )
     }
 }
@@ -215,7 +226,7 @@ fun Actions(
                 navController.navigate(DropDestination.Send.route)
             },
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF4285F4)
+                containerColor = MaterialTheme.colorScheme.primary
             ),
             shape = RoundedCornerShape(12.dp),
             modifier = Modifier
@@ -225,13 +236,13 @@ fun Actions(
             Icon(
                 imageVector = TablerIcons.ArrowUpCircle,
                 contentDescription = null,
-                tint = Color.White,
+                tint = MaterialTheme.colorScheme.onPrimary,
                 modifier = Modifier.size(20.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = "Send",
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onPrimary,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium
             )
@@ -242,7 +253,7 @@ fun Actions(
                 navController.navigate(DropDestination.Receive.route)
             },
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF4285F4)
+                containerColor = MaterialTheme.colorScheme.primary
             ),
             shape = RoundedCornerShape(12.dp),
             modifier = Modifier
@@ -252,13 +263,13 @@ fun Actions(
             Icon(
                 imageVector = TablerIcons.ArrowDownCircle,
                 contentDescription = null,
-                tint = Color.White,
+                tint = MaterialTheme.colorScheme.onPrimary,
                 modifier = Modifier.size(20.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = "Receive",
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onPrimary,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium
             )

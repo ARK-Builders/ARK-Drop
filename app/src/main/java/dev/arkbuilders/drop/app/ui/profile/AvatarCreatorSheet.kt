@@ -42,6 +42,8 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.core.graphics.scale
+import androidx.core.graphics.createBitmap
 
 data class CustomAvatar(
     val id: String,
@@ -353,8 +355,8 @@ private fun loadBitmapFromUri(context: Context, uri: Uri): Bitmap? {
 
 private fun cropToCircle(bitmap: Bitmap, size: Int): Bitmap? {
     return try {
-        val scaledBitmap = Bitmap.createScaledBitmap(bitmap, size, size, true)
-        val output = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        val scaledBitmap = bitmap.scale(size, size)
+        val output = createBitmap(size, size)
         
         val canvas = Canvas(output)
         val paint = Paint(Paint.ANTI_ALIAS_FLAG)

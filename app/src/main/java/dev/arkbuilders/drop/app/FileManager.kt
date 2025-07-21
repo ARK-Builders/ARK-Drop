@@ -29,9 +29,6 @@ class FileManager @Inject constructor(
             val file = receiveDir.resolve(chunk.name)
             file.appendBytes(chunk.data.map { it.toByte() }.toByteArray())
         }
-
-        SenderProfile(name="")
-        ReceiverProfile
     }
 }
 

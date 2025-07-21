@@ -303,7 +303,7 @@ fun ReceiveFiles(
                 Spacer(Modifier.height(32.dp))
 
                 Text(
-                    text = "File has been received from ${"TODO: NAME"}!",
+                    text = "File has been received from ${subscriber.connectingEvent.value?.sender?.name ?: "Unknown"}!",
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Medium,
                     textAlign = TextAlign.Center

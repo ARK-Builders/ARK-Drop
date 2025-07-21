@@ -193,6 +193,7 @@ fun Send(
         request.value = SendFilesRequest(
             profile = SenderProfile(
                 name = profile.name,
+                avatarB64 = profile.avatarB64
             ), files = files
         )
     }
@@ -451,7 +452,7 @@ fun Send(
                         contentAlignment = Alignment.Center
                     ) {
                         val sendingTo = Profile(name = subscriber.connectingEvent?.receiver?.name ?: "Unknown", avatarB64 = AvatarUtils.getDefaultAvatarBase64(context))
-                        AvatarUtils.AvatarImage()
+//                        AvatarUtils.AvatarImage()
                     }
                     Box(
                         modifier = Modifier

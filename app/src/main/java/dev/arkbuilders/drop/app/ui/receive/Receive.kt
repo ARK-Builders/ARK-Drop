@@ -163,7 +163,7 @@ fun ReceiveFiles(
     val subscriber = remember { ReceiveFilesSubscriberImpl() }
     val request = remember {
         ReceiveFilesRequest(
-            ticket, confirmation, profile = ReceiverProfile(name = profile.name)
+            ticket, confirmation, profile = ReceiverProfile(name = profile.name, avatarB64 = profile.avatarB64)
         )
     }
     val fileStates = remember { mutableStateOf<List<FileState>>(emptyList()) }

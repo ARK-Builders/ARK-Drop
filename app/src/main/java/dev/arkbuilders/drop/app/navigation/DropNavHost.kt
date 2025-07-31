@@ -31,15 +31,15 @@ fun DropNavHost(
         composable(DropDestination.Home.route) {
             Home(navController = navController, profileManager = profileManager)
         }
-        
+
         composable(DropDestination.Send.route) {
             Send(navController = navController, profileManager = profileManager)
         }
-        
+
         composable(DropDestination.History.route) {
 //            History(navController = navController)
         }
-        
+
         composable(DropDestination.Settings.route) {
             Settings(navController = navController, profileManager = profileManager)
         }
@@ -62,18 +62,10 @@ fun DropNavHost(
                 ?.split(",")
                 ?.mapNotNull { it.toUByteOrNull() }
                 ?: emptyList()
-            
+
             Receive(
-                ticket = ticket,
-                confirmations = confirmations,
-                onBack = { navController.popBackStack() },
-                onReceive = { chunks ->
-                    fileManager.saveReceivedChunks(chunks.map { it -> FileChunk(it.name, it.data) })
-                },
-                onScanQRCode = { deepLink ->
-                    navController.navigate(deepLink)
-                },
-                profileManager = profileManager
+                navController = navController,
+                profileManager = profileManager,
             )
         }
     }

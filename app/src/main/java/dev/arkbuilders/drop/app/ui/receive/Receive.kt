@@ -3,8 +3,10 @@
 package dev.arkbuilders.drop.app.ui.receive
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
@@ -65,51 +67,27 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.navigation.NavController
 import com.google.mlkit.vision.barcode.BarcodeScanner
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
+import compose.icons.TablerIcons
+import compose.icons.tablericons.History
 import dev.arkbuilders.drop.ReceiveFilesBubble
 import dev.arkbuilders.drop.ReceiveFilesConnectingEvent
 import dev.arkbuilders.drop.ReceiveFilesReceivingEvent
 import dev.arkbuilders.drop.ReceiveFilesRequest
 import dev.arkbuilders.drop.ReceiveFilesSubscriber
 import dev.arkbuilders.drop.ReceiverProfile
-import dev.arkbuilders.drop.app.Profile
 import dev.arkbuilders.drop.app.ProfileManager
+import dev.arkbuilders.drop.app.ui.send.formatFileSize
 import dev.arkbuilders.drop.receiveFiles
 import kotlinx.coroutines.delay
 import java.text.DecimalFormat
 import java.util.UUID
 import java.util.concurrent.Executors
-
-@Composable
-fun Receive(
-    ticket: String?,
-    confirmations: List<UByte>,
-    onBack: () -> Unit = {},
-    onReceive: (List<ReceiverChunk>) -> Unit = {},
-    onScanQRCode: (Uri) -> Unit = {},
-    profileManager: ProfileManager
-) {
-    val profile = remember { profileManager.loadOrDefault() }
-    var selectedConfirmation by remember { mutableStateOf<UByte?>(null) }
-
-    if (ticket != null && selectedConfirmation != null) {
-        ReceiveFiles(ticket, selectedConfirmation!!, onBack, onReceive, profile)
-    } else if (confirmations.isEmpty()) {
-        ScanQRCode(onScanQRCode)
-    } else {
-        SelectConfirmation(
-            confirmations,
-            onBack,
-            onSelectConfirmation = { confirmation ->
-                selectedConfirmation = confirmation
-            },
-        )
-    }
-}
 
 class ReceiveFilesSubscriberImpl : ReceiveFilesSubscriber {
     private val id: UUID = UUID.randomUUID()
@@ -121,10 +99,12 @@ class ReceiveFilesSubscriberImpl : ReceiveFilesSubscriber {
     }
 
     override fun notifyConnecting(event: ReceiveFilesConnectingEvent) {
+        Log.d("ReceiveFilesSubscriberImpl", "Connecting event received: sender=${event.sender.name}, files=${event.files.size}")
         this.connectingEvent.value = event
     }
 
     override fun notifyReceiving(event: ReceiveFilesReceivingEvent) {
+        Log.d("ReceiveFilesSubscriberImpl", "Receiving event: file=${event.id}, data size=${event.data.size}")
         this.receivingEvents.add(event)
     }
 }
@@ -142,13 +122,50 @@ data class ReceiverChunk(
     val data: List<UByte>,
 )
 
-fun formatFileSize(bytes: ULong): String {
-    val df = DecimalFormat("#.#")
-    return when {
-        bytes < 1024u -> "${bytes} B"
-        bytes < 1024u * 1024u -> "${df.format(bytes.toDouble() / 1024)} KB"
-        bytes < 1024u * 1024u * 1024u -> "${df.format(bytes.toDouble() / (1024 * 1024))} MB"
-        else -> "${df.format(bytes.toDouble() / (1024 * 1024 * 1024))} GB"
+@Composable
+fun Receive(
+    modifier: Modifier = Modifier,
+    navController: NavController,
+    profileManager: ProfileManager
+) {
+    var ticket by remember { mutableStateOf<String?>(null) }
+    var confirmations by remember { mutableStateOf<List<UByte>>(emptyList()) }
+    var selectedConfirmation by remember { mutableStateOf<UByte?>(null) }
+
+    when {
+        ticket != null && selectedConfirmation != null -> {
+            ReceiveFiles(
+                ticket = ticket!!,
+                confirmation = selectedConfirmation!!,
+                onBack = { navController.popBackStack() },
+                onReceive = { chunks ->
+                    // Handle received file chunks - could save to storage here
+                    Log.d("Receive", "Received ${chunks.size} chunks")
+                },
+                profileManager = profileManager
+            )
+        }
+
+        confirmations.isNotEmpty() -> {
+            SelectConfirmation(
+                confirmations = confirmations,
+                onBack = { navController.popBackStack() },
+                onSelectConfirmation = { confirmation ->
+                    Log.d("Receive", "Selected confirmation: $confirmation")
+                    selectedConfirmation = confirmation
+                }
+            )
+        }
+
+        else -> {
+            ScanQRCode { uri ->
+                Log.d("Receive", "QR code scanned: $uri")
+                processQRCode(uri) { processedTicket, processedConfirmations ->
+                    ticket = processedTicket
+                    confirmations = processedConfirmations
+                }
+            }
+        }
     }
 }
 
@@ -158,12 +175,19 @@ fun ReceiveFiles(
     confirmation: UByte,
     onBack: () -> Unit = {},
     onReceive: (List<ReceiverChunk>) -> Unit = {},
-    profile: Profile
+    profileManager: ProfileManager
 ) {
+    val context = LocalContext.current
+    val profile = remember { profileManager.loadOrDefault() }
     val subscriber = remember { ReceiveFilesSubscriberImpl() }
     val request = remember {
         ReceiveFilesRequest(
-            ticket, confirmation, profile = ReceiverProfile(name = profile.name, avatarB64 = profile.avatarB64)
+            ticket = ticket,
+            confirmation = confirmation,
+            profile = ReceiverProfile(
+                name = profile.name,
+                avatarB64 = profile.avatarB64
+            )
         )
     }
     val fileStates = remember { mutableStateOf<List<FileState>>(emptyList()) }
@@ -175,17 +199,20 @@ fun ReceiveFiles(
 
     LaunchedEffect(request) {
         try {
+            Log.d("ReceiveFiles", "Creating ReceiveFilesBubble...")
             bubble = receiveFiles(request)
             bubble!!.subscribe(subscriber)
             bubble!!.start()
+            Log.d("ReceiveFiles", "ReceiveFilesBubble started successfully")
         } catch (e: Exception) {
+            Log.e("ReceiveFiles", "Error creating bubble", e)
             isCancelled = true
-            e.printStackTrace()
         }
     }
 
     LaunchedEffect(isCancelled) {
         if (isCancelled) {
+            Log.d("ReceiveFiles", "Cancelling receive")
             bubble?.cancel()
             onBack()
         }
@@ -193,7 +220,11 @@ fun ReceiveFiles(
 
     LaunchedEffect(subscriber.connectingEvent.value) {
         if (subscriber.connectingEvent.value == null) return@LaunchedEffect
-        fileStates.value = subscriber.connectingEvent.value!!.files.map {
+
+        val connectingEvent = subscriber.connectingEvent.value!!
+        Log.d("ReceiveFiles", "Connection established with: ${connectingEvent.sender.name}")
+
+        fileStates.value = connectingEvent.files.map {
             FileState(it.id, it.name, 0u, it.len)
         }
 
@@ -218,6 +249,7 @@ fun ReceiveFiles(
                 // Check if all files are actually completed before marking as done
                 val allFilesCompleted = fileStates.value.all { it.received >= it.total }
                 if (allFilesCompleted && fileStates.value.isNotEmpty()) {
+                    Log.d("ReceiveFiles", "All files completed successfully")
                     isCompleted = true
                     completionTime = (System.currentTimeMillis() - startTime) / 1000
                 }
@@ -264,314 +296,391 @@ fun ReceiveFiles(
             }) {
                 Icon(Icons.Default.Close, contentDescription = "Close")
             }
+
             Text(
-                "Transferring Files",
+                "Receiving Files",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Medium
             )
+
             Spacer(modifier = Modifier.width(48.dp)) // Balance the close button
         }
 
         if (isCompleted) {
-            // Completion screen
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Spacer(Modifier.height(80.dp))
+            CompletionScreen(
+                senderName = subscriber.connectingEvent.value?.sender?.name ?: "Unknown",
+                completionTime = completionTime,
+                fileStates = fileStates.value,
+                onOpenFolder = {
+                    // Open file manager to download folder
+                    val intent = Intent(Intent.ACTION_VIEW).apply {
+                        data = Uri.parse("content://com.android.externalstorage.documents/document/primary%3ADownload%2FDrop")
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    }
+                    try {
+                        context.startActivity(intent)
+                    } catch (e: Exception) {
+                        Log.e("ReceiveFiles", "No file manager available", e)
+                    }
+                },
+                onReceiveMore = { onBack() }
+            )
+        } else {
+            ReceivingScreen(
+                senderName = subscriber.connectingEvent.value?.sender?.name ?: "Connecting...",
+                fileStates = fileStates.value,
+                bytesPerSecond = bytesPerSecond,
+                onOpenFolder = {
+                    val intent = Intent(Intent.ACTION_VIEW).apply {
+                        data = Uri.parse("content://com.android.externalstorage.documents/document/primary%3ADownload%2FDrop")
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    }
+                    try {
+                        context.startActivity(intent)
+                    } catch (e: Exception) {
+                        Log.e("ReceiveFiles", "Error opening file manager", e)
+                    }
+                }
+            )
+        }
+    }
+}
 
-                // Success checkmark
+@Composable
+private fun CompletionScreen(
+    senderName: String,
+    completionTime: Long,
+    fileStates: List<FileState>,
+    onOpenFolder: () -> Unit,
+    onReceiveMore: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Spacer(Modifier.height(80.dp))
+
+        // Success checkmark
+        Box(
+            modifier = Modifier
+                .size(80.dp)
+                .background(
+                    color = Color(0xFF4CAF50),
+                    shape = CircleShape
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.Check,
+                contentDescription = "Success",
+                tint = Color.White,
+                modifier = Modifier.size(40.dp)
+            )
+        }
+
+        Spacer(Modifier.height(32.dp))
+
+        Text(
+            text = "Files received successfully from $senderName!",
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Medium,
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(Modifier.height(8.dp))
+
+        Text(
+            text = "Completed in $completionTime seconds",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Spacer(Modifier.height(32.dp))
+
+        // File completion cards
+        fileStates.forEach { fileState ->
+            FileCompletionCard(fileState)
+            Spacer(Modifier.height(8.dp))
+        }
+
+        Spacer(Modifier.height(32.dp))
+
+        // Open folder button
+        OutlinedButton(
+            onClick = onOpenFolder,
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = MaterialTheme.colorScheme.primary
+            )
+        ) {
+            Icon(
+                TablerIcons.History,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(Modifier.width(8.dp))
+            Text("Open in File Manager")
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        // Receive more button
+        OutlinedButton(
+            onClick = onReceiveMore,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Receive more files")
+        }
+    }
+}
+
+@Composable
+private fun ReceivingScreen(
+    senderName: String,
+    fileStates: List<FileState>,
+    bytesPerSecond: ULong,
+    onOpenFolder: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Spacer(Modifier.height(32.dp))
+
+        // User avatars
+        Row(
+            horizontalArrangement = Arrangement.spacedBy((-12).dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFFE1BEE7)), // Light purple background
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Default.Person,
+                    contentDescription = null,
+                    modifier = Modifier.size(40.dp),
+                    tint = Color(0xFF9C27B0)
+                )
+            }
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFFB3E5FC)), // Light blue background
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Outlined.Person,
+                    contentDescription = null,
+                    modifier = Modifier.size(40.dp),
+                    tint = Color(0xFF2196F3)
+                )
+            }
+        }
+
+        Spacer(Modifier.height(24.dp))
+
+        Text(
+            "Wait a moment while transferring…",
+            style = MaterialTheme.typography.headlineSmall,
+            textAlign = TextAlign.Center,
+            fontWeight = FontWeight.Medium
+        )
+
+        Spacer(Modifier.height(8.dp))
+
+        Text(
+            "Receiving from $senderName",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.primary,
+            fontWeight = FontWeight.Medium
+        )
+
+        Spacer(Modifier.height(32.dp))
+
+        // File transfer progress
+        fileStates.forEach { fileState ->
+            FileReceiveCard(fileState, bytesPerSecond)
+            Spacer(Modifier.height(12.dp))
+        }
+
+        // Open folder button
+        OutlinedButton(
+            onClick = onOpenFolder,
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = MaterialTheme.colorScheme.primary
+            )
+        ) {
+            Icon(
+                TablerIcons.History,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(Modifier.width(8.dp))
+            Text("Open in File Manager")
+        }
+    }
+}
+
+@Composable
+private fun FileCompletionCard(fileState: FileState) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                MaterialTheme.colorScheme.surface,
+                RoundedCornerShape(16.dp)
+            )
+            .padding(16.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
                 Box(
                     modifier = Modifier
-                        .size(80.dp)
+                        .size(40.dp)
                         .background(
-                            color = Color(0xFF4CAF50),
-                            shape = CircleShape
+                            Color(0xFF4CAF50).copy(alpha = 0.1f),
+                            RoundedCornerShape(8.dp)
                         ),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Check,
-                        contentDescription = "Success",
-                        tint = Color.White,
-                        modifier = Modifier.size(40.dp)
+                        Icons.Default.Check,
+                        contentDescription = null,
+                        tint = Color(0xFF4CAF50),
+                        modifier = Modifier.size(20.dp)
                     )
                 }
 
-                Spacer(Modifier.height(32.dp))
-
-                Text(
-                    text = "File has been received from ${subscriber.connectingEvent.value?.sender?.name ?: "Unknown"}!",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Medium,
-                    textAlign = TextAlign.Center
-                )
-
-                Spacer(Modifier.height(8.dp))
-
-                Text(
-                    text = "Complete in ${completionTime} Seconds",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                Spacer(Modifier.height(32.dp))
-
-                // File completion card
-                fileStates.value.forEach { fileState ->
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(
-                                MaterialTheme.colorScheme.surface,
-                                RoundedCornerShape(16.dp)
-                            )
-                            .padding(16.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(40.dp)
-                                        .background(
-                                            MaterialTheme.colorScheme.error.copy(alpha = 0.1f),
-                                            RoundedCornerShape(8.dp)
-                                        ),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        Icons.Default.Close,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.error,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                }
-
-                                Column {
-                                    Text(
-                                        fileState.name,
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                    Text(
-                                        formatFileSize(fileState.total),
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-
-                            Box(
-                                modifier = Modifier
-                                    .size(32.dp)
-                                    .background(
-                                        color = Color(0xFF2196F3),
-                                        shape = CircleShape
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Check,
-                                    contentDescription = "Completed",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                        }
-                    }
-                }
-
-                Spacer(Modifier.height(32.dp))
-
-                // Open in file manager button
-                OutlinedButton(
-                    onClick = { /* Handle file manager opening */ },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = MaterialTheme.colorScheme.primary
+                Column {
+                    Text(
+                        fileState.name,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium
                     )
-                ) {
-                    Text("Open in File Manager")
+                    Text(
+                        formatFileSize(fileState.total),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
-        } else {
-            // Receiving in progress
-            Column(
+
+            Box(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .size(32.dp)
+                    .background(
+                        color = Color(0xFF4CAF50),
+                        shape = CircleShape
+                    ),
+                contentAlignment = Alignment.Center
             ) {
-                Spacer(Modifier.height(32.dp))
-
-                // User avatars
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy((-12).dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(80.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFFE1BEE7)), // Light purple background
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            Icons.Default.Person,
-                            contentDescription = null,
-                            modifier = Modifier.size(40.dp),
-                            tint = Color(0xFF9C27B0)
-                        )
-                    }
-                    Box(
-                        modifier = Modifier
-                            .size(80.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFFB3E5FC)), // Light blue background
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            Icons.Outlined.Person,
-                            contentDescription = null,
-                            modifier = Modifier.size(40.dp),
-                            tint = Color(0xFF2196F3)
-                        )
-                    }
-                }
-
-                Spacer(Modifier.height(24.dp))
-
-                Text(
-                    "Wait a moment while transferring…",
-                    style = MaterialTheme.typography.headlineSmall,
-                    textAlign = TextAlign.Center,
-                    fontWeight = FontWeight.Medium
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = "Completed",
+                    tint = Color.White,
+                    modifier = Modifier.size(18.dp)
                 )
-
-                Spacer(Modifier.height(8.dp))
-
-                Text(
-                    "Receiving from Alice",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Medium
-                )
-
-                Spacer(Modifier.height(32.dp))
-
-                // File transfer progress
-                fileStates.value.forEach { fileState ->
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(
-                                MaterialTheme.colorScheme.surface,
-                                RoundedCornerShape(16.dp)
-                            )
-                            .padding(16.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(40.dp)
-                                        .background(
-                                            MaterialTheme.colorScheme.error.copy(alpha = 0.1f),
-                                            RoundedCornerShape(8.dp)
-                                        ),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        Icons.Default.Close,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.error,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                }
-
-                                Column {
-                                    Text(
-                                        fileState.name,
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                    Text(
-                                        "${formatFileSize(fileState.received)} of ${
-                                            formatFileSize(
-                                                fileState.total
-                                            )
-                                        } • ${
-                                            if (bytesPerSecond > 0u) {
-                                                "${(fileState.total - fileState.received) / bytesPerSecond} secs left"
-                                            } else {
-                                                "calculating..."
-                                            }
-                                        }",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-
-                            IconButton(
-                                onClick = { /* Handle file removal */ }
-                            ) {
-                                Icon(
-                                    Icons.Default.Close,
-                                    contentDescription = "Remove file",
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-
-                        Spacer(Modifier.height(12.dp))
-
-                        LinearProgressIndicator(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(6.dp)
-                                .clip(RoundedCornerShape(3.dp)),
-                            progress = {
-                                if (fileState.total > 0u) {
-                                    fileState.received.toFloat() / fileState.total.toFloat()
-                                } else {
-                                    0f
-                                }
-                            }
-                        )
-                    }
-
-                    Spacer(Modifier.height(16.dp))
-                }
-
-                // Open in file manager button (appears during transfer)
-                OutlinedButton(
-                    onClick = { /* Handle file manager opening */ },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = MaterialTheme.colorScheme.primary
-                    )
-                ) {
-                    Text("Open in File Manager")
-                }
             }
         }
+    }
+}
+
+@Composable
+private fun FileReceiveCard(fileState: FileState, bytesPerSecond: ULong) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                MaterialTheme.colorScheme.surface,
+                RoundedCornerShape(16.dp)
+            )
+            .padding(16.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                            RoundedCornerShape(8.dp)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Default.Person,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
+                Column {
+                    Text(
+                        fileState.name,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        "${formatFileSize(fileState.received)} of ${formatFileSize(fileState.total)} • ${
+                            if (bytesPerSecond > 0u) {
+                                "${(fileState.total - fileState.received) / bytesPerSecond} secs left"
+                            } else {
+                                "calculating..."
+                            }
+                        }",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            Text(
+                "${if (fileState.total > 0u) ((fileState.received.toFloat() / fileState.total.toFloat()) * 100).toInt() else 0}%",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium
+            )
+        }
+
+        Spacer(Modifier.height(12.dp))
+
+        LinearProgressIndicator(
+            progress = {
+                if (fileState.total > 0u) {
+                    fileState.received.toFloat() / fileState.total.toFloat()
+                } else {
+                    0f
+                }
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(6.dp)
+                .clip(RoundedCornerShape(3.dp))
+        )
     }
 }
 
@@ -581,7 +690,11 @@ fun ScanQRCode(onScanQRCode: (Uri) -> Unit = {}) {
     val lifecycleOwner = LocalLifecycleOwner.current
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { /* TODO: handle denial */ }
+    ) { granted ->
+        if (!granted) {
+            Log.w("ScanQRCode", "Camera permission denied")
+        }
+    }
 
     LaunchedEffect(Unit) {
         cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
@@ -613,6 +726,7 @@ fun ScanQRCode(onScanQRCode: (Uri) -> Unit = {}) {
                         aa.setAnalyzer(executor) { proxy ->
                             processImageProxy(scanner, proxy) { qr ->
                                 val data = qr.toUri()
+                                Log.d("ScanQRCode", "QR code detected: $data")
                                 onScanQRCode(data).also { proxy.close() }
                             }
                         }
@@ -624,7 +738,16 @@ fun ScanQRCode(onScanQRCode: (Uri) -> Unit = {}) {
             }, ContextCompat.getMainExecutor(context))
         }
     } else {
-        Text("Camera permission required")
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                "Camera permission required to scan QR codes",
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center
+            )
+        }
     }
 }
 
@@ -639,6 +762,7 @@ private fun processImageProxy(
 
         barcodeScanner.process(inputImage).addOnSuccessListener { barcodes ->
             barcodes.firstOrNull()?.rawValue?.let { qrValue ->
+                Log.d("processImageProxy", "Barcode detected: $qrValue")
                 if (qrValue.startsWith("drop://receive")) {
                     onQrCodeScanned(qrValue)
                 }
@@ -651,7 +775,9 @@ private fun processImageProxy(
 
 @Composable
 fun SelectConfirmation(
-    confirmations: List<UByte>, onBack: () -> Unit, onSelectConfirmation: (UByte) -> Unit
+    confirmations: List<UByte>,
+    onBack: () -> Unit,
+    onSelectConfirmation: (UByte) -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -685,6 +811,7 @@ fun SelectConfirmation(
                         modifier = Modifier
                             .size(64.dp)
                             .clickable {
+                                Log.d("SelectConfirmation", "Confirmation selected: $confirmation")
                                 onSelectConfirmation(confirmation)
                             },
                         tonalElevation = 0.dp
@@ -699,5 +826,45 @@ fun SelectConfirmation(
                 }
             }
         }
+    }
+}
+
+// Helper function to process QR code
+private fun processQRCode(uri: Uri, onResult: (String, List<UByte>) -> Unit) {
+    try {
+        Log.d("processQRCode", "Processing QR code: $uri")
+
+        if (!uri.toString().startsWith("drop://receive")) {
+            Log.e("processQRCode", "Invalid QR code format: $uri")
+            return
+        }
+
+        val ticket = uri.getQueryParameter("ticket")
+        val confirmationsParam = uri.getQueryParameter("confirmations")
+
+        Log.d("processQRCode", "QR code parameters: ticket=$ticket, confirmations=$confirmationsParam")
+
+        if (ticket != null && confirmationsParam != null) {
+            val confirmations = confirmationsParam.split(",")
+                .mapNotNull {
+                    try {
+                        it.trim().toUByteOrNull()
+                    } catch (e: Exception) {
+                        Log.w("processQRCode", "Invalid confirmation value: $it", e)
+                        null
+                    }
+                }
+
+            if (confirmations.isNotEmpty()) {
+                Log.d("processQRCode", "QR code processed successfully: ticket=$ticket, confirmations=$confirmations")
+                onResult(ticket, confirmations)
+            } else {
+                Log.e("processQRCode", "No valid confirmations found in QR code")
+            }
+        } else {
+            Log.e("processQRCode", "Missing required QR code parameters: ticket=$ticket, confirmations=$confirmationsParam")
+        }
+    } catch (e: Exception) {
+        Log.e("processQRCode", "Error processing QR code: $uri", e)
     }
 }

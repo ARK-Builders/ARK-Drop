@@ -101,7 +101,7 @@ fun Send(
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var isSending by remember { mutableStateOf(false) }
     var isTransferComplete by remember { mutableStateOf(false) }
-    var showSuccessAnimation by remember { mutableStateOf(false) }
+    var showSuccessRemainingMillis by remember { mutableStateOf(0) }
     var sentFilesCount by remember { mutableStateOf(0) }
 
     // Observe sending progress
@@ -126,38 +126,30 @@ fun Send(
             println("DEBUG progress: $progress")
             println("DEBUG isSendFinished: ${transferManager.isSendFinished()}")
             println("DEBUG isSendConnected: ${transferManager.isSendConnected()}")
-            if (progress.remaining == 0uL) {
+            if (isSending && progress.isConnected && progress.remaining == 0uL) {
                 if (sentFilesCount < selectedFiles.size) {
                     sentFilesCount++;
                 }
                 if (selectedFiles.size > 0 && sentFilesCount == selectedFiles.size) {
                     if (!isTransferComplete) {
                         isTransferComplete = true
-                        showSuccessAnimation = true
-
-                        // Auto-hide success animation after 3 seconds
-                        delay(3000)
-                        showSuccessAnimation = false
+                        showSuccessRemainingMillis = 3000
                     }
-                }
-            }
-            if (isSending && progress.isConnected && progress.remaining == 0uL) {
-                // Transfer completed successfully
-                if (!isTransferComplete) {
-                    isTransferComplete = true
-                    showSuccessAnimation = true
-
-                    // Auto-hide success animation after 3 seconds
-                    delay(3000)
-                    showSuccessAnimation = false
                 }
             }
         }
     }
 
+    LaunchedEffect(showSuccessRemainingMillis) {
+        if (showSuccessRemainingMillis > 0) {
+            delay(1000)
+            showSuccessRemainingMillis -= 1000;
+        }
+    }
+
     // Success animation scale
     val successScale by animateFloatAsState(
-        targetValue = if (showSuccessAnimation) 1f else 0f,
+        targetValue = if (showSuccessRemainingMillis > 0) 1f else 0f,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessLow
@@ -195,14 +187,14 @@ fun Send(
 
         // Success Animation Overlay
         AnimatedVisibility(
-            visible = showSuccessAnimation,
+            visible = showSuccessRemainingMillis > 0,
             enter = scaleIn(
                 animationSpec = spring(
                     dampingRatio = Spring.DampingRatioMediumBouncy,
                     stiffness = Spring.StiffnessLow
                 )
             ) + fadeIn(),
-            exit = scaleOut() + fadeOut()
+            exit = scaleOut() + fadeOut(),
         ) {
             Box(
                 modifier = Modifier.fillMaxWidth(),
@@ -250,7 +242,7 @@ fun Send(
 
         // Transfer Complete Actions
         AnimatedVisibility(
-            visible = isTransferComplete && !showSuccessAnimation,
+            visible = isTransferComplete && showSuccessRemainingMillis <= 0,
             enter = slideInVertically(
                 initialOffsetY = { it },
                 animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)

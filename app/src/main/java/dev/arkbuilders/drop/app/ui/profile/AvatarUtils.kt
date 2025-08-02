@@ -9,19 +9,12 @@ import android.graphics.drawable.Drawable
 import android.util.Base64
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.painter.BitmapPainter
-import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.graphics.vector.rememberVectorPainter
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.createBitmap
 import dev.arkbuilders.drop.app.R
@@ -33,27 +26,38 @@ object AvatarUtils {
     @Composable
     fun AvatarImage(
         base64String: String,
-        modifier: Modifier = Modifier,
-        placeholder: Painter? = null
+        modifier: Modifier = Modifier
     ) {
-        val painter = remember(base64String) {
-            try {
-                val cleanBase64 = base64String.substringAfter("base64,")
-                val decodedBytes = Base64.decode(cleanBase64, Base64.DEFAULT)
-                val bitmap = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.size)
-                BitmapPainter(bitmap.asImageBitmap())
-            } catch (e: Exception) {
-                null
+        val context = LocalContext.current
+
+        if (base64String.isNotEmpty()) {
+            val imageBytes = Base64.decode(base64String, Base64.DEFAULT)
+            val bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+
+            if (bitmap != null) {
+                Image(
+                    bitmap = bitmap.asImageBitmap(),
+                    contentDescription = "Avatar",
+                    modifier = modifier.clip(CircleShape)
+                )
+                return
             }
         }
 
-        Image(
-            painter = painter ?: placeholder ?: rememberVectorPainter(Icons.Default.Person),
-            contentDescription = null,
-            modifier = modifier
-                .size(48.dp)
-                .clip(CircleShape)
-        )
+        // Default avatar fallback
+        val defaultBase64 = getDefaultAvatarBase64(context, "avatar_00")
+        if (defaultBase64.isNotEmpty()) {
+            val imageBytes = Base64.decode(defaultBase64, Base64.DEFAULT)
+            val bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+
+            if (bitmap != null) {
+                Image(
+                    bitmap = bitmap.asImageBitmap(),
+                    contentDescription = "Avatar",
+                    modifier = modifier.clip(CircleShape)
+                )
+            }
+        }
     }
 
     /**

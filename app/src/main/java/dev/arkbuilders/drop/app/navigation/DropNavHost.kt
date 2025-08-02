@@ -6,22 +6,21 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navDeepLink
-import dev.arkbuilders.drop.app.FileChunk
-import dev.arkbuilders.drop.app.FileManager
 import dev.arkbuilders.drop.app.ProfileManager
+import dev.arkbuilders.drop.app.TransferManager
+import dev.arkbuilders.drop.app.ui.history.History
 import dev.arkbuilders.drop.app.ui.home.Home
 import dev.arkbuilders.drop.app.ui.profile.EditProfile
 import dev.arkbuilders.drop.app.ui.receive.Receive
 import dev.arkbuilders.drop.app.ui.send.Send
-//import dev.arkbuilders.drop.app.ui.history.History
 import dev.arkbuilders.drop.app.ui.settings.Settings
 
 @Composable
 fun DropNavHost(
     navController: NavHostController,
     modifier: Modifier = Modifier,
-    fileManager: FileManager,
-    profileManager: ProfileManager
+    profileManager: ProfileManager,
+    transferManager: TransferManager,
 ) {
     NavHost(
         modifier = modifier,
@@ -33,11 +32,11 @@ fun DropNavHost(
         }
 
         composable(DropDestination.Send.route) {
-            Send(navController = navController, profileManager = profileManager)
+            Send(navController = navController, transferManager = transferManager)
         }
 
         composable(DropDestination.History.route) {
-//            History(navController = navController)
+            History(navController = navController)
         }
 
         composable(DropDestination.Settings.route) {
@@ -56,16 +55,9 @@ fun DropNavHost(
                 }
             )
         ) { backStackEntry ->
-            val args = backStackEntry.arguments
-            val ticket = args?.getString("ticket")
-            val confirmations = args?.getString("confirmations")
-                ?.split(",")
-                ?.mapNotNull { it.toUByteOrNull() }
-                ?: emptyList()
-
             Receive(
                 navController = navController,
-                profileManager = profileManager,
+                transferManager = transferManager,
             )
         }
     }

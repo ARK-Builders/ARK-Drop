@@ -1,12 +1,6 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
-
 package dev.arkbuilders.drop.app.ui.receive
 
 import android.Manifest
-import android.content.Intent
-import android.content.pm.PackageManager
-import android.net.Uri
-import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
@@ -16,855 +10,652 @@ import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavController
-import com.google.mlkit.vision.barcode.BarcodeScanner
-import com.google.mlkit.vision.barcode.BarcodeScannerOptions
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberPermissionState
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
 import compose.icons.TablerIcons
-import compose.icons.tablericons.History
-import dev.arkbuilders.drop.ReceiveFilesBubble
-import dev.arkbuilders.drop.ReceiveFilesConnectingEvent
-import dev.arkbuilders.drop.ReceiveFilesReceivingEvent
-import dev.arkbuilders.drop.ReceiveFilesRequest
-import dev.arkbuilders.drop.ReceiveFilesSubscriber
-import dev.arkbuilders.drop.ReceiverProfile
-import dev.arkbuilders.drop.app.ProfileManager
-import dev.arkbuilders.drop.app.ui.send.formatFileSize
-import dev.arkbuilders.drop.receiveFiles
-import kotlinx.coroutines.delay
-import java.text.DecimalFormat
-import java.util.UUID
+import compose.icons.tablericons.Camera
+import dev.arkbuilders.drop.app.TransferManager
+import dev.arkbuilders.drop.app.data.ReceiveFileInfo
+import kotlinx.coroutines.launch
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
-class ReceiveFilesSubscriberImpl : ReceiveFilesSubscriber {
-    private val id: UUID = UUID.randomUUID()
-    val connectingEvent = mutableStateOf<ReceiveFilesConnectingEvent?>(null)
-    val receivingEvents = mutableListOf<ReceiveFilesReceivingEvent>()
-
-    override fun getId(): String {
-        return this.id.toString()
-    }
-
-    override fun notifyConnecting(event: ReceiveFilesConnectingEvent) {
-        Log.d("ReceiveFilesSubscriberImpl", "Connecting event received: sender=${event.sender.name}, files=${event.files.size}")
-        this.connectingEvent.value = event
-    }
-
-    override fun notifyReceiving(event: ReceiveFilesReceivingEvent) {
-        Log.d("ReceiveFilesSubscriberImpl", "Receiving event: file=${event.id}, data size=${event.data.size}")
-        this.receivingEvents.add(event)
-    }
-}
-
-data class FileState(
-    val id: String,
-    val name: String,
-    var received: ULong,
-    val total: ULong,
-)
-
-data class ReceiverChunk(
-    val id: String,
-    val name: String,
-    val data: List<UByte>,
-)
-
+@OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun Receive(
-    modifier: Modifier = Modifier,
     navController: NavController,
-    profileManager: ProfileManager
-) {
-    var ticket by remember { mutableStateOf<String?>(null) }
-    var confirmations by remember { mutableStateOf<List<UByte>>(emptyList()) }
-    var selectedConfirmation by remember { mutableStateOf<UByte?>(null) }
-
-    when {
-        ticket != null && selectedConfirmation != null -> {
-            ReceiveFiles(
-                ticket = ticket!!,
-                confirmation = selectedConfirmation!!,
-                onBack = { navController.popBackStack() },
-                onReceive = { chunks ->
-                    // Handle received file chunks - could save to storage here
-                    Log.d("Receive", "Received ${chunks.size} chunks")
-                },
-                profileManager = profileManager
-            )
-        }
-
-        confirmations.isNotEmpty() -> {
-            SelectConfirmation(
-                confirmations = confirmations,
-                onBack = { navController.popBackStack() },
-                onSelectConfirmation = { confirmation ->
-                    Log.d("Receive", "Selected confirmation: $confirmation")
-                    selectedConfirmation = confirmation
-                }
-            )
-        }
-
-        else -> {
-            ScanQRCode { uri ->
-                Log.d("Receive", "QR code scanned: $uri")
-                processQRCode(uri) { processedTicket, processedConfirmations ->
-                    ticket = processedTicket
-                    confirmations = processedConfirmations
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun ReceiveFiles(
-    ticket: String,
-    confirmation: UByte,
-    onBack: () -> Unit = {},
-    onReceive: (List<ReceiverChunk>) -> Unit = {},
-    profileManager: ProfileManager
+    transferManager: TransferManager
 ) {
     val context = LocalContext.current
-    val profile = remember { profileManager.loadOrDefault() }
-    val subscriber = remember { ReceiveFilesSubscriberImpl() }
-    val request = remember {
-        ReceiveFilesRequest(
-            ticket = ticket,
-            confirmation = confirmation,
-            profile = ReceiverProfile(
-                name = profile.name,
-                avatarB64 = profile.avatarB64
-            )
-        )
-    }
-    val fileStates = remember { mutableStateOf<List<FileState>>(emptyList()) }
-    var isCancelled by remember { mutableStateOf(false) }
-    var isCompleted by remember { mutableStateOf(false) }
-    var completionTime by remember { mutableStateOf<Long>(0L) }
-    var bubble by remember { mutableStateOf<ReceiveFilesBubble?>(null) }
-    var bytesPerSecond by remember { mutableStateOf<ULong>(0u) }
+    val scope = rememberCoroutineScope()
 
-    LaunchedEffect(request) {
-        try {
-            Log.d("ReceiveFiles", "Creating ReceiveFilesBubble...")
-            bubble = receiveFiles(request)
-            bubble!!.subscribe(subscriber)
-            bubble!!.start()
-            Log.d("ReceiveFiles", "ReceiveFilesBubble started successfully")
-        } catch (e: Exception) {
-            Log.e("ReceiveFiles", "Error creating bubble", e)
-            isCancelled = true
-        }
-    }
+    var isScanning by remember { mutableStateOf(false) }
+    var scannedTicket by remember { mutableStateOf<String?>(null) }
+    var scannedConfirmation by remember { mutableStateOf<UByte?>(null) }
+    var isReceiving by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var successMessage by remember { mutableStateOf<String?>(null) }
+    var receivedFiles by remember { mutableStateOf<List<String>>(emptyList()) }
 
-    LaunchedEffect(isCancelled) {
-        if (isCancelled) {
-            Log.d("ReceiveFiles", "Cancelling receive")
-            bubble?.cancel()
-            onBack()
-        }
-    }
+    val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
 
-    LaunchedEffect(subscriber.connectingEvent.value) {
-        if (subscriber.connectingEvent.value == null) return@LaunchedEffect
+    // Observe receiving progress
+    val receiveProgress by (transferManager.receiveProgress?.collectAsState() ?: remember { mutableStateOf(null) })
 
-        val connectingEvent = subscriber.connectingEvent.value!!
-        Log.d("ReceiveFiles", "Connection established with: ${connectingEvent.sender.name}")
-
-        fileStates.value = connectingEvent.files.map {
-            FileState(it.id, it.name, 0u, it.len)
-        }
-
-        val startTime = System.currentTimeMillis()
-        var emptyReceivingEventsCounter = 0
-
-        // Continue processing until connection naturally terminates
-        while (!isCancelled) {
-            var receivedBytes: ULong = 0u
-            val receivingEvents = subscriber.receivingEvents.toList()
-            subscriber.receivingEvents.clear()
-
-            if (receivingEvents.isEmpty()) {
-                emptyReceivingEventsCounter++
-            } else {
-                emptyReceivingEventsCounter = 0
-            }
-
-            // Only exit when connection is idle for extended period
-            if (emptyReceivingEventsCounter > 10) {
-                bytesPerSecond = 0u
-                // Check if all files are actually completed before marking as done
-                val allFilesCompleted = fileStates.value.all { it.received >= it.total }
-                if (allFilesCompleted && fileStates.value.isNotEmpty()) {
-                    Log.d("ReceiveFiles", "All files completed successfully")
-                    isCompleted = true
-                    completionTime = (System.currentTimeMillis() - startTime) / 1000
-                }
-                break
-            }
-
-            val chunks: List<ReceiverChunk> =
-                receivingEvents.groupBy { it.id }.map { (id, events) ->
-                    val fileState = fileStates.value.find { it.id == id }!!
-                    val accumulatedData = events.flatMap { it.data }
-                    ReceiverChunk(id, fileState.name, accumulatedData)
-                }
-
-            onReceive(chunks)
-
-            chunks.forEach { chunk ->
-                fileStates.value = fileStates.value.map { fileState ->
-                    if (fileState.id == chunk.id) {
-                        receivedBytes += chunk.data.size.toULong()
-                        fileState.received += chunk.data.size.toULong()
-                    }
-                    fileState
-                }
-            }
-
-            bytesPerSecond = receivedBytes
-            delay(1000L)
-        }
-    }
-
-    Column(
-        modifier = Modifier.fillMaxSize()
-    ) {
-        // Top bar with close button
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = {
-                isCancelled = true
-            }) {
-                Icon(Icons.Default.Close, contentDescription = "Close")
-            }
-
-            Text(
-                "Receiving Files",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Medium
-            )
-
-            Spacer(modifier = Modifier.width(48.dp)) // Balance the close button
-        }
-
-        if (isCompleted) {
-            CompletionScreen(
-                senderName = subscriber.connectingEvent.value?.sender?.name ?: "Unknown",
-                completionTime = completionTime,
-                fileStates = fileStates.value,
-                onOpenFolder = {
-                    // Open file manager to download folder
-                    val intent = Intent(Intent.ACTION_VIEW).apply {
-                        data = Uri.parse("content://com.android.externalstorage.documents/document/primary%3ADownload%2FDrop")
-                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                    }
-                    try {
-                        context.startActivity(intent)
-                    } catch (e: Exception) {
-                        Log.e("ReceiveFiles", "No file manager available", e)
-                    }
-                },
-                onReceiveMore = { onBack() }
-            )
-        } else {
-            ReceivingScreen(
-                senderName = subscriber.connectingEvent.value?.sender?.name ?: "Connecting...",
-                fileStates = fileStates.value,
-                bytesPerSecond = bytesPerSecond,
-                onOpenFolder = {
-                    val intent = Intent(Intent.ACTION_VIEW).apply {
-                        data = Uri.parse("content://com.android.externalstorage.documents/document/primary%3ADownload%2FDrop")
-                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                    }
-                    try {
-                        context.startActivity(intent)
-                    } catch (e: Exception) {
-                        Log.e("ReceiveFiles", "Error opening file manager", e)
-                    }
-                }
-            )
-        }
-    }
-}
-
-@Composable
-private fun CompletionScreen(
-    senderName: String,
-    completionTime: Long,
-    fileStates: List<FileState>,
-    onOpenFolder: () -> Unit,
-    onReceiveMore: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Spacer(Modifier.height(80.dp))
-
-        // Success checkmark
-        Box(
-            modifier = Modifier
-                .size(80.dp)
-                .background(
-                    color = Color(0xFF4CAF50),
-                    shape = CircleShape
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.Check,
-                contentDescription = "Success",
-                tint = Color.White,
-                modifier = Modifier.size(40.dp)
-            )
-        }
-
-        Spacer(Modifier.height(32.dp))
-
-        Text(
-            text = "Files received successfully from $senderName!",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Medium,
-            textAlign = TextAlign.Center
-        )
-
-        Spacer(Modifier.height(8.dp))
-
-        Text(
-            text = "Completed in $completionTime seconds",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-        Spacer(Modifier.height(32.dp))
-
-        // File completion cards
-        fileStates.forEach { fileState ->
-            FileCompletionCard(fileState)
-            Spacer(Modifier.height(8.dp))
-        }
-
-        Spacer(Modifier.height(32.dp))
-
-        // Open folder button
-        OutlinedButton(
-            onClick = onOpenFolder,
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = MaterialTheme.colorScheme.primary
-            )
-        ) {
-            Icon(
-                TablerIcons.History,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp)
-            )
-            Spacer(Modifier.width(8.dp))
-            Text("Open in File Manager")
-        }
-
-        Spacer(Modifier.height(16.dp))
-
-        // Receive more button
-        OutlinedButton(
-            onClick = onReceiveMore,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Receive more files")
-        }
-    }
-}
-
-@Composable
-private fun ReceivingScreen(
-    senderName: String,
-    fileStates: List<FileState>,
-    bytesPerSecond: ULong,
-    onOpenFolder: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Spacer(Modifier.height(32.dp))
-
-        // User avatars
-        Row(
-            horizontalArrangement = Arrangement.spacedBy((-12).dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(80.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFFE1BEE7)), // Light purple background
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    Icons.Default.Person,
-                    contentDescription = null,
-                    modifier = Modifier.size(40.dp),
-                    tint = Color(0xFF9C27B0)
-                )
-            }
-            Box(
-                modifier = Modifier
-                    .size(80.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFFB3E5FC)), // Light blue background
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    Icons.Outlined.Person,
-                    contentDescription = null,
-                    modifier = Modifier.size(40.dp),
-                    tint = Color(0xFF2196F3)
-                )
-            }
-        }
-
-        Spacer(Modifier.height(24.dp))
-
-        Text(
-            "Wait a moment while transferring…",
-            style = MaterialTheme.typography.headlineSmall,
-            textAlign = TextAlign.Center,
-            fontWeight = FontWeight.Medium
-        )
-
-        Spacer(Modifier.height(8.dp))
-
-        Text(
-            "Receiving from $senderName",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.primary,
-            fontWeight = FontWeight.Medium
-        )
-
-        Spacer(Modifier.height(32.dp))
-
-        // File transfer progress
-        fileStates.forEach { fileState ->
-            FileReceiveCard(fileState, bytesPerSecond)
-            Spacer(Modifier.height(12.dp))
-        }
-
-        // Open folder button
-        OutlinedButton(
-            onClick = onOpenFolder,
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = MaterialTheme.colorScheme.primary
-            )
-        ) {
-            Icon(
-                TablerIcons.History,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp)
-            )
-            Spacer(Modifier.width(8.dp))
-            Text("Open in File Manager")
-        }
-    }
-}
-
-@Composable
-private fun FileCompletionCard(fileState: FileState) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(
-                MaterialTheme.colorScheme.surface,
-                RoundedCornerShape(16.dp)
-            )
-            .padding(16.dp)
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .background(
-                            Color(0xFF4CAF50).copy(alpha = 0.1f),
-                            RoundedCornerShape(8.dp)
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Default.Check,
-                        contentDescription = null,
-                        tint = Color(0xFF4CAF50),
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-
-                Column {
-                    Text(
-                        fileState.name,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Medium
-                    )
-                    Text(
-                        formatFileSize(fileState.total),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            Box(
-                modifier = Modifier
-                    .size(32.dp)
-                    .background(
-                        color = Color(0xFF4CAF50),
-                        shape = CircleShape
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Check,
-                    contentDescription = "Completed",
-                    tint = Color.White,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun FileReceiveCard(fileState: FileState, bytesPerSecond: ULong) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(
-                MaterialTheme.colorScheme.surface,
-                RoundedCornerShape(16.dp)
-            )
-            .padding(16.dp)
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .background(
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                            RoundedCornerShape(8.dp)
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Default.Person,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-
-                Column {
-                    Text(
-                        fileState.name,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Medium
-                    )
-                    Text(
-                        "${formatFileSize(fileState.received)} of ${formatFileSize(fileState.total)} • ${
-                            if (bytesPerSecond > 0u) {
-                                "${(fileState.total - fileState.received) / bytesPerSecond} secs left"
-                            } else {
-                                "calculating..."
-                            }
-                        }",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            Text(
-                "${if (fileState.total > 0u) ((fileState.received.toFloat() / fileState.total.toFloat()) * 100).toInt() else 0}%",
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium
-            )
-        }
-
-        Spacer(Modifier.height(12.dp))
-
-        LinearProgressIndicator(
-            progress = {
-                if (fileState.total > 0u) {
-                    fileState.received.toFloat() / fileState.total.toFloat()
-                } else {
-                    0f
-                }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(6.dp)
-                .clip(RoundedCornerShape(3.dp))
-        )
-    }
-}
-
-@Composable
-fun ScanQRCode(onScanQRCode: (Uri) -> Unit = {}) {
-    val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
-    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+    val requestPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        if (!granted) {
-            Log.w("ScanQRCode", "Camera permission denied")
+    ) { isGranted ->
+        if (isGranted) {
+            isScanning = true
         }
     }
 
-    LaunchedEffect(Unit) {
-        cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+    // Monitor transfer completion
+    LaunchedEffect(receiveProgress) {
+        receiveProgress?.let { progress ->
+            if (isReceiving && transferManager.isReceiveFinished()) {
+                // Save received files
+                val savedFiles = transferManager.saveReceivedFiles()
+                if (savedFiles.isNotEmpty()) {
+                    receivedFiles = savedFiles.map { it.name }
+                    successMessage = "Successfully received ${savedFiles.size} file(s)"
+                    isReceiving = false
+                } else if (progress.files.isNotEmpty()) {
+                    // Still receiving
+                } else {
+                    errorMessage = "No files were received"
+                    isReceiving = false
+                }
+            }
+        }
     }
 
-    if (ContextCompat.checkSelfPermission(
-            context, Manifest.permission.CAMERA
-        ) == PackageManager.PERMISSION_GRANTED
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
     ) {
-        val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
-        AndroidView(factory = { ctx ->
-            PreviewView(ctx).apply {
-                implementationMode = PreviewView.ImplementationMode.COMPATIBLE
+        // Top bar
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = { navController.navigateUp() }) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Back")
             }
-        }, modifier = Modifier.fillMaxSize()) { previewView ->
-            cameraProviderFuture.addListener({
-                val cameraProvider = cameraProviderFuture.get()
-                val previewUseCase = Preview.Builder().build().also {
-                    it.setSurfaceProvider(previewView.surfaceProvider)
+            Text(
+                text = "Receive Files",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        when {
+            !cameraPermissionState.status.isGranted -> {
+                // Permission not granted
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            TablerIcons.Camera,
+                            contentDescription = null,
+                            modifier = Modifier.size(48.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "Camera Permission Required",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "We need camera access to scan QR codes for receiving files.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(
+                            onClick = { requestPermissionLauncher.launch(Manifest.permission.CAMERA) },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Grant Permission")
+                        }
+                    }
                 }
-                val options =
-                    BarcodeScannerOptions.Builder().setBarcodeFormats(Barcode.FORMAT_QR_CODE)
-                        .build()
-                val scanner = BarcodeScanning.getClient(options)
-                val analysis = ImageAnalysis.Builder()
-                    .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST).build()
-                    .also { aa ->
-                        val executor = Executors.newSingleThreadExecutor()
-                        aa.setAnalyzer(executor) { proxy ->
-                            processImageProxy(scanner, proxy) { qr ->
-                                val data = qr.toUri()
-                                Log.d("ScanQRCode", "QR code detected: $data")
-                                onScanQRCode(data).also { proxy.close() }
+            }
+
+            isReceiving -> {
+                // Receiving files
+                receiveProgress?.let { progress ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = if (progress.isConnected) "Receiving Files..." else "Connecting...",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold
+                                )
+
+                                IconButton(
+                                    onClick = {
+                                        transferManager.cancelReceive()
+                                        isReceiving = false
+                                        scannedTicket = null
+                                        scannedConfirmation = null
+                                    }
+                                ) {
+                                    Icon(Icons.Default.Close, contentDescription = "Cancel")
+                                }
+                            }
+
+                            if (progress.isConnected) {
+                                Text(
+                                    text = "From: ${progress.senderName}",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+
+                                Spacer(modifier = Modifier.height(16.dp))
+
+                                Text(
+                                    text = "Files (${progress.files.size}):",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Medium
+                                )
+
+                                LazyColumn(
+                                    modifier = Modifier.heightIn(max = 200.dp),
+                                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    items(progress.files) { file ->
+                                        ReceivingFileItem(
+                                            file = file,
+                                            receivedData = progress.receivedData[file.id]
+                                        )
+                                    }
+                                }
+                            } else {
+                                CircularProgressIndicator(
+                                    modifier = Modifier
+                                        .size(32.dp)
+                                        .align(Alignment.CenterHorizontally)
+                                )
                             }
                         }
                     }
-                cameraProvider.unbindAll()
-                cameraProvider.bindToLifecycle(
-                    lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, previewUseCase, analysis
-                )
-            }, ContextCompat.getMainExecutor(context))
-        }
-    } else {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                "Camera permission required to scan QR codes",
-                style = MaterialTheme.typography.bodyLarge,
-                textAlign = TextAlign.Center
-            )
-        }
-    }
-}
-
-@androidx.annotation.OptIn(ExperimentalGetImage::class)
-private fun processImageProxy(
-    barcodeScanner: BarcodeScanner, imageProxy: ImageProxy, onQrCodeScanned: (String) -> Unit
-) {
-    imageProxy.image?.let { image ->
-        val inputImage = InputImage.fromMediaImage(
-            image, imageProxy.imageInfo.rotationDegrees
-        )
-
-        barcodeScanner.process(inputImage).addOnSuccessListener { barcodes ->
-            barcodes.firstOrNull()?.rawValue?.let { qrValue ->
-                Log.d("processImageProxy", "Barcode detected: $qrValue")
-                if (qrValue.startsWith("drop://receive")) {
-                    onQrCodeScanned(qrValue)
                 }
             }
-        }.addOnCompleteListener {
-            imageProxy.close()
-        }
-    }
-}
 
-@Composable
-fun SelectConfirmation(
-    confirmations: List<UByte>,
-    onBack: () -> Unit,
-    onSelectConfirmation: (UByte) -> Unit
-) {
-    Scaffold(
-        topBar = {
-            TopAppBar(navigationIcon = {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
-                }
-            }, title = { Text("Back") })
-        }) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Top
-        ) {
-            Spacer(Modifier.height(32.dp))
-            Text("Choose the confirmation Code", style = MaterialTheme.typography.headlineSmall)
-            Spacer(Modifier.height(8.dp))
-            Text("Make sure code confirmation are matched", fontSize = 14.sp, color = Color.Gray)
-            Spacer(Modifier.height(32.dp))
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(24.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                confirmations.forEach { confirmation ->
-                    Surface(
-                        shape = CircleShape,
-                        color = Color(0xFFF0F3F5),
-                        modifier = Modifier
-                            .size(64.dp)
-                            .clickable {
-                                Log.d("SelectConfirmation", "Confirmation selected: $confirmation")
-                                onSelectConfirmation(confirmation)
-                            },
-                        tonalElevation = 0.dp
+            scannedTicket != null && scannedConfirmation != null -> {
+                // QR code scanned, show connection info
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Box(contentAlignment = Alignment.Center) {
+                        Text(
+                            text = "QR Code Scanned!",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Ready to receive files from sender",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            OutlinedButton(
+                                onClick = {
+                                    scannedTicket = null
+                                    scannedConfirmation = null
+                                    isScanning = true
+                                },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Scan Again")
+                            }
+
+                            Button(
+                                onClick = {
+                                    scope.launch {
+                                        val ticket = scannedTicket!!
+                                        val confirmation = scannedConfirmation!!
+
+                                        val bubble = transferManager.receiveFiles(ticket, confirmation)
+                                        if (bubble != null) {
+                                            isReceiving = true
+                                            errorMessage = null
+                                        } else {
+                                            errorMessage = "Failed to start receiving files"
+                                        }
+                                    }
+                                },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Accept")
+                            }
+                        }
+                    }
+                }
+            }
+
+            else -> {
+                // Camera preview for QR scanning
+                if (isScanning) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(1f),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        QRCodeScanner(
+                            onQRCodeScanned = { ticket, confirmation ->
+                                scannedTicket = ticket
+                                scannedConfirmation = confirmation
+                                isScanning = false
+                            },
+                            onError = { error ->
+                                errorMessage = error
+                                isScanning = false
+                            }
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text(
+                        text = "Point your camera at the QR code",
+                        style = MaterialTheme.typography.bodyLarge,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    OutlinedButton(
+                        onClick = { isScanning = false },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Stop Scanning")
+                    }
+                } else {
+                    // Start scanning button
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Icon(
+                                TablerIcons.Camera,
+                                contentDescription = null,
+                                modifier = Modifier.size(48.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
                             Text(
-                                confirmation.toULong().toString().padStart(2, '0'),
-                                style = MaterialTheme.typography.titleMedium
+                                text = "Ready to Receive",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Scan the QR code from the sender's device to start receiving files.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                textAlign = TextAlign.Center,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Button(
+                                onClick = { isScanning = true },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Start Scanning")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Error message
+        errorMessage?.let { message ->
+            Spacer(modifier = Modifier.height(16.dp))
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer
+                )
+            ) {
+                Text(
+                    text = message,
+                    modifier = Modifier.padding(16.dp),
+                    color = MaterialTheme.colorScheme.onErrorContainer
+                )
+            }
+        }
+
+        // Success message
+        successMessage?.let { message ->
+            Spacer(modifier = Modifier.height(16.dp))
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                )
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = message,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+
+                    if (receivedFiles.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Files saved to Downloads:",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                        receivedFiles.forEach { fileName ->
+                            Text(
+                                text = "• $fileName",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
                             )
                         }
                     }
                 }
             }
         }
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        // Instructions
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Text(
+                    text = "How to receive files:",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Medium
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "1. Ask the sender to start a transfer\n2. Tap 'Start Scanning' and point camera at QR code\n3. Accept the transfer\n4. Files will be saved to your Downloads folder",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
     }
 }
 
-// Helper function to process QR code
-private fun processQRCode(uri: Uri, onResult: (String, List<UByte>) -> Unit) {
-    try {
-        Log.d("processQRCode", "Processing QR code: $uri")
+@Composable
+private fun ReceivingFileItem(
+    file: ReceiveFileInfo,
+    receivedData: ByteArray?
+) {
+    val progress = if (receivedData != null && file.size > 0UL) {
+        receivedData.size.toFloat() / file.size.toFloat()
+    } else 0f
 
-        if (!uri.toString().startsWith("drop://receive")) {
-            Log.e("processQRCode", "Invalid QR code format: $uri")
-            return
+    val isComplete = receivedData != null && receivedData.size.toULong() == file.size
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = file.name,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium
+            )
+
+            LinearProgressIndicator(
+            progress = { progress },
+            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 2.dp),
+            )
+
+            Text(
+                text = "${formatBytes(receivedData?.size?.toLong() ?: 0L)} / ${formatBytes(file.size.toLong())}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
 
-        val ticket = uri.getQueryParameter("ticket")
-        val confirmationsParam = uri.getQueryParameter("confirmations")
+        if (isComplete) {
+            Icon(
+                Icons.Default.CheckCircle,
+                contentDescription = "Complete",
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+    }
+}
 
-        Log.d("processQRCode", "QR code parameters: ticket=$ticket, confirmations=$confirmationsParam")
+@androidx.annotation.OptIn(ExperimentalGetImage::class)
+@Composable
+private fun QRCodeScanner(
+    onQRCodeScanned: (String, UByte) -> Unit,
+    onError: (String) -> Unit
+) {
+    val context = LocalContext.current
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    val cameraExecutor: ExecutorService = remember { Executors.newSingleThreadExecutor() }
 
-        if (ticket != null && confirmationsParam != null) {
-            val confirmations = confirmationsParam.split(",")
-                .mapNotNull {
-                    try {
-                        it.trim().toUByteOrNull()
-                    } catch (e: Exception) {
-                        Log.w("processQRCode", "Invalid confirmation value: $it", e)
-                        null
-                    }
+    AndroidView(
+        factory = { ctx ->
+            val previewView = PreviewView(ctx)
+            val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
+
+            cameraProviderFuture.addListener({
+                val cameraProvider = cameraProviderFuture.get()
+
+                val preview = Preview.Builder().build().also {
+                    it.setSurfaceProvider(previewView.surfaceProvider)
                 }
 
-            if (confirmations.isNotEmpty()) {
-                Log.d("processQRCode", "QR code processed successfully: ticket=$ticket, confirmations=$confirmations")
-                onResult(ticket, confirmations)
-            } else {
-                Log.e("processQRCode", "No valid confirmations found in QR code")
-            }
-        } else {
-            Log.e("processQRCode", "Missing required QR code parameters: ticket=$ticket, confirmations=$confirmationsParam")
+                val imageAnalyzer = ImageAnalysis.Builder()
+                    .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                    .build()
+                    .also {
+                        it.setAnalyzer(cameraExecutor) { imageProxy ->
+                            processImageProxy(imageProxy, onQRCodeScanned, onError)
+                        }
+                    }
+
+                val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+
+                try {
+                    cameraProvider.unbindAll()
+                    cameraProvider.bindToLifecycle(
+                        lifecycleOwner,
+                        cameraSelector,
+                        preview,
+                        imageAnalyzer
+                    )
+                } catch (exc: Exception) {
+                    onError("Failed to start camera: ${exc.message}")
+                }
+            }, ContextCompat.getMainExecutor(ctx))
+
+            previewView
+        },
+        modifier = Modifier.fillMaxSize()
+    )
+
+    DisposableEffect(Unit) {
+        onDispose {
+            cameraExecutor.shutdown()
         }
-    } catch (e: Exception) {
-        Log.e("processQRCode", "Error processing QR code: $uri", e)
     }
+}
+
+@androidx.camera.core.ExperimentalGetImage
+private fun processImageProxy(
+    imageProxy: ImageProxy,
+    onQRCodeScanned: (String, UByte) -> Unit,
+    onError: (String) -> Unit
+) {
+    val mediaImage = imageProxy.image
+    if (mediaImage != null) {
+        val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
+        val scanner = BarcodeScanning.getClient()
+
+        scanner.process(image)
+            .addOnSuccessListener { barcodes ->
+                for (barcode in barcodes) {
+                    when (barcode.valueType) {
+                        Barcode.TYPE_TEXT, Barcode.TYPE_URL -> {
+                            barcode.rawValue?.let { value ->
+                                // Parse Drop QR code format: drop://receive?ticket=...&confirmation=...
+                                if (value.startsWith("drop://receive?")) {
+                                    try {
+                                        val uri = value.toUri()
+                                        val ticket = uri.getQueryParameter("ticket")
+                                        val confirmationStr = uri.getQueryParameter("confirmation")
+
+                                        if (ticket != null && confirmationStr != null) {
+                                            val confirmation = confirmationStr.toUByte()
+                                            onQRCodeScanned(ticket, confirmation)
+                                            return@addOnSuccessListener
+                                        }
+                                    } catch (e: Exception) {
+                                        onError("Invalid QR code format")
+                                        return@addOnSuccessListener
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            .addOnFailureListener { exception ->
+                onError("Failed to scan QR code: ${exception.message}")
+            }
+            .addOnCompleteListener {
+                imageProxy.close()
+            }
+    } else {
+        imageProxy.close()
+    }
+}
+
+private fun formatBytes(bytes: Long): String {
+    if (bytes < 1024) return "$bytes B"
+    val kb = bytes / 1024.0
+    if (kb < 1024) return "%.1f KB".format(kb)
+    val mb = kb / 1024.0
+    if (mb < 1024) return "%.1f MB".format(mb)
+    val gb = mb / 1024.0
+    return "%.1f GB".format(gb)
 }

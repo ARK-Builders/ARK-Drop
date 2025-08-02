@@ -1,98 +1,98 @@
 package dev.arkbuilders.drop.app
 
 import android.content.Context
+import android.content.SharedPreferences
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.arkbuilders.drop.app.ui.profile.AvatarUtils
-import dev.arkbuilders.drop.app.utils.RandomNameGenerator
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Serializable
-data class Profile(
-    var name: String,
-    var avatarB64: String,
+data class UserProfile(
+    val name: String = "",
+    val avatarB64: String = "",
+    val avatarId: String = "avatar_00"
 )
 
 @Singleton
 class ProfileManager @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
-    private val file = File(context.filesDir, "profile.json")
-    private val json = Json { prettyPrint = true }
-
-    fun save(profile: Profile) {
-        val encodedProfile: String = json.encodeToString(Profile.serializer(), profile)
-        file.writeText(encodedProfile)
+    companion object {
+        private const val PREFS_NAME = "drop_profile"
+        private const val KEY_PROFILE = "user_profile"
     }
 
-    private fun load(): Profile? {
-        if (!file.exists()) return null
-        return runCatching {
-            json.decodeFromString<Profile>(file.readText())
-        }.getOrNull()
-    }
+    private val prefs: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    private val json = Json { ignoreUnknownKeys = true }
 
-    fun loadOrDefault(): Profile {
-        var profile = load()
-        if (profile == null) {
-            profile = Profile(
-                name = RandomNameGenerator.generateName(),
-                avatarB64 = AvatarUtils.getDefaultAvatarBase64(context)
-            )
-            save(profile)
+    private val _profile = MutableStateFlow(loadProfile())
+    val profile: StateFlow<UserProfile> = _profile.asStateFlow()
+
+    private fun loadProfile(): UserProfile {
+        val profileJson = prefs.getString(KEY_PROFILE, null)
+        return if (profileJson != null) {
+            try {
+                json.decodeFromString<UserProfile>(profileJson)
+            } catch (e: Exception) {
+                createDefaultProfile()
+            }
+        } else {
+            createDefaultProfile()
         }
-        if (profile.avatarB64.isEmpty()) {
-            profile.avatarB64 = AvatarUtils.getDefaultAvatarBase64(context)
+    }
+
+    private fun createDefaultProfile(): UserProfile {
+        val defaultProfile = UserProfile(
+            name = "Anonymous",
+            avatarB64 = AvatarUtils.getDefaultAvatarBase64(context, "avatar_00"),
+            avatarId = "avatar_00"
+        )
+        saveProfile(defaultProfile)
+        return defaultProfile
+    }
+
+    fun updateProfile(profile: UserProfile) {
+        _profile.value = profile
+        saveProfile(profile)
+    }
+
+    fun updateName(name: String) {
+        val updatedProfile = _profile.value.copy(name = name)
+        updateProfile(updatedProfile)
+    }
+
+    fun updateAvatar(avatarId: String) {
+        val avatarBase64 = AvatarUtils.getDefaultAvatarBase64(context, avatarId)
+        val updatedProfile = _profile.value.copy(
+            avatarId = avatarId,
+            avatarB64 = avatarBase64
+        )
+        updateProfile(updatedProfile)
+    }
+
+    fun updateCustomAvatar(base64: String) {
+        val updatedProfile = _profile.value.copy(
+            avatarB64 = base64,
+            avatarId = "custom"
+        )
+        updateProfile(updatedProfile)
+    }
+
+    private fun saveProfile(profile: UserProfile) {
+        try {
+            val profileJson = json.encodeToString(profile)
+            prefs.edit().putString(KEY_PROFILE, profileJson).apply()
+        } catch (e: Exception) {
+            // Handle serialization error
         }
-        return profile
     }
 
-    fun exists(): Boolean = file.exists()
-
-    fun delete() {
-        file.delete()
-    }
-
-    /**
-     * Generate a new random name for the user
-     */
-    fun generateNewName(): String {
-        val currentProfile = loadOrDefault()
-        return RandomNameGenerator.generateDifferentName(currentProfile.name)
-    }
-
-    /**
-     * Update the profile with a new random name
-     */
-    fun updateToRandomName(): Profile {
-        val currentProfile = loadOrDefault()
-        val newName = generateNewName()
-
-        val updatedProfile = currentProfile.copy(name = newName)
-        save(updatedProfile)
-
-        return updatedProfile
-    }
-
-    /**
-     * Check if the current profile name is a generated name
-     */
-    fun hasGeneratedName(): Boolean {
-        val profile = loadOrDefault()
-        return RandomNameGenerator.isValidGeneratedName(profile.name)
-    }
-
-    /**
-     * Get suggestions for new names
-     */
-    fun getNameSuggestions(count: Int = 5): List<String> {
-        val currentProfile = loadOrDefault()
-        val suggestions = RandomNameGenerator.generateUniqueNames(count + 1)
-
-        // Remove current name if it appears in suggestions
-        return suggestions.filter { it != currentProfile.name }.take(count)
-    }
+    fun getCurrentProfile(): UserProfile = _profile.value
 }

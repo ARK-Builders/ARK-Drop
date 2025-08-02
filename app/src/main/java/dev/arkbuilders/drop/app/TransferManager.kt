@@ -1,15 +1,25 @@
 package dev.arkbuilders.drop.app
 
+import android.content.ContentValues
 import android.content.Context
 import android.net.Uri
 import android.os.Environment
+import android.provider.MediaStore
 import android.provider.OpenableColumns
 import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
-import dev.arkbuilders.drop.*
+import dev.arkbuilders.drop.ReceiveFilesBubble
+import dev.arkbuilders.drop.ReceiveFilesRequest
+import dev.arkbuilders.drop.ReceiverProfile
+import dev.arkbuilders.drop.SendFilesBubble
+import dev.arkbuilders.drop.SendFilesRequest
+import dev.arkbuilders.drop.SenderFile
+import dev.arkbuilders.drop.SenderProfile
 import dev.arkbuilders.drop.app.data.ReceiveFilesSubscriberImpl
 import dev.arkbuilders.drop.app.data.SendFilesSubscriberImpl
 import dev.arkbuilders.drop.app.data.SenderFileDataImpl
+import dev.arkbuilders.drop.receiveFiles
+import dev.arkbuilders.drop.sendFiles
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
@@ -90,42 +100,43 @@ class TransferManager @Inject constructor(
         }
     }
 
-    suspend fun receiveFiles(ticket: String, confirmation: UByte): ReceiveFilesBubble? = withContext(Dispatchers.IO) {
-        try {
-            Log.d(TAG, "Starting file receive with ticket: $ticket")
+    suspend fun receiveFiles(ticket: String, confirmation: UByte): ReceiveFilesBubble? =
+        withContext(Dispatchers.IO) {
+            try {
+                Log.d(TAG, "Starting file receive with ticket: $ticket")
 
-            val profile = profileManager.getCurrentProfile()
-            val receiverProfile = ReceiverProfile(
-                name = profile.name.ifEmpty { "Anonymous" },
-                avatarB64 = profile.avatarB64.takeIf { it.isNotEmpty() }
-            )
+                val profile = profileManager.getCurrentProfile()
+                val receiverProfile = ReceiverProfile(
+                    name = profile.name.ifEmpty { "Anonymous" },
+                    avatarB64 = profile.avatarB64.takeIf { it.isNotEmpty() }
+                )
 
-            val request = ReceiveFilesRequest(
-                ticket = ticket,
-                confirmation = confirmation,
-                profile = receiverProfile
-            )
+                val request = ReceiveFilesRequest(
+                    ticket = ticket,
+                    confirmation = confirmation,
+                    profile = receiverProfile
+                )
 
-            // Create and subscribe to bubble
-            val bubble = receiveFiles(request)
-            currentReceiveBubble = bubble
+                // Create and subscribe to bubble
+                val bubble = receiveFiles(request)
+                currentReceiveBubble = bubble
 
-            // Set up subscriber
-            receiveSubscriber = ReceiveFilesSubscriberImpl().also { subscriber ->
-                bubble.subscribe(subscriber)
+                // Set up subscriber
+                receiveSubscriber = ReceiveFilesSubscriberImpl().also { subscriber ->
+                    bubble.subscribe(subscriber)
+                }
+
+                // Start receiving
+                bubble.start()
+
+                Log.d(TAG, "Receive bubble created and started")
+                bubble
+
+            } catch (e: Exception) {
+                Log.e(TAG, "Error starting file receive", e)
+                null
             }
-
-            // Start receiving
-            bubble.start()
-
-            Log.d(TAG, "Receive bubble created and started")
-            bubble
-
-        } catch (e: Exception) {
-            Log.e(TAG, "Error starting file receive", e)
-            null
         }
-    }
 
     suspend fun saveReceivedFiles(): List<File> = withContext(Dispatchers.IO) {
         val subscriber = receiveSubscriber ?: return@withContext emptyList()
@@ -133,35 +144,14 @@ class TransferManager @Inject constructor(
         val savedFiles = mutableListOf<File>()
 
         try {
-            val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-            if (!downloadsDir.exists()) {
-                downloadsDir.mkdirs()
-            }
-
             completeFiles.forEach { (fileInfo, data) ->
-                val file = File(downloadsDir, fileInfo.name)
-                
-                // Handle file name conflicts
-                var counter = 1
-                var finalFile = file
-                while (finalFile.exists()) {
-                    val nameWithoutExt = fileInfo.name.substringBeforeLast(".")
-                    val extension = fileInfo.name.substringAfterLast(".", "")
-                    val newName = if (extension.isNotEmpty()) {
-                        "${nameWithoutExt}_$counter.$extension"
-                    } else {
-                        "${nameWithoutExt}_$counter"
-                    }
-                    finalFile = File(downloadsDir, newName)
-                    counter++
+                val savedFile = saveFileToDownloads(fileInfo.name, data)
+                if (savedFile != null) {
+                    savedFiles.add(savedFile)
+                    Log.d(TAG, "Saved file: ${savedFile.absolutePath}")
+                } else {
+                    Log.e(TAG, "Failed to save file: ${fileInfo.name}")
                 }
-
-                FileOutputStream(finalFile).use { outputStream ->
-                    outputStream.write(data)
-                }
-
-                savedFiles.add(finalFile)
-                Log.d(TAG, "Saved file: ${finalFile.absolutePath}")
             }
 
         } catch (e: Exception) {
@@ -169,6 +159,127 @@ class TransferManager @Inject constructor(
         }
 
         savedFiles
+    }
+
+    private suspend fun saveFileToDownloads(fileName: String, data: ByteArray): File? =
+        withContext(Dispatchers.IO) {
+            try {
+                // Use MediaStore for Android 10+ (Scoped Storage)
+                return@withContext saveFileUsingMediaStore(fileName, data)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error saving file: $fileName", e)
+                return@withContext null
+            }
+        }
+
+    private fun saveFileUsingMediaStore(fileName: String, data: ByteArray): File? {
+        try {
+            val resolver = context.contentResolver
+
+            // Create content values for the file
+            val contentValues = ContentValues().apply {
+                put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+                put(MediaStore.MediaColumns.MIME_TYPE, getMimeType(fileName))
+                put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+            }
+
+            // Insert the file into MediaStore
+            val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
+
+            if (uri != null) {
+                // Write the file data
+                resolver.openOutputStream(uri)?.use { outputStream ->
+                    outputStream.write(data)
+                    outputStream.flush()
+                }
+
+                // Get the actual file path for return
+                val actualFile = getFileFromMediaStoreUri(uri, fileName)
+                Log.d(TAG, "File saved using MediaStore: $fileName")
+                return actualFile
+            } else {
+                Log.e(TAG, "Failed to create MediaStore entry for: $fileName")
+                return null
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error saving file using MediaStore: $fileName", e)
+            return null
+        }
+    }
+
+    private fun saveFileUsingLegacyStorage(fileName: String, data: ByteArray): File? {
+        try {
+            val downloadsDir =
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+            if (!downloadsDir.exists()) {
+                downloadsDir.mkdirs()
+            }
+
+            val file = File(downloadsDir, fileName)
+
+            // Handle file name conflicts
+            var counter = 1
+            var finalFile = file
+            while (finalFile.exists()) {
+                val nameWithoutExt = fileName.substringBeforeLast(".")
+                val extension = fileName.substringAfterLast(".", "")
+                val newName = if (extension.isNotEmpty()) {
+                    "${nameWithoutExt}_$counter.$extension"
+                } else {
+                    "${nameWithoutExt}_$counter"
+                }
+                finalFile = File(downloadsDir, newName)
+                counter++
+            }
+
+            FileOutputStream(finalFile).use { outputStream ->
+                outputStream.write(data)
+                outputStream.flush()
+            }
+
+            Log.d(TAG, "File saved using legacy storage: ${finalFile.absolutePath}")
+            return finalFile
+        } catch (e: Exception) {
+            Log.e(TAG, "Error saving file using legacy storage: $fileName", e)
+            return null
+        }
+    }
+
+    private fun getFileFromMediaStoreUri(uri: Uri, fileName: String): File {
+        // For MediaStore files, we create a reference file object
+        // The actual file is managed by the system
+        val downloadsDir =
+            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+        return File(downloadsDir, fileName)
+    }
+
+    private fun getMimeType(fileName: String): String {
+        val extension = fileName.substringAfterLast(".", "").lowercase()
+        return when (extension) {
+            "jpg", "jpeg" -> "image/jpeg"
+            "png" -> "image/png"
+            "gif" -> "image/gif"
+            "webp" -> "image/webp"
+            "pdf" -> "application/pdf"
+            "txt" -> "text/plain"
+            "doc" -> "application/msword"
+            "docx" -> "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            "xls" -> "application/vnd.ms-excel"
+            "xlsx" -> "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            "ppt" -> "application/vnd.ms-powerpoint"
+            "pptx" -> "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+            "zip" -> "application/zip"
+            "rar" -> "application/x-rar-compressed"
+            "7z" -> "application/x-7z-compressed"
+            "mp3" -> "audio/mpeg"
+            "wav" -> "audio/wav"
+            "flac" -> "audio/flac"
+            "mp4" -> "video/mp4"
+            "avi" -> "video/x-msvideo"
+            "mkv" -> "video/x-matroska"
+            "mov" -> "video/quicktime"
+            else -> "application/octet-stream"
+        }
     }
 
     fun cancelSend() {

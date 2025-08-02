@@ -10,18 +10,48 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Send
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
@@ -29,17 +59,19 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.core.graphics.createBitmap
+import androidx.core.graphics.set
 import androidx.navigation.NavController
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.WriterException
 import com.google.zxing.common.BitMatrix
 import com.google.zxing.qrcode.QRCodeWriter
+import compose.icons.TablerIcons
+import compose.icons.tablericons.Cloud
+import compose.icons.tablericons.CloudUpload
+import compose.icons.tablericons.Upload
 import dev.arkbuilders.drop.app.TransferManager
 import kotlinx.coroutines.launch
-import androidx.core.graphics.createBitmap
-import androidx.core.graphics.set
-import compose.icons.TablerIcons
-import compose.icons.tablericons.Upload
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,7 +95,17 @@ fun Send(
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetMultipleContents()
     ) { uris ->
-        selectedFiles = uris
+        selectedFiles = selectedFiles + uris
+    }
+
+    // Auto-close QR dialog when receiver connects and transfer starts
+    LaunchedEffect(sendProgress) {
+        sendProgress?.let { progress ->
+            if (isSending && progress.isConnected && showQRDialog) {
+                // Close QR dialog when receiver connects and transfer starts
+                showQRDialog = false
+            }
+        }
     }
 
     Column(
@@ -78,7 +120,7 @@ fun Send(
         ) {
             IconButton(onClick = { navController.navigateUp() }) {
                 Icon(
-                    Icons.Default.ArrowBack,
+                    Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Back",
                     tint = MaterialTheme.colorScheme.onSurface
                 )
@@ -315,7 +357,7 @@ fun Send(
                 )
             } else {
                 Icon(
-                    TablerIcons.Upload,
+                    TablerIcons.CloudUpload,
                     contentDescription = null,
                     modifier = Modifier.size(24.dp)
                 )
@@ -381,11 +423,13 @@ fun Send(
         }
     }
 
-    // QR Code Dialog
-    if (showQRDialog && qrBitmap != null) {
+    // QR Code Dialog - Only show when waiting for connection
+    if (showQRDialog && qrBitmap != null && isSending) {
         AlertDialog(
             onDismissRequest = {
-                if (!isSending) {
+                // Only allow dismissal if not actively transferring
+                val currentProgress = sendProgress
+                if (currentProgress == null || !currentProgress.isConnected) {
                     showQRDialog = false
                 }
             },
@@ -422,55 +466,41 @@ fun Send(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
-                    if (isSending) {
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(16.dp),
-                                strokeWidth = 2.dp,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "Waiting for receiver to scan...",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.primary,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Waiting for receiver to scan...",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Medium
+                        )
                     }
                 }
             },
             confirmButton = {
-                if (!isSending) {
-                    TextButton(
-                        onClick = { showQRDialog = false },
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Text(
-                            "Close",
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                }
+                // No confirm button while waiting for connection
             },
             dismissButton = {
-                if (isSending) {
-                    TextButton(
-                        onClick = {
-                            transferManager.cancelSend()
-                            isSending = false
-                            showQRDialog = false
-                        },
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Text(
-                            "Cancel Transfer",
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
+                TextButton(
+                    onClick = {
+                        transferManager.cancelSend()
+                        isSending = false
+                        showQRDialog = false
+                    },
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        "Cancel Transfer",
+                        fontWeight = FontWeight.Medium
+                    )
                 }
             },
             shape = RoundedCornerShape(20.dp)

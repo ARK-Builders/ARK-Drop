@@ -24,7 +24,7 @@ class TransferManager @Inject constructor(
     private val profileManager: ProfileManager
 ) {
     companion object {
-        private const val TAG = "DropTransferManager"
+        private const val TAG = "TransferManager"
     }
 
     private var currentSendBubble: SendFilesBubble? = null

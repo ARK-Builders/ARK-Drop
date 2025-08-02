@@ -69,10 +69,10 @@ class ProfileManager @Inject constructor(
     }
 
     fun updateAvatar(avatarId: String) {
-        val avatarBase64 = AvatarUtils.getDefaultAvatarBase64(context, avatarId)
+        val avatarB64 = AvatarUtils.getDefaultAvatarBase64(context, avatarId)
         val updatedProfile = _profile.value.copy(
             avatarId = avatarId,
-            avatarB64 = avatarBase64
+            avatarB64 = avatarB64
         )
         updateProfile(updatedProfile)
     }

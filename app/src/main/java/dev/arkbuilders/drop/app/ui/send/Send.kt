@@ -5,12 +5,20 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -27,8 +35,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -42,6 +52,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -54,9 +65,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.createBitmap
@@ -67,10 +80,9 @@ import com.google.zxing.WriterException
 import com.google.zxing.common.BitMatrix
 import com.google.zxing.qrcode.QRCodeWriter
 import compose.icons.TablerIcons
-import compose.icons.tablericons.Cloud
 import compose.icons.tablericons.CloudUpload
-import compose.icons.tablericons.Upload
 import dev.arkbuilders.drop.app.TransferManager
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -88,6 +100,9 @@ fun Send(
     var showQRDialog by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var isSending by remember { mutableStateOf(false) }
+    var isTransferComplete by remember { mutableStateOf(false) }
+    var showSuccessAnimation by remember { mutableStateOf(false) }
+    var sentFilesCount by remember { mutableStateOf(0) }
 
     // Observe sending progress
     val sendProgress by (transferManager.sendProgress?.collectAsState()
@@ -99,15 +114,56 @@ fun Send(
         selectedFiles = selectedFiles + uris
     }
 
-    // Auto-close QR dialog when receiver connects and transfer starts
+    // Handle transfer completion and success animation
     LaunchedEffect(sendProgress) {
         sendProgress?.let { progress ->
+            // Auto-close QR dialog when receiver connects and transfer starts
             if (isSending && progress.isConnected && showQRDialog) {
-                // Close QR dialog when receiver connects and transfer starts
                 showQRDialog = false
+            }
+
+            // Check if transfer is complete
+            println("DEBUG progress: $progress")
+            println("DEBUG isSendFinished: ${transferManager.isSendFinished()}")
+            println("DEBUG isSendConnected: ${transferManager.isSendConnected()}")
+            if (progress.remaining == 0uL) {
+                if (sentFilesCount < selectedFiles.size) {
+                    sentFilesCount++;
+                }
+                if (selectedFiles.size > 0 && sentFilesCount == selectedFiles.size) {
+                    if (!isTransferComplete) {
+                        isTransferComplete = true
+                        showSuccessAnimation = true
+
+                        // Auto-hide success animation after 3 seconds
+                        delay(3000)
+                        showSuccessAnimation = false
+                    }
+                }
+            }
+            if (isSending && progress.isConnected && progress.remaining == 0uL) {
+                // Transfer completed successfully
+                if (!isTransferComplete) {
+                    isTransferComplete = true
+                    showSuccessAnimation = true
+
+                    // Auto-hide success animation after 3 seconds
+                    delay(3000)
+                    showSuccessAnimation = false
+                }
             }
         }
     }
+
+    // Success animation scale
+    val successScale by animateFloatAsState(
+        targetValue = if (showSuccessAnimation) 1f else 0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "successScale"
+    )
 
     Column(
         modifier = Modifier
@@ -137,9 +193,153 @@ fun Send(
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        // Success Animation Overlay
+        AnimatedVisibility(
+            visible = showSuccessAnimation,
+            enter = scaleIn(
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessLow
+                )
+            ) + fadeIn(),
+            exit = scaleOut() + fadeOut()
+        ) {
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                ElevatedCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .scale(successScale),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.elevatedCardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    ),
+                    elevation = CardDefaults.elevatedCardElevation(defaultElevation = 12.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(32.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            Icons.Default.CheckCircle,
+                            contentDescription = "Success",
+                            modifier = Modifier.size(64.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "Transfer Complete!",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "All files have been successfully sent to the receiver.",
+                            style = MaterialTheme.typography.bodyLarge,
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                        )
+                    }
+                }
+            }
+        }
+
+        // Transfer Complete Actions
+        AnimatedVisibility(
+            visible = isTransferComplete && !showSuccessAnimation,
+            enter = slideInVertically(
+                initialOffsetY = { it },
+                animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
+            ) + fadeIn(),
+            exit = slideOutVertically() + fadeOut()
+        ) {
+            ElevatedCard(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.elevatedCardColors(
+                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+                ),
+                elevation = CardDefaults.elevatedCardElevation(defaultElevation = 8.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        Icons.Default.CheckCircle,
+                        contentDescription = "Complete",
+                        modifier = Modifier.size(48.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "Files Sent Successfully!",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "${selectedFiles.size} file${if (selectedFiles.size != 1) "s" else ""} transferred successfully",
+                        style = MaterialTheme.typography.bodyLarge,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.8f)
+                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Action buttons
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = {
+                                // Reset for new transfer
+                                selectedFiles = emptyList()
+                                isTransferComplete = false
+                                isSending = false
+                                sentFilesCount = 0
+                                showQRDialog = false
+                                errorMessage = null
+                                transferManager.cancelSend()
+                            },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Refresh,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Send More", fontWeight = FontWeight.Medium)
+                        }
+
+                        Button(
+                            onClick = { navController.navigateUp() },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text("Done", fontWeight = FontWeight.Medium)
+                        }
+                    }
+                }
+            }
+        }
+
+        if (isTransferComplete) {
+            Spacer(modifier = Modifier.height(20.dp))
+        }
+
         // Sending progress
         AnimatedVisibility(
-            visible = isSending && sendProgress != null,
+            visible = isSending && sendProgress != null && !isTransferComplete,
             enter = expandVertically() + fadeIn(),
             exit = shrinkVertically() + fadeOut()
         ) {
@@ -171,7 +371,9 @@ fun Send(
                                 onClick = {
                                     transferManager.cancelSend()
                                     isSending = false
+                                    sentFilesCount = 0
                                     showQRDialog = false
+                                    isTransferComplete = false
                                 }
                             ) {
                                 Icon(
@@ -230,214 +432,221 @@ fun Send(
             }
         }
 
-        if (isSending) {
+        if (isSending && !isTransferComplete) {
             Spacer(modifier = Modifier.height(20.dp))
         }
 
         // File selection section
-        ElevatedCard(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.elevatedCardColors(
-                containerColor = MaterialTheme.colorScheme.surface,
-                contentColor = MaterialTheme.colorScheme.onSurface
-            ),
-            elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(20.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Selected Files (${selectedFiles.size})",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-
-                    FilledTonalButton(
-                        onClick = { filePickerLauncher.launch("*/*") },
-                        enabled = !isSending,
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Add Files", fontWeight = FontWeight.Medium)
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                if (selectedFiles.isEmpty()) {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                        ),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text(
-                            text = "No files selected. Tap 'Add Files' to choose files to send.",
-                            style = MaterialTheme.typography.bodyLarge,
-                            modifier = Modifier.padding(20.dp),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                } else {
-                    LazyColumn(
-                        modifier = Modifier.heightIn(max = 240.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        items(selectedFiles) { uri ->
-                            FileItem(
-                                uri = uri,
-                                onRemove = {
-                                    if (!isSending) {
-                                        selectedFiles = selectedFiles - uri
-                                    }
-                                },
-                                enabled = !isSending
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        // Send button
-        Button(
-            onClick = {
-                if (selectedFiles.isNotEmpty()) {
-                    scope.launch {
-                        isGeneratingQR = true
-                        errorMessage = null
-                        try {
-                            val bubble = transferManager.sendFiles(selectedFiles)
-                            if (bubble != null) {
-                                val ticket = transferManager.getCurrentSendTicket() ?: ""
-                                val confirmation =
-                                    transferManager.getCurrentSendConfirmation() ?: 0u
-
-                                qrBitmap = generateQRCode(ticket, confirmation)
-                                showQRDialog = true
-                                isSending = true
-                            } else {
-                                errorMessage = "Failed to start file transfer"
-                            }
-                        } catch (e: Exception) {
-                            errorMessage = "Failed to generate QR code: ${e.message}"
-                        } finally {
-                            isGeneratingQR = false
-                        }
-                    }
-                }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(64.dp),
-            enabled = selectedFiles.isNotEmpty() && !isGeneratingQR && !isSending,
-            shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
-            )
-        ) {
-            if (isGeneratingQR) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp),
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    strokeWidth = 3.dp
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    "Starting Transfer...",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-            } else {
-                Icon(
-                    TablerIcons.CloudUpload,
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp)
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    "Start Transfer",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-        }
-
-        // Error message
         AnimatedVisibility(
-            visible = errorMessage != null,
+            visible = !isTransferComplete,
             enter = expandVertically() + fadeIn(),
             exit = shrinkVertically() + fadeOut()
         ) {
-            errorMessage?.let { message ->
-                Spacer(modifier = Modifier.height(20.dp))
-                ElevatedCard(
-                    colors = CardDefaults.elevatedCardColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer,
-                        contentColor = MaterialTheme.colorScheme.onErrorContainer
-                    ),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text(
-                        text = message,
-                        modifier = Modifier.padding(20.dp),
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        // Instructions
-        AnimatedVisibility(
-            visible = !isSending || sendProgress == null,
-            enter = expandVertically() + fadeIn(),
-            exit = shrinkVertically() + fadeOut()
-        ) {
-
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+            ElevatedCard(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.elevatedCardColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
-                shape = RoundedCornerShape(16.dp)
+                elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp)
             ) {
                 Column(
                     modifier = Modifier.padding(20.dp)
                 ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Selected Files (${selectedFiles.size})",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+
+                        FilledTonalButton(
+                            onClick = { filePickerLauncher.launch("*/*") },
+                            enabled = !isSending,
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Add Files", fontWeight = FontWeight.Medium)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    if (selectedFiles.isEmpty()) {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text(
+                                text = "No files selected. Tap 'Add Files' to choose files to send.",
+                                style = MaterialTheme.typography.bodyLarge,
+                                modifier = Modifier.padding(20.dp),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.heightIn(max = 240.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            items(selectedFiles) { uri ->
+                                FileItem(
+                                    uri = uri,
+                                    onRemove = {
+                                        if (!isSending) {
+                                            selectedFiles = selectedFiles - uri
+                                        }
+                                    },
+                                    enabled = !isSending
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (!isTransferComplete) {
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // Send button
+            Button(
+                onClick = {
+                    if (selectedFiles.isNotEmpty()) {
+                        scope.launch {
+                            isGeneratingQR = true
+                            errorMessage = null
+                            try {
+                                val bubble = transferManager.sendFiles(selectedFiles)
+                                if (bubble != null) {
+                                    val ticket = transferManager.getCurrentSendTicket() ?: ""
+                                    val confirmation =
+                                        transferManager.getCurrentSendConfirmation() ?: 0u
+
+                                    qrBitmap = generateQRCode(ticket, confirmation)
+                                    showQRDialog = true
+                                    isSending = true
+                                } else {
+                                    errorMessage = "Failed to start file transfer"
+                                }
+                            } catch (e: Exception) {
+                                errorMessage = "Failed to generate QR code: ${e.message}"
+                            } finally {
+                                isGeneratingQR = false
+                            }
+                        }
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(64.dp),
+                enabled = selectedFiles.isNotEmpty() && !isGeneratingQR && !isSending,
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                )
+            ) {
+                if (isGeneratingQR) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        strokeWidth = 3.dp
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = "How to send files:",
+                        "Starting Transfer...",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.SemiBold
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
+                } else {
+                    Icon(
+                        TablerIcons.CloudUpload,
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = "1. Select files you want to send\n2. Start transfer to generate QR code\n3. Let the receiver scan the QR code\n4. Files will be transferred automatically",
-                        style = MaterialTheme.typography.bodyMedium,
-                        lineHeight = MaterialTheme.typography.bodyMedium.lineHeight * 1.2
+                        "Start Transfer",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
                     )
+                }
+            }
+
+            // Error message
+            AnimatedVisibility(
+                visible = errorMessage != null,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut()
+            ) {
+                errorMessage?.let { message ->
+                    Spacer(modifier = Modifier.height(20.dp))
+                    ElevatedCard(
+                        colors = CardDefaults.elevatedCardColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer,
+                            contentColor = MaterialTheme.colorScheme.onErrorContainer
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            text = message,
+                            modifier = Modifier.padding(20.dp),
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // Instructions
+            AnimatedVisibility(
+                visible = !isSending || sendProgress == null,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut()
+            ) {
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    ),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(20.dp)
+                    ) {
+                        Text(
+                            text = "How to send files:",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = "1. Select files you want to send\n2. Start transfer to generate QR code\n3. Let the receiver scan the QR code\n4. Files will be transferred automatically",
+                            style = MaterialTheme.typography.bodyMedium,
+                            lineHeight = MaterialTheme.typography.bodyMedium.lineHeight * 1.2
+                        )
+                    }
                 }
             }
         }
     }
 
     // QR Code Dialog - Only show when waiting for connection
-    if (showQRDialog && qrBitmap != null && isSending) {
+    if (showQRDialog && qrBitmap != null && isSending && !isTransferComplete) {
         AlertDialog(
             onDismissRequest = {
                 // Only allow dismissal if not actively transferring
@@ -506,7 +715,9 @@ fun Send(
                     onClick = {
                         transferManager.cancelSend()
                         isSending = false
+                        sentFilesCount = 0
                         showQRDialog = false
+                        isTransferComplete = false
                     },
                     shape = RoundedCornerShape(8.dp)
                 ) {

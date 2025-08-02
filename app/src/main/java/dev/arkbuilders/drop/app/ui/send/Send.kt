@@ -90,7 +90,8 @@ fun Send(
     var isSending by remember { mutableStateOf(false) }
 
     // Observe sending progress
-    val sendProgress by (transferManager.sendProgress?.collectAsState() ?: remember { mutableStateOf(null) })
+    val sendProgress by (transferManager.sendProgress?.collectAsState()
+        ?: remember { mutableStateOf(null) })
 
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetMultipleContents()
@@ -215,7 +216,11 @@ fun Send(
 
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "${formatBytes(progress.sent.toLong())} / ${formatBytes(totalBytes.toLong())}",
+                                text = "${formatBytes(progress.sent.toLong())} / ${
+                                    formatBytes(
+                                        totalBytes.toLong()
+                                    )
+                                }",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                             )
@@ -317,7 +322,8 @@ fun Send(
                             val bubble = transferManager.sendFiles(selectedFiles)
                             if (bubble != null) {
                                 val ticket = transferManager.getCurrentSendTicket() ?: ""
-                                val confirmation = transferManager.getCurrentSendConfirmation() ?: 0u
+                                val confirmation =
+                                    transferManager.getCurrentSendConfirmation() ?: 0u
 
                                 qrBitmap = generateQRCode(ticket, confirmation)
                                 showQRDialog = true
@@ -395,30 +401,37 @@ fun Send(
             }
         }
 
-        Spacer(modifier = Modifier.weight(1f))
+        Spacer(modifier = Modifier.height(32.dp))
 
         // Instructions
-        Card(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-            ),
-            shape = RoundedCornerShape(16.dp)
+        AnimatedVisibility(
+            visible = !isSending || sendProgress == null,
+            enter = expandVertically() + fadeIn(),
+            exit = shrinkVertically() + fadeOut()
         ) {
-            Column(
-                modifier = Modifier.padding(20.dp)
+
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                ),
+                shape = RoundedCornerShape(16.dp)
             ) {
-                Text(
-                    text = "How to send files:",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = "1. Select files you want to send\n2. Start transfer to generate QR code\n3. Let the receiver scan the QR code\n4. Files will be transferred automatically",
-                    style = MaterialTheme.typography.bodyMedium,
-                    lineHeight = MaterialTheme.typography.bodyMedium.lineHeight * 1.2
-                )
+                Column(
+                    modifier = Modifier.padding(20.dp)
+                ) {
+                    Text(
+                        text = "How to send files:",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "1. Select files you want to send\n2. Start transfer to generate QR code\n3. Let the receiver scan the QR code\n4. Files will be transferred automatically",
+                        style = MaterialTheme.typography.bodyMedium,
+                        lineHeight = MaterialTheme.typography.bodyMedium.lineHeight * 1.2
+                    )
+                }
             }
         }
     }
@@ -524,7 +537,8 @@ private fun FileItem(
                 val nameIndex = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
                 val sizeIndex = cursor.getColumnIndex(android.provider.OpenableColumns.SIZE)
 
-                fileName = if (nameIndex >= 0) cursor.getString(nameIndex) ?: "Unknown" else "Unknown"
+                fileName =
+                    if (nameIndex >= 0) cursor.getString(nameIndex) ?: "Unknown" else "Unknown"
                 fileSize = if (sizeIndex >= 0) cursor.getLong(sizeIndex) else 0L
             }
         }
@@ -591,7 +605,8 @@ private fun generateQRCode(ticket: String, confirmation: UByte): Bitmap {
 
         for (x in 0 until width) {
             for (y in 0 until height) {
-                bitmap[x, y] = if (bitMatrix[x, y]) android.graphics.Color.BLACK else android.graphics.Color.WHITE
+                bitmap[x, y] =
+                    if (bitMatrix[x, y]) android.graphics.Color.BLACK else android.graphics.Color.WHITE
             }
         }
         return bitmap

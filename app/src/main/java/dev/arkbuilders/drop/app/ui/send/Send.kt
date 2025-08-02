@@ -4,6 +4,11 @@ import android.graphics.Bitmap
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -14,6 +19,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -28,12 +34,12 @@ import com.google.zxing.BarcodeFormat
 import com.google.zxing.WriterException
 import com.google.zxing.common.BitMatrix
 import com.google.zxing.qrcode.QRCodeWriter
-import compose.icons.TablerIcons
-import compose.icons.tablericons.PlayerPlay
 import dev.arkbuilders.drop.app.TransferManager
 import kotlinx.coroutines.launch
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.set
+import compose.icons.TablerIcons
+import compose.icons.tablericons.Upload
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,7 +69,7 @@ fun Send(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(20.dp)
     ) {
         // Top bar
         Row(
@@ -71,30 +77,41 @@ fun Send(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = { navController.navigateUp() }) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                Icon(
+                    Icons.Default.ArrowBack,
+                    contentDescription = "Back",
+                    tint = MaterialTheme.colorScheme.onSurface
+                )
             }
             Text(
                 text = "Send Files",
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
         // Sending progress
-        sendProgress?.let { progress ->
-            if (isSending) {
-                Card(
+        AnimatedVisibility(
+            visible = isSending && sendProgress != null,
+            enter = expandVertically() + fadeIn(),
+            exit = shrinkVertically() + fadeOut()
+        ) {
+            sendProgress?.let { progress ->
+                ElevatedCard(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer
-                    )
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.elevatedCardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    ),
+                    elevation = CardDefaults.elevatedCardElevation(defaultElevation = 8.dp)
                 ) {
                     Column(
-                        modifier = Modifier.padding(16.dp)
+                        modifier = Modifier.padding(20.dp)
                     ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -102,8 +119,8 @@ fun Send(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = if (progress.isConnected) "Sending..." else "Waiting for receiver...",
-                                style = MaterialTheme.typography.titleMedium,
+                                text = if (progress.isConnected) "Sending Files..." else "Waiting for receiver...",
+                                style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold
                             )
 
@@ -114,23 +131,29 @@ fun Send(
                                     showQRDialog = false
                                 }
                             ) {
-                                Icon(Icons.Default.Close, contentDescription = "Cancel")
+                                Icon(
+                                    Icons.Default.Close,
+                                    contentDescription = "Cancel",
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
                             }
                         }
 
                         if (progress.isConnected) {
+                            Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = "Connected to: ${progress.receiverName}",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                             )
                         }
 
                         if (progress.fileName.isNotEmpty()) {
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(16.dp))
                             Text(
                                 text = "Sending: ${progress.fileName}",
-                                style = MaterialTheme.typography.bodyMedium
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Medium
                             )
 
                             val totalBytes = progress.sent + progress.remaining
@@ -138,33 +161,44 @@ fun Send(
                                 progress.sent.toFloat() / totalBytes.toFloat()
                             } else 0f
 
+                            Spacer(modifier = Modifier.height(12.dp))
                             LinearProgressIndicator(
-                                progress = progressValue,
+                                progress = { progressValue },
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(vertical = 8.dp)
+                                    .height(8.dp),
+                                color = MaterialTheme.colorScheme.primary,
+                                trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
                             )
 
+                            Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = "${formatBytes(progress.sent.toLong())} / ${formatBytes(totalBytes.toLong())}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                             )
                         }
                     }
                 }
-
-                Spacer(modifier = Modifier.height(16.dp))
             }
         }
 
+        if (isSending) {
+            Spacer(modifier = Modifier.height(20.dp))
+        }
+
         // File selection section
-        Card(
+        ElevatedCard(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp)
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.elevatedCardColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.onSurface
+            ),
+            elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp)
         ) {
             Column(
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(20.dp)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -173,32 +207,44 @@ fun Send(
                 ) {
                     Text(
                         text = "Selected Files (${selectedFiles.size})",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Medium
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
 
                     FilledTonalButton(
                         onClick = { filePickerLauncher.launch("*/*") },
-                        enabled = !isSending
+                        enabled = !isSending,
+                        shape = RoundedCornerShape(12.dp)
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Add Files")
+                        Text("Add Files", fontWeight = FontWeight.Medium)
                     }
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
                 if (selectedFiles.isEmpty()) {
-                    Text(
-                        text = "No files selected. Tap 'Add Files' to choose files to send.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            text = "No files selected. Tap 'Add Files' to choose files to send.",
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.padding(20.dp),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 } else {
                     LazyColumn(
-                        modifier = Modifier.heightIn(max = 200.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        modifier = Modifier.heightIn(max = 240.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         items(selectedFiles) { uri ->
                             FileItem(
@@ -216,7 +262,7 @@ fun Send(
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(32.dp))
 
         // Send button
         Button(
@@ -247,37 +293,63 @@ fun Send(
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp),
+                .height(64.dp),
             enabled = selectedFiles.isNotEmpty() && !isGeneratingQR && !isSending,
-            shape = RoundedCornerShape(12.dp)
+            shape = RoundedCornerShape(16.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            )
         ) {
             if (isGeneratingQR) {
                 CircularProgressIndicator(
-                    modifier = Modifier.size(20.dp),
-                    color = MaterialTheme.colorScheme.onPrimary
+                    modifier = Modifier.size(24.dp),
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    strokeWidth = 3.dp
                 )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Starting Transfer...")
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    "Starting Transfer...",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
             } else {
-                Icon(TablerIcons.PlayerPlay, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Start Transfer")
+                Icon(
+                    TablerIcons.Upload,
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    "Start Transfer",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
             }
         }
 
         // Error message
-        errorMessage?.let { message ->
-            Spacer(modifier = Modifier.height(16.dp))
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer
-                )
-            ) {
-                Text(
-                    text = message,
-                    modifier = Modifier.padding(16.dp),
-                    color = MaterialTheme.colorScheme.onErrorContainer
-                )
+        AnimatedVisibility(
+            visible = errorMessage != null,
+            enter = expandVertically() + fadeIn(),
+            exit = shrinkVertically() + fadeOut()
+        ) {
+            errorMessage?.let { message ->
+                Spacer(modifier = Modifier.height(20.dp))
+                ElevatedCard(
+                    colors = CardDefaults.elevatedCardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(
+                        text = message,
+                        modifier = Modifier.padding(20.dp),
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
         }
 
@@ -286,22 +358,24 @@ fun Send(
         // Instructions
         Card(
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
-            )
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+            ),
+            shape = RoundedCornerShape(16.dp)
         ) {
             Column(
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(20.dp)
             ) {
                 Text(
                     text = "How to send files:",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Medium
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(12.dp))
                 Text(
                     text = "1. Select files you want to send\n2. Start transfer to generate QR code\n3. Let the receiver scan the QR code\n4. Files will be transferred automatically",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    style = MaterialTheme.typography.bodyMedium,
+                    lineHeight = MaterialTheme.typography.bodyMedium.lineHeight * 1.2
                 )
             }
         }
@@ -315,37 +389,70 @@ fun Send(
                     showQRDialog = false
                 }
             },
-            title = { Text("QR Code for Transfer") },
+            title = {
+                Text(
+                    "QR Code for Transfer",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
+            },
             text = {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Image(
-                        bitmap = qrBitmap!!.asImageBitmap(),
-                        contentDescription = "QR Code",
-                        modifier = Modifier.size(200.dp)
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Card(
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surface
+                        )
+                    ) {
+                        Image(
+                            bitmap = qrBitmap!!.asImageBitmap(),
+                            contentDescription = "QR Code",
+                            modifier = Modifier
+                                .size(220.dp)
+                                .padding(16.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(20.dp))
                     Text(
                         text = "Show this QR code to the receiver",
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
                     if (isSending) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "Waiting for receiver to scan...",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Waiting for receiver to scan...",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
                     }
                 }
             },
             confirmButton = {
                 if (!isSending) {
-                    TextButton(onClick = { showQRDialog = false }) {
-                        Text("Close")
+                    TextButton(
+                        onClick = { showQRDialog = false },
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text(
+                            "Close",
+                            fontWeight = FontWeight.Medium
+                        )
                     }
                 }
             },
@@ -356,12 +463,17 @@ fun Send(
                             transferManager.cancelSend()
                             isSending = false
                             showQRDialog = false
-                        }
+                        },
+                        shape = RoundedCornerShape(8.dp)
                     ) {
-                        Text("Cancel Transfer")
+                        Text(
+                            "Cancel Transfer",
+                            fontWeight = FontWeight.Medium
+                        )
                     }
                 }
-            }
+            },
+            shape = RoundedCornerShape(20.dp)
         )
     }
 }
@@ -388,30 +500,35 @@ private fun FileItem(
         }
     }
 
-    Card(
+    ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+        ),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
+                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = fileName,
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Medium,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = formatBytes(fileSize),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                 )
             }
 
@@ -422,7 +539,10 @@ private fun FileItem(
                 Icon(
                     Icons.Default.Delete,
                     contentDescription = "Remove",
-                    tint = if (enabled) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+                    tint = if (enabled)
+                        MaterialTheme.colorScheme.error
+                    else
+                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                 )
             }
         }

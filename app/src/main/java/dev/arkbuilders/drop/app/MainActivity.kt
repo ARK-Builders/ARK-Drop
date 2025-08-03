@@ -78,7 +78,8 @@ fun DropNavigation(
         composable(DropDestination.Home.route) {
             Home(
                 navController = navController,
-                profileManager = profileManager
+                profileManager = profileManager,
+                historyRepository = historyRepository
             )
         }
         composable(DropDestination.Send.route) {

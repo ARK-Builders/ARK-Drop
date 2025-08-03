@@ -83,6 +83,7 @@ import com.google.zxing.qrcode.QRCodeWriter
 import compose.icons.TablerIcons
 import compose.icons.tablericons.CloudUpload
 import dev.arkbuilders.drop.app.TransferManager
+import dev.arkbuilders.drop.app.ui.components.DropLogoIcon
 import dev.arkbuilders.drop.app.ui.profile.AvatarUtils
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -166,7 +167,7 @@ fun Send(
             .fillMaxSize()
             .padding(20.dp)
     ) {
-        // Top bar
+        // Top bar with logo
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
@@ -178,6 +179,14 @@ fun Send(
                     tint = MaterialTheme.colorScheme.onSurface
                 )
             }
+
+            DropLogoIcon(
+                size = 28.dp,
+                tint = MaterialTheme.colorScheme.primary
+            )
+
+            Spacer(modifier = Modifier.width(12.dp))
+
             Text(
                 text = "Send Files",
                 style = MaterialTheme.typography.headlineMedium,
@@ -663,11 +672,20 @@ fun Send(
                 }
             },
             title = {
-                Text(
-                    "QR Code for Transfer",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    DropLogoIcon(
+                        size = 24.dp,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        "QR Code for Transfer",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             },
             text = {
                 Column(

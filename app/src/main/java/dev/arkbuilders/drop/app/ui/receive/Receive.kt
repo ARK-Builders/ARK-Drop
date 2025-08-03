@@ -86,6 +86,7 @@ import compose.icons.TablerIcons
 import compose.icons.tablericons.Camera
 import dev.arkbuilders.drop.app.TransferManager
 import dev.arkbuilders.drop.app.data.ReceiveFileInfo
+import dev.arkbuilders.drop.app.ui.components.DropLogoIcon
 import dev.arkbuilders.drop.app.ui.profile.AvatarUtils
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -167,7 +168,7 @@ fun Receive(
             .fillMaxSize()
             .padding(20.dp)
     ) {
-        // Top bar
+        // Top bar with logo
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
@@ -179,6 +180,14 @@ fun Receive(
                     tint = MaterialTheme.colorScheme.onSurface
                 )
             }
+
+            DropLogoIcon(
+                size = 28.dp,
+                tint = MaterialTheme.colorScheme.primary
+            )
+
+            Spacer(modifier = Modifier.width(12.dp))
+
             Text(
                 text = "Receive Files",
                 style = MaterialTheme.typography.headlineMedium,

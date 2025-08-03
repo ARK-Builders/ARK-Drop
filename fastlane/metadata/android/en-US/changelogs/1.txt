@@ -1,0 +1,7 @@
+• Initial release of Drop
+• Secure file sharing between devices over internet
+• Profile management with custom avatars
+• Transfer history tracking
+• Multiple sharing options: QR code and deep links
+• End-to-end encryption for all transfers
+• Works anywhere with internet connection

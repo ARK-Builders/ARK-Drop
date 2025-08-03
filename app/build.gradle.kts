@@ -17,6 +17,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     id("com.google.dagger.hilt.android") version "2.56.2"
+    id("com.github.triplet.play") version "3.10.1"
 }
 
 android {
@@ -36,10 +37,13 @@ android {
         applicationId = "dev.arkbuilders.drop.app"
         minSdk = 29
         targetSdk = 36
-        versionCode = 1
-        versionName = System.getenv("RELEASE_VERSION") ?: "dev"
+        versionCode = getVersionCode()
+        versionName = getVersionName()
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Play Store metadata
+        setProperty("archivesBaseName", "drop-v$versionName")
     }
 
     signingConfigs {
@@ -52,13 +56,27 @@ android {
     }
 
     buildTypes {
-        release {
-            signingConfig = signingConfigs.getByName("testRelease")
+        debug {
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
+            isDebuggable = true
             isMinifyEnabled = false
+        }
+
+        release {
+            isMinifyEnabled = true
+            isShrinkResources = true
             signingConfig = signingConfigs.getByName("release")
             proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
             )
+
+            // Enable R8 full mode
+            isDebuggable = false
+            isJniDebuggable = false
+            isRenderscriptDebuggable = false
+            isPseudoLocalesEnabled = false
         }
     }
 
@@ -73,12 +91,43 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     packaging {
         jniLibs.excludes.add("META-INF/AL2.0")
         jniLibs.excludes.add("META-INF/LGPL2.1")
+        resources.excludes.addAll(listOf(
+            "META-INF/DEPENDENCIES",
+            "META-INF/LICENSE",
+            "META-INF/LICENSE.txt",
+            "META-INF/license.txt",
+            "META-INF/NOTICE",
+            "META-INF/NOTICE.txt",
+            "META-INF/notice.txt",
+            "META-INF/ASL2.0",
+            "META-INF/*.kotlin_module"
+        ))
     }
+
+    bundle {
+        language {
+            enableSplit = false
+        }
+        density {
+            enableSplit = true
+        }
+        abi {
+            enableSplit = true
+        }
+    }
+}
+
+play {
+    serviceAccountCredentials.set(file("play-store-credentials.json"))
+    track.set("internal") // Start with internal testing
+    releaseStatus.set(com.github.triplet.gradle.androidpublisher.ReleaseStatus.DRAFT)
+    defaultToAppBundles.set(true)
 }
 
 dependencies {
@@ -152,12 +201,20 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.5.0")
     implementation("androidx.compose.foundation:foundation:1.4.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
-
-
 }
 
 kapt {
     correctErrorTypes = true
+}
+
+fun getVersionCode(): Int {
+    val versionCode = System.getenv("VERSION_CODE")?.toIntOrNull()
+    return versionCode ?: (System.currentTimeMillis() / 1000).toInt()
+}
+
+fun getVersionName(): String {
+    val versionName = System.getenv("VERSION_NAME")
+    return versionName ?: "1.0.0"
 }
 
 tasks.named<Delete>("clean") {
@@ -166,7 +223,7 @@ tasks.named<Delete>("clean") {
 
 tasks.register<Exec>("generateDevKeystore") {
     doFirst {
-            mkdir(layout.buildDirectory)
+        mkdir(layout.buildDirectory)
     }
     val keystoreFile = file(devKeystorePath)
     commandLine = if (keystoreFile.exists()) {
@@ -187,3 +244,18 @@ tasks.register<Exec>("generateDevKeystore") {
 }
 
 tasks.named("preBuild").dependsOn("generateDevKeystore")
+
+// Task to generate release notes
+tasks.register("generateReleaseNotes") {
+    doLast {
+        val releaseNotesFile = file("fastlane/metadata/android/en-US/changelogs/${getVersionCode()}.txt")
+        releaseNotesFile.parentFile.mkdirs()
+        releaseNotesFile.writeText("""
+            • Initial release of Drop
+            • Secure file sharing between devices
+            • Profile management with custom avatars
+            • Transfer history tracking
+            • QR code sharing for easy connections
+        """.trimIndent())
+    }
+}

@@ -8,6 +8,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import dev.arkbuilders.drop.app.TransferManager
 import dev.arkbuilders.drop.app.ProfileManager
+import dev.arkbuilders.drop.app.data.HistoryRepository
 import javax.inject.Singleton
 
 @Module
@@ -22,10 +23,11 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideDropTransferManager(
+    fun provideTransferManager(
         @ApplicationContext context: Context,
-        profileManager: ProfileManager
+        profileManager: ProfileManager,
+        historyRepository: HistoryRepository
     ): TransferManager {
-        return TransferManager(context, profileManager)
+        return TransferManager(context, profileManager, historyRepository)
     }
 }

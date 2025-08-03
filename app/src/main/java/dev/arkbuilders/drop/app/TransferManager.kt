@@ -100,43 +100,42 @@ class TransferManager @Inject constructor(
         }
     }
 
-    suspend fun receiveFiles(ticket: String, confirmation: UByte): ReceiveFilesBubble? =
-        withContext(Dispatchers.IO) {
-            try {
-                Log.d(TAG, "Starting file receive with ticket: $ticket")
+    suspend fun receiveFiles(ticket: String, confirmation: UByte): ReceiveFilesBubble? = withContext(Dispatchers.IO) {
+        try {
+            Log.d(TAG, "Starting file receive with ticket: $ticket")
 
-                val profile = profileManager.getCurrentProfile()
-                val receiverProfile = ReceiverProfile(
-                    name = profile.name.ifEmpty { "Anonymous" },
-                    avatarB64 = profile.avatarB64.takeIf { it.isNotEmpty() }
-                )
+            val profile = profileManager.getCurrentProfile()
+            val receiverProfile = ReceiverProfile(
+                name = profile.name.ifEmpty { "Anonymous" },
+                avatarB64 = profile.avatarB64.takeIf { it.isNotEmpty() }
+            )
 
-                val request = ReceiveFilesRequest(
-                    ticket = ticket,
-                    confirmation = confirmation,
-                    profile = receiverProfile
-                )
+            val request = ReceiveFilesRequest(
+                ticket = ticket,
+                confirmation = confirmation,
+                profile = receiverProfile
+            )
 
-                // Create and subscribe to bubble
-                val bubble = receiveFiles(request)
-                currentReceiveBubble = bubble
+            // Create and subscribe to bubble
+            val bubble = receiveFiles(request)
+            currentReceiveBubble = bubble
 
-                // Set up subscriber
-                receiveSubscriber = ReceiveFilesSubscriberImpl().also { subscriber ->
-                    bubble.subscribe(subscriber)
-                }
-
-                // Start receiving
-                bubble.start()
-
-                Log.d(TAG, "Receive bubble created and started")
-                bubble
-
-            } catch (e: Exception) {
-                Log.e(TAG, "Error starting file receive", e)
-                null
+            // Set up subscriber
+            receiveSubscriber = ReceiveFilesSubscriberImpl().also { subscriber ->
+                bubble.subscribe(subscriber)
             }
+
+            // Start receiving
+            bubble.start()
+
+            Log.d(TAG, "Receive bubble created and started")
+            bubble
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Error starting file receive", e)
+            null
         }
+    }
 
     suspend fun saveReceivedFiles(): List<File> = withContext(Dispatchers.IO) {
         val subscriber = receiveSubscriber ?: return@withContext emptyList()
@@ -161,25 +160,27 @@ class TransferManager @Inject constructor(
         savedFiles
     }
 
-    private suspend fun saveFileToDownloads(fileName: String, data: ByteArray): File? =
-        withContext(Dispatchers.IO) {
-            try {
-                // Use MediaStore for Android 10+ (Scoped Storage)
-                return@withContext saveFileUsingMediaStore(fileName, data)
-            } catch (e: Exception) {
-                Log.e(TAG, "Error saving file: $fileName", e)
-                return@withContext null
-            }
+    private suspend fun saveFileToDownloads(fileName: String, data: ByteArray): File? = withContext(Dispatchers.IO) {
+        try {
+            // Use MediaStore for Android 10+ (Scoped Storage)
+            return@withContext saveFileUsingMediaStore(fileName, data)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error saving file: $fileName", e)
+            return@withContext null
         }
+    }
 
     private fun saveFileUsingMediaStore(fileName: String, data: ByteArray): File? {
         try {
             val resolver = context.contentResolver
 
+            // Generate unique filename to avoid conflicts
+            val uniqueFileName = generateUniqueFileName(fileName)
+
             // Create content values for the file
             val contentValues = ContentValues().apply {
-                put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
-                put(MediaStore.MediaColumns.MIME_TYPE, getMimeType(fileName))
+                put(MediaStore.MediaColumns.DISPLAY_NAME, uniqueFileName)
+                put(MediaStore.MediaColumns.MIME_TYPE, getMimeType(uniqueFileName))
                 put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
             }
 
@@ -194,11 +195,11 @@ class TransferManager @Inject constructor(
                 }
 
                 // Get the actual file path for return
-                val actualFile = getFileFromMediaStoreUri(uri, fileName)
-                Log.d(TAG, "File saved using MediaStore: $fileName")
+                val actualFile = getFileFromMediaStoreUri(uri, uniqueFileName)
+                Log.d(TAG, "File saved using MediaStore: $uniqueFileName")
                 return actualFile
             } else {
-                Log.e(TAG, "Failed to create MediaStore entry for: $fileName")
+                Log.e(TAG, "Failed to create MediaStore entry for: $uniqueFileName")
                 return null
             }
         } catch (e: Exception) {
@@ -209,47 +210,94 @@ class TransferManager @Inject constructor(
 
     private fun saveFileUsingLegacyStorage(fileName: String, data: ByteArray): File? {
         try {
-            val downloadsDir =
-                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+            val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
             if (!downloadsDir.exists()) {
                 downloadsDir.mkdirs()
             }
 
-            val file = File(downloadsDir, fileName)
+            // Generate unique filename to avoid conflicts
+            val uniqueFileName = generateUniqueFileNameForDirectory(downloadsDir, fileName)
+            val file = File(downloadsDir, uniqueFileName)
 
-            // Handle file name conflicts
-            var counter = 1
-            var finalFile = file
-            while (finalFile.exists()) {
-                val nameWithoutExt = fileName.substringBeforeLast(".")
-                val extension = fileName.substringAfterLast(".", "")
-                val newName = if (extension.isNotEmpty()) {
-                    "${nameWithoutExt}_$counter.$extension"
-                } else {
-                    "${nameWithoutExt}_$counter"
-                }
-                finalFile = File(downloadsDir, newName)
-                counter++
-            }
-
-            FileOutputStream(finalFile).use { outputStream ->
+            FileOutputStream(file).use { outputStream ->
                 outputStream.write(data)
                 outputStream.flush()
             }
 
-            Log.d(TAG, "File saved using legacy storage: ${finalFile.absolutePath}")
-            return finalFile
+            Log.d(TAG, "File saved using legacy storage: ${file.absolutePath}")
+            return file
         } catch (e: Exception) {
             Log.e(TAG, "Error saving file using legacy storage: $fileName", e)
             return null
         }
     }
 
+    private fun generateUniqueFileName(originalFileName: String): String {
+        val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+        return generateUniqueFileNameForDirectory(downloadsDir, originalFileName)
+    }
+
+    private fun generateUniqueFileNameForDirectory(directory: File, originalFileName: String): String {
+        val nameWithoutExt = originalFileName.substringBeforeLast(".", originalFileName)
+        val extension = originalFileName.substringAfterLast(".", "")
+
+        var counter = 1
+        var candidateFileName = originalFileName
+        var candidateFile = File(directory, candidateFileName)
+
+        // Keep incrementing counter until we find a unique filename
+        while (candidateFile.exists() || isFileNameInMediaStore(candidateFileName)) {
+            candidateFileName = if (extension.isNotEmpty()) {
+                "${nameWithoutExt}($counter).$extension"
+            } else {
+                "${nameWithoutExt}($counter)"
+            }
+            candidateFile = File(directory, candidateFileName)
+            counter++
+
+            // Safety check to prevent infinite loop
+            if (counter > 1000) {
+                Log.w(TAG, "Too many duplicate files, using timestamp suffix")
+                val timestamp = System.currentTimeMillis()
+                candidateFileName = if (extension.isNotEmpty()) {
+                    "${nameWithoutExt}_$timestamp.$extension"
+                } else {
+                    "${nameWithoutExt}_$timestamp"
+                }
+                break
+            }
+        }
+
+        Log.d(TAG, "Generated unique filename: $candidateFileName (original: $originalFileName)")
+        return candidateFileName
+    }
+
+    private fun isFileNameInMediaStore(fileName: String): Boolean {
+        return try {
+            val resolver = context.contentResolver
+            val projection = arrayOf(MediaStore.MediaColumns.DISPLAY_NAME)
+            val selection = "${MediaStore.MediaColumns.DISPLAY_NAME} = ? AND ${MediaStore.MediaColumns.RELATIVE_PATH} = ?"
+            val selectionArgs = arrayOf(fileName, "${Environment.DIRECTORY_DOWNLOADS}/")
+
+            resolver.query(
+                MediaStore.Downloads.EXTERNAL_CONTENT_URI,
+                projection,
+                selection,
+                selectionArgs,
+                null
+            )?.use { cursor ->
+                cursor.count > 0
+            } ?: false
+        } catch (e: Exception) {
+            Log.w(TAG, "Error checking MediaStore for filename: $fileName", e)
+            false
+        }
+    }
+
     private fun getFileFromMediaStoreUri(uri: Uri, fileName: String): File {
         // For MediaStore files, we create a reference file object
         // The actual file is managed by the system
-        val downloadsDir =
-            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+        val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
         return File(downloadsDir, fileName)
     }
 

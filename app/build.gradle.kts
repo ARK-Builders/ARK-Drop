@@ -151,7 +151,6 @@ dependencies {
 
     // QR CODE create setup
     implementation(libs.google.zxing.core)
-    implementation(libs.google.zxing.javase)
     implementation(libs.github.yuriy.budiyev.code.scanner)
 
     // QR CODE SCAN

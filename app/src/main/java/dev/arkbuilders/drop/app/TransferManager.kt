@@ -8,18 +8,12 @@ import android.provider.MediaStore
 import android.provider.OpenableColumns
 import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
-import dev.arkbuilders.drop.ReceiveFilesBubble
-import dev.arkbuilders.drop.ReceiveFilesRequest
-import dev.arkbuilders.drop.ReceiverProfile
-import dev.arkbuilders.drop.SendFilesBubble
-import dev.arkbuilders.drop.SendFilesRequest
-import dev.arkbuilders.drop.SenderFile
-import dev.arkbuilders.drop.SenderProfile
+import dev.arkbuilders.drop.*
+import dev.arkbuilders.drop.app.data.HistoryRepository
 import dev.arkbuilders.drop.app.data.ReceiveFilesSubscriberImpl
 import dev.arkbuilders.drop.app.data.SendFilesSubscriberImpl
 import dev.arkbuilders.drop.app.data.SenderFileDataImpl
-import dev.arkbuilders.drop.receiveFiles
-import dev.arkbuilders.drop.sendFiles
+import dev.arkbuilders.drop.app.data.TransferStatus
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
@@ -31,7 +25,8 @@ import javax.inject.Singleton
 @Singleton
 class TransferManager @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val profileManager: ProfileManager
+    private val profileManager: ProfileManager,
+    private val historyRepository: HistoryRepository
 ) {
     companion object {
         private const val TAG = "TransferManager"
@@ -153,11 +148,78 @@ class TransferManager @Inject constructor(
                 }
             }
 
+            // Add to history if files were saved successfully
+            if (savedFiles.isNotEmpty()) {
+                val progress = receiveSubscriber?.progress?.value
+                val senderName = progress?.senderName ?: "Unknown"
+                val senderAvatar = progress?.senderAvatar
+
+                val totalSize = completeFiles.sumOf { it.second.size.toLong() }
+                val firstFileName = savedFiles.firstOrNull()?.name ?: "Unknown"
+
+                historyRepository.addReceivedTransfer(
+                    fileName = firstFileName,
+                    fileSize = totalSize,
+                    peerName = senderName,
+                    peerAvatar = senderAvatar,
+                    fileCount = savedFiles.size,
+                    status = TransferStatus.COMPLETED
+                )
+            }
+
         } catch (e: Exception) {
             Log.e(TAG, "Error saving received files", e)
+
+            // Add failed transfer to history
+            val progress = receiveSubscriber?.progress?.value
+            val senderName = progress?.senderName ?: "Unknown"
+            val senderAvatar = progress?.senderAvatar
+
+            historyRepository.addReceivedTransfer(
+                fileName = "Transfer failed",
+                fileSize = 0L,
+                peerName = senderName,
+                peerAvatar = senderAvatar,
+                fileCount = completeFiles.size,
+                status = TransferStatus.FAILED
+            )
         }
 
         savedFiles
+    }
+
+    fun recordSendCompletion(fileUris: List<Uri>) {
+        try {
+            val progress = sendSubscriber?.progress?.value
+            val receiverName = progress?.receiverName ?: "Unknown"
+            val receiverAvatar = progress?.receiverAvatar
+
+            val totalSize = fileUris.sumOf { uri ->
+                try {
+                    context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                        if (cursor.moveToFirst()) {
+                            val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
+                            if (sizeIndex >= 0) cursor.getLong(sizeIndex) else 0L
+                        } else 0L
+                    } ?: 0L
+                } catch (_: Exception) {
+                    0L
+                }
+            }
+
+            val firstFileName = getFileName(fileUris.firstOrNull()) ?: "Unknown"
+
+            historyRepository.addSentTransfer(
+                fileName = firstFileName,
+                fileSize = totalSize,
+                peerName = receiverName,
+                peerAvatar = receiverAvatar,
+                fileCount = fileUris.size,
+                status = TransferStatus.COMPLETED
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "Error recording send completion", e)
+        }
     }
 
     private suspend fun saveFileToDownloads(fileName: String, data: ByteArray): File? = withContext(Dispatchers.IO) {
@@ -380,7 +442,8 @@ class TransferManager @Inject constructor(
         currentReceiveBubble = null
     }
 
-    private fun getFileName(uri: Uri): String? {
+    private fun getFileName(uri: Uri?): String? {
+        if (uri == null) return null
         return try {
             context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
                 if (cursor.moveToFirst()) {

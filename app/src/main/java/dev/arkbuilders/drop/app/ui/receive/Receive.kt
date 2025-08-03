@@ -86,6 +86,7 @@ import compose.icons.TablerIcons
 import compose.icons.tablericons.Camera
 import dev.arkbuilders.drop.app.TransferManager
 import dev.arkbuilders.drop.app.data.ReceiveFileInfo
+import dev.arkbuilders.drop.app.ui.profile.AvatarUtils
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.concurrent.ExecutorService
@@ -106,14 +107,13 @@ fun Receive(
     var isReceiving by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var isTransferComplete by remember { mutableStateOf(false) }
-    var showSuccessRemainingMillis by remember { mutableStateOf(0) }
+    var showSuccessAnimation by remember { mutableStateOf(false) }
     var receivedFiles by remember { mutableStateOf<List<String>>(emptyList()) }
 
     val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
 
     // Observe receiving progress
-    val receiveProgress by (transferManager.receiveProgress?.collectAsState()
-        ?: remember { mutableStateOf(null) })
+    val receiveProgress by (transferManager.receiveProgress?.collectAsState() ?: remember { mutableStateOf(null) })
 
     val requestPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -126,41 +126,35 @@ fun Receive(
     // Monitor transfer completion with enhanced UX
     LaunchedEffect(receiveProgress) {
         receiveProgress?.let { progress ->
-            if (isReceiving) {
-                delay(3000)
-                if (transferManager.isReceiveFinished()) {
-                    // Save received files
-                    val savedFiles = transferManager.saveReceivedFiles()
-                    if (savedFiles.isNotEmpty()) {
-                        receivedFiles = savedFiles.map { it.name }
+            if (isReceiving && transferManager.isReceiveFinished()) {
+                // Save received files
+                val savedFiles = transferManager.saveReceivedFiles()
+                if (savedFiles.isNotEmpty()) {
+                    receivedFiles = savedFiles.map { it.name }
 
-                        // Transfer completed successfully - trigger celebration
-                        if (!isTransferComplete) {
-                            isTransferComplete = true
-                            showSuccessRemainingMillis = 3000
-                            isReceiving = false
-                        }
-                    } else if (progress.files.isNotEmpty()) {
-                        // Still receiving
-                    } else {
-                        errorMessage = "No files were received"
+                    // Transfer completed successfully - trigger celebration
+                    if (!isTransferComplete) {
+                        isTransferComplete = true
+                        showSuccessAnimation = true
                         isReceiving = false
+
+                        // Auto-hide success animation after 3 seconds
+                        delay(3000)
+                        showSuccessAnimation = false
                     }
+                } else if (progress.files.isNotEmpty()) {
+                    // Still receiving
+                } else {
+                    errorMessage = "No files were received"
+                    isReceiving = false
                 }
             }
         }
     }
 
-    LaunchedEffect(showSuccessRemainingMillis) {
-        if (showSuccessRemainingMillis > 0) {
-            delay(1000)
-            showSuccessRemainingMillis -= 1000
-        }
-    }
-
     // Success animation scale with bouncy spring physics
     val successScale by animateFloatAsState(
-        targetValue = if (showSuccessRemainingMillis > 0) 1f else 0f,
+        targetValue = if (showSuccessAnimation) 1f else 0f,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessLow
@@ -198,7 +192,7 @@ fun Receive(
 
         // Success Animation Overlay - Celebratory 3-second animation
         AnimatedVisibility(
-            visible = showSuccessRemainingMillis > 0,
+            visible = showSuccessAnimation,
             enter = scaleIn(
                 animationSpec = spring(
                     dampingRatio = Spring.DampingRatioMediumBouncy,
@@ -253,7 +247,7 @@ fun Receive(
 
         // Transfer Complete Actions Card
         AnimatedVisibility(
-            visible = isTransferComplete && showSuccessRemainingMillis <= 0,
+            visible = isTransferComplete && !showSuccessAnimation,
             enter = slideInVertically(
                 initialOffsetY = { it },
                 animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
@@ -495,14 +489,25 @@ fun Receive(
 
                                 if (progress.isConnected) {
                                     Spacer(modifier = Modifier.height(8.dp))
-                                    Text(
-                                        text = "From: ${progress.senderName}",
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        fontWeight = FontWeight.Medium,
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(
-                                            alpha = 0.8f
+
+                                    // Show sender info with avatar
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                    ) {
+                                        AvatarUtils.AvatarImageWithFallback(
+                                            base64String = progress.senderAvatar,
+                                            fallbackText = progress.senderName,
+                                            size = 32.dp
                                         )
-                                    )
+
+                                        Text(
+                                            text = "From: ${progress.senderName}",
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            fontWeight = FontWeight.Medium,
+                                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                                        )
+                                    }
 
                                     Spacer(modifier = Modifier.height(20.dp))
 
@@ -610,8 +615,7 @@ fun Receive(
                                             val ticket = scannedTicket!!
                                             val confirmation = scannedConfirmation!!
 
-                                            val bubble =
-                                                transferManager.receiveFiles(ticket, confirmation)
+                                            val bubble = transferManager.receiveFiles(ticket, confirmation)
                                             if (bubble != null) {
                                                 isReceiving = true
                                                 errorMessage = null

@@ -59,6 +59,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -82,6 +83,7 @@ import com.google.zxing.qrcode.QRCodeWriter
 import compose.icons.TablerIcons
 import compose.icons.tablericons.CloudUpload
 import dev.arkbuilders.drop.app.TransferManager
+import dev.arkbuilders.drop.app.ui.profile.AvatarUtils
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -101,8 +103,7 @@ fun Send(
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var isSending by remember { mutableStateOf(false) }
     var isTransferComplete by remember { mutableStateOf(false) }
-    var showSuccessRemainingMillis by remember { mutableStateOf(0) }
-    var sentFilesCount by remember { mutableStateOf(0) }
+    var showSuccessRemainingMillis by remember { mutableIntStateOf(0) }
 
     // Observe sending progress
     val sendProgress by (transferManager.sendProgress?.collectAsState()
@@ -117,24 +118,27 @@ fun Send(
     // Handle transfer completion and success animation
     LaunchedEffect(sendProgress) {
         sendProgress?.let { progress ->
+
             // Auto-close QR dialog when receiver connects and transfer starts
             if (isSending && progress.isConnected && showQRDialog) {
                 showQRDialog = false
             }
 
-            // Check if transfer is complete
-            println("DEBUG progress: $progress")
-            println("DEBUG isSendFinished: ${transferManager.isSendFinished()}")
-            println("DEBUG isSendConnected: ${transferManager.isSendConnected()}")
-            if (isSending && progress.isConnected && progress.remaining == 0uL) {
-                if (sentFilesCount < selectedFiles.size) {
-                    sentFilesCount++;
-                }
-                if (selectedFiles.size > 0 && sentFilesCount == selectedFiles.size) {
-                    if (!isTransferComplete) {
-                        isTransferComplete = true
-                        showSuccessRemainingMillis = 3000
-                    }
+            delay(3000)
+            val isFinished = transferManager.isSendFinished()
+            val isConnected = transferManager.isSendConnected()
+
+            if (!isConnected && !isFinished) {
+                // TODO: Handle cancelled transfers
+            }
+
+            if (isFinished) {
+                if (!isTransferComplete) {
+                    isTransferComplete = true
+                    showSuccessRemainingMillis = 3000
+
+                    // Record completion in history
+                    transferManager.recordSendCompletion(selectedFiles)
                 }
             }
         }
@@ -143,7 +147,7 @@ fun Send(
     LaunchedEffect(showSuccessRemainingMillis) {
         if (showSuccessRemainingMillis > 0) {
             delay(1000)
-            showSuccessRemainingMillis -= 1000;
+            showSuccessRemainingMillis -= 1000
         }
     }
 
@@ -194,7 +198,7 @@ fun Send(
                     stiffness = Spring.StiffnessLow
                 )
             ) + fadeIn(),
-            exit = scaleOut() + fadeOut(),
+            exit = scaleOut() + fadeOut()
         ) {
             Box(
                 modifier = Modifier.fillMaxWidth(),
@@ -296,7 +300,6 @@ fun Send(
                                 selectedFiles = emptyList()
                                 isTransferComplete = false
                                 isSending = false
-                                sentFilesCount = 0
                                 showQRDialog = false
                                 errorMessage = null
                                 transferManager.cancelSend()
@@ -363,7 +366,6 @@ fun Send(
                                 onClick = {
                                     transferManager.cancelSend()
                                     isSending = false
-                                    sentFilesCount = 0
                                     showQRDialog = false
                                     isTransferComplete = false
                                 }
@@ -378,11 +380,24 @@ fun Send(
 
                         if (progress.isConnected) {
                             Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = "Connected to: ${progress.receiverName}",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
-                            )
+
+                            // Show receiver info with avatar
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                AvatarUtils.AvatarImageWithFallback(
+                                    base64String = progress.receiverAvatar,
+                                    fallbackText = progress.receiverName,
+                                    size = 32.dp
+                                )
+
+                                Text(
+                                    text = "Connected to: ${progress.receiverName}",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                                )
+                            }
                         }
 
                         if (progress.fileName.isNotEmpty()) {
@@ -707,7 +722,6 @@ fun Send(
                     onClick = {
                         transferManager.cancelSend()
                         isSending = false
-                        sentFilesCount = 0
                         showQRDialog = false
                         isTransferComplete = false
                     },

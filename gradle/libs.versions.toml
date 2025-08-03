@@ -11,7 +11,6 @@ composeBom = "2024.12.01"
 navigationCompose = "2.8.4"
 jna = "5.15.0"
 googleZxingCore = "3.5.3"
-googleZxingJavase = "3.5.3"
 githubYuriyBudiyevCodeScanner = "2.3.2"
 cameraCore = "1.4.0"
 cameraCamera2 = "1.4.0"
@@ -38,7 +37,6 @@ androidx-material3 = { group = "androidx.compose.material3", name = "material3" 
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
 jna = { group = "net.java.dev.jna", name = "jna", version.ref = "jna" }
 google-zxing-core = { group = "com.google.zxing", name = "core", version.ref = "googleZxingCore" }
-google-zxing-javase = { group = "com.google.zxing", name = "javase", version.ref = "googleZxingJavase" }
 github-yuriy-budiyev-code-scanner = { group = "com.github.yuriy-budiyev", name = "code-scanner", version.ref = "githubYuriyBudiyevCodeScanner" }
 androidx-camera-core = { group = "androidx.camera", name = "camera-core", version.ref = "cameraCore" }
 androidx-camera-camera2 = { group = "androidx.camera", name = "camera-camera2", version.ref = "cameraCamera2" }

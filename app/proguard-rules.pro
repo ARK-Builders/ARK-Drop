@@ -53,8 +53,16 @@
 -keep class com.sun.jna.** { *; }
 -keep class * implements com.sun.jna.** { *; }
 
-# Keep ZXing classes
+# Keep ZXing classes but exclude desktop GUI components
 -keep class com.google.zxing.** { *; }
+-dontwarn com.google.zxing.client.j2se.**
+-dontwarn java.awt.**
+-dontwarn javax.swing.**
+-dontwarn javax.imageio.**
+-dontwarn org.w3c.dom.bootstrap.**
+
+# Exclude ZXing desktop GUI classes completely
+-dontnote com.google.zxing.client.j2se.**
 
 # Keep CameraX classes
 -keep class androidx.camera.** { *; }
@@ -74,3 +82,54 @@
     public static int d(...);
     public static int e(...);
 }
+
+# Fix for missing javax.imageio classes from ZXing
+-dontwarn javax.imageio.spi.ImageInputStreamSpi
+-dontwarn javax.imageio.spi.ImageOutputStreamSpi
+-dontwarn javax.imageio.spi.ImageReaderSpi
+-dontwarn javax.imageio.spi.ImageWriterSpi
+-dontwarn com.github.jaiimageio.impl.**
+
+# Fix for missing AWT classes from ZXing desktop components
+-dontwarn java.awt.Component
+-dontwarn java.awt.Container
+-dontwarn java.awt.Dimension
+-dontwarn java.awt.FlowLayout
+-dontwarn java.awt.Graphics2D
+-dontwarn java.awt.GraphicsEnvironment
+-dontwarn java.awt.HeadlessException
+-dontwarn java.awt.Image
+-dontwarn java.awt.LayoutManager
+-dontwarn java.awt.Window
+-dontwarn java.awt.geom.AffineTransform
+-dontwarn java.awt.image.BufferedImage
+-dontwarn java.awt.image.ImageObserver
+-dontwarn java.awt.image.RenderedImage
+-dontwarn java.awt.image.WritableRaster
+
+# Fix for missing Swing classes from ZXing desktop components
+-dontwarn javax.swing.Icon
+-dontwarn javax.swing.ImageIcon
+-dontwarn javax.swing.JFileChooser
+-dontwarn javax.swing.JFrame
+-dontwarn javax.swing.JLabel
+-dontwarn javax.swing.JPanel
+-dontwarn javax.swing.JTextArea
+-dontwarn javax.swing.SwingUtilities
+-dontwarn javax.swing.text.JTextComponent
+
+# Suppress warnings for ZXing desktop classes that we don't use on Android
+-dontwarn com.google.zxing.client.j2se.GUIRunner
+-dontwarn com.google.zxing.client.j2se.BufferedImageLuminanceSource
+-dontwarn com.google.zxing.client.j2se.DecodeWorker
+-dontwarn com.google.zxing.client.j2se.HtmlAssetTranslator
+
+# Keep only the ZXing classes we actually use for Android
+-keep class com.google.zxing.BarcodeFormat { *; }
+-keep class com.google.zxing.WriterException { *; }
+-keep class com.google.zxing.common.BitMatrix { *; }
+-keep class com.google.zxing.qrcode.QRCodeWriter { *; }
+
+# Additional R8 optimizations
+-allowaccessmodification
+-repackageclasses ''

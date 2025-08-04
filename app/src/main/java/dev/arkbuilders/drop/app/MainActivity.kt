@@ -21,10 +21,13 @@ import dagger.hilt.android.AndroidEntryPoint
 import dev.arkbuilders.drop.app.data.HistoryRepository
 import dev.arkbuilders.drop.app.navigation.DropDestination
 import dev.arkbuilders.drop.app.ui.history.History
+import dev.arkbuilders.drop.app.ui.home.EnhancedHome
 import dev.arkbuilders.drop.app.ui.home.Home
 import dev.arkbuilders.drop.app.ui.profile.EditProfile
+import dev.arkbuilders.drop.app.ui.profile.EditProfileEnhanced
 import dev.arkbuilders.drop.app.ui.receive.Receive
 import dev.arkbuilders.drop.app.ui.send.Send
+import dev.arkbuilders.drop.app.ui.send.SendEnhanced
 import dev.arkbuilders.drop.app.ui.theme.DropTheme
 import javax.inject.Inject
 
@@ -76,17 +79,26 @@ fun DropNavigation(
         modifier = modifier
     ) {
         composable(DropDestination.Home.route) {
-            Home(
+            EnhancedHome(
                 navController = navController,
                 profileManager = profileManager,
                 historyRepository = historyRepository
             )
+//            Home(
+//                navController = navController,
+//                profileManager = profileManager,
+//                historyRepository = historyRepository
+//            )
         }
         composable(DropDestination.Send.route) {
-            Send(
+            SendEnhanced(
                 navController = navController,
                 transferManager = transferManager
             )
+//            Send(
+//                navController = navController,
+//                transferManager = transferManager
+//            )
         }
         composable(
             DropDestination.Receive.route,
@@ -108,10 +120,14 @@ fun DropNavigation(
             )
         }
         composable(DropDestination.EditProfile.route) {
-            EditProfile(
+            EditProfileEnhanced(
                 navController = navController,
                 profileManager = profileManager
             )
+//            EditProfile(
+//                navController = navController,
+//                profileManager = profileManager
+//            )
         }
     }
 }

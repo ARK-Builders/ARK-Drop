@@ -14,7 +14,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -74,7 +74,7 @@ fun History(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = { navController.navigateUp() }) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
             }
             Text(
                 text = "Transfer History",
@@ -213,7 +213,7 @@ private fun HistoryItemCard(
             AvatarUtils.AvatarImageWithFallback(
                 base64String = item.peerAvatar,
                 fallbackText = item.peerName,
-                modifier = Modifier.size(48.dp)
+                size = 48.dp
             )
 
             Spacer(modifier = Modifier.width(16.dp))

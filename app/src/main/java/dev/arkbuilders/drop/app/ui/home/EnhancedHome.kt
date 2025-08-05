@@ -60,6 +60,9 @@ import dev.arkbuilders.drop.app.ui.components.EmptyState
 import dev.arkbuilders.drop.app.ui.profile.AvatarUtils
 import dev.arkbuilders.drop.app.ui.theme.DesignTokens
 import kotlinx.coroutines.delay
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun EnhancedHome(
@@ -116,7 +119,7 @@ fun EnhancedHome(
                 RecentTransfersSection(
                     historyItems = historyItems.take(5),
                     onViewAllClick = { navController.navigate(DropDestination.History.route) },
-                    showViewAll = historyItems.size > 5
+                    showViewAll = historyItems.isNotEmpty()
                 )
             } else {
                 EmptyTransfersSection()
@@ -343,7 +346,7 @@ private fun EnhancedTransferHistoryCard(item: TransferHistoryItem) {
                     )
                     Spacer(modifier = Modifier.height(DesignTokens.Spacing.xs))
                     Text(
-                        text = "${item.fileCount} file${if (item.fileCount != 1) "s" else ""} • ${item.timestamp}",
+                        text = "${item.fileCount} file${if (item.fileCount != 1) "s" else ""} • ${formatTimestamp(item.timestamp)}",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -357,5 +360,18 @@ private fun EnhancedTransferHistoryCard(item: TransferHistoryItem) {
                 )
             }
         }
+    }
+}
+
+private fun formatTimestamp(timestamp: Long): String {
+    val now = System.currentTimeMillis()
+    val diff = now - timestamp
+
+    return when {
+        diff < 60000 -> "Just now"
+        diff < 3600000 -> "${diff / 60000}m ago"
+        diff < 86400000 -> "${diff / 3600000}h ago"
+        diff < 604800000 -> "${diff / 86400000}d ago"
+        else -> SimpleDateFormat("MMM dd", Locale.getDefault()).format(Date(timestamp))
     }
 }

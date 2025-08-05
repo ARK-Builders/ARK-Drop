@@ -433,7 +433,7 @@ class TransferManager @Inject constructor(
 
     fun isSendConnected(): Boolean = currentSendBubble?.isConnected() ?: false
 
-    fun cleanup() {
+    private fun cleanup() {
         sendSubscriber?.reset()
         receiveSubscriber?.reset()
         sendSubscriber = null

@@ -286,10 +286,12 @@ fun SendEnhanced(
             if (sendState.networkConnected != isConnected) {
                 sendState = sendState.copy(networkConnected = isConnected)
 
-                if (!isConnected && sendState.phase in listOf(SendPhase.WaitingForReceiver, SendPhase.Transferring)) {
+                if (!isConnected && sendState.phase in listOf(
+                        SendPhase.WaitingForReceiver, SendPhase.Transferring
+                    )
+                ) {
                     sendState = sendState.copy(
-                        phase = SendPhase.Error,
-                        error = SendException.NetworkUnavailable
+                        phase = SendPhase.Error, error = SendException.NetworkUnavailable
                     )
                 }
             }
@@ -309,10 +311,10 @@ fun SendEnhanced(
                     bytesTransferred = progress.sent.toLong(),
                     totalBytes = (progress.sent + progress.remaining).toLong(),
                     transferSpeedBps = calculateTransferSpeed(progress.sent.toLong()),
-                    estimatedTimeRemaining = calculateETA(progress.sent.toLong(), progress.remaining.toLong())
+                    estimatedTimeRemaining = calculateETA(
+                        progress.sent.toLong(), progress.remaining.toLong()
+                    )
                 )
-
-                delay(750)
 
                 when {
                     progress.isConnected && sendState.phase == SendPhase.WaitingForReceiver -> {
@@ -325,40 +327,43 @@ fun SendEnhanced(
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     }
 
-                    transferManager.isSendFinished() -> {
-                        if (sendState.phase != SendPhase.Complete) {
-                            sendState = sendState.copy(
-                                phase = SendPhase.Complete,
-                                showSuccessAnimation = true,
-                                successCountdown = 3000,
-                                error = null
-                            )
-                            transferManager.recordSendCompletion(selectedFiles)
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        }
-                    }
-
-                    !progress.isConnected && sendState.phase == SendPhase.Transferring -> {
-                        sendState = sendState.copy(
-                            phase = SendPhase.Error,
-                            error = SendException.ReceiverDisconnected
-                        )
-                    }
-
                     else -> {
                         sendState = sendState.copy(transferProgress = progressState)
                     }
                 }
             } catch (e: Exception) {
-                sendState = sendState.copy(
-                    phase = SendPhase.Error,
-                    error = SendException.UnknownError("Progress monitoring failed: ${e.message}")
-                )
+                // temp workaround
+                val stacktrace = e.stackTraceToString()
+                println("DEBUG: $stacktrace")
+                if (stacktrace.startsWith("androidx.compose.runtime.LeftCompositionCancellationException:")) {
+                    // Pass
+                } else {
+                    sendState = sendState.copy(
+                        phase = SendPhase.Error,
+                        error = SendException.UnknownError("Progress monitoring failed: ${e.message}")
+                    )
+                }
+            }
+
+            delay(750)
+            when {
+                transferManager.isSendFinished() -> {
+                    if (sendState.phase != SendPhase.Complete) {
+                        sendState = sendState.copy(
+                            phase = SendPhase.Complete,
+                            showSuccessAnimation = true,
+                            successCountdown = 3000,
+                            error = null
+                        )
+                        transferManager.recordSendCompletion(selectedFiles)
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    }
+                }
             }
         }
     }
 
-    // Success animation countdown
+// Success animation countdown
     LaunchedEffect(sendState.successCountdown) {
         if (sendState.successCountdown > 0) {
             delay(1000)
@@ -366,15 +371,13 @@ fun SendEnhanced(
         }
     }
 
-    // Core functions
+// Core functions
     val startTransfer = {
         if (canStartTransfer) {
             scope.launch {
                 try {
                     sendState = sendState.copy(
-                        phase = SendPhase.GeneratingQR,
-                        isLoading = true,
-                        error = null
+                        phase = SendPhase.GeneratingQR, isLoading = true, error = null
                     )
 
                     val bubble = transferManager.sendFiles(selectedFiles)
@@ -400,9 +403,7 @@ fun SendEnhanced(
                     }
                 } catch (e: Exception) {
                     sendState = sendState.copy(
-                        phase = SendPhase.Error,
-                        isLoading = false,
-                        error = when {
+                        phase = SendPhase.Error, isLoading = false, error = when {
                             e.message?.contains("QR") == true -> SendException.QRGenerationFailed
                             e.message?.contains("network") == true -> SendException.NetworkUnavailable
                             else -> SendException.TransferInitializationFailed
@@ -439,6 +440,7 @@ fun SendEnhanced(
             "Retry" -> {
                 sendState = sendState.copy(error = null, phase = SendPhase.FileSelection)
             }
+
             "Continue" -> {
                 sendState = sendState.copy(error = null)
             }
@@ -456,8 +458,7 @@ fun SendEnhanced(
                 onBackClick = {
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     navController.navigateUp()
-                },
-                networkConnected = sendState.networkConnected
+                }, networkConnected = sendState.networkConnected
             )
         },
         containerColor = MaterialTheme.colorScheme.background
@@ -470,24 +471,19 @@ fun SendEnhanced(
         ) {
             // Main content with phase-based transitions
             AnimatedContent(
-                targetState = sendState.phase,
-                transitionSpec = {
+                targetState = sendState.phase, transitionSpec = {
                     slideInVertically(
-                        initialOffsetY = { it / 3 },
-                        animationSpec = spring(
+                        initialOffsetY = { it / 3 }, animationSpec = spring(
                             dampingRatio = Spring.DampingRatioMediumBouncy,
                             stiffness = Spring.StiffnessMedium
                         )
-                    ) + fadeIn(animationSpec = tween(300)) togetherWith
-                            slideOutVertically(
-                                targetOffsetY = { -it / 3 },
-                                animationSpec = spring(
-                                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                                    stiffness = Spring.StiffnessMedium
-                                )
-                            ) + fadeOut(animationSpec = tween(200))
-                },
-                label = "phaseTransition"
+                    ) + fadeIn(animationSpec = tween(300)) togetherWith slideOutVertically(
+                        targetOffsetY = { -it / 3 }, animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                            stiffness = Spring.StiffnessMedium
+                        )
+                    ) + fadeOut(animationSpec = tween(200))
+                }, label = "phaseTransition"
             ) { phase ->
                 when (phase) {
                     SendPhase.FileSelection -> {
@@ -516,15 +512,13 @@ fun SendEnhanced(
 
                     SendPhase.WaitingForReceiver -> {
                         WaitingForReceiverPhase(
-                            fileCount = selectedFiles.size,
-                            onCancel = cancelTransfer
+                            fileCount = selectedFiles.size, onCancel = cancelTransfer
                         )
                     }
 
                     SendPhase.Transferring -> {
                         TransferringPhase(
-                            progress = sendState.transferProgress,
-                            onCancel = cancelTransfer
+                            progress = sendState.transferProgress, onCancel = cancelTransfer
                         )
                     }
 
@@ -532,7 +526,10 @@ fun SendEnhanced(
                         TransferCompletePhase(
                             fileCount = selectedFiles.size,
                             onSendMore = resetForNewTransfer,
-                            onDone = { navController.navigateUp() },
+                            onDone = {
+                                transferManager.cancelSend()
+                                navController.navigateUp()
+                            },
                             showSuccessAnimation = sendState.showSuccessAnimation,
                             successCountdown = sendState.successCountdown
                         )
@@ -542,8 +539,10 @@ fun SendEnhanced(
                         ErrorPhase(
                             error = sendState.error,
                             onRetry = { handleError("Retry") },
-                            onCancel = { navController.navigateUp() }
-                        )
+                            onCancel = {
+                                transferManager.cancelSend()
+                                navController.navigateUp()
+                            })
                     }
                 }
             }
@@ -553,8 +552,7 @@ fun SendEnhanced(
                     SendErrorOverlay(
                         error = error,
                         onDismiss = { sendState = sendState.copy(error = null) },
-                        onAction = { action -> handleError(action) }
-                    )
+                        onAction = { action -> handleError(action) })
                 }
             }
 
@@ -574,8 +572,7 @@ fun SendEnhanced(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SendTopBar(
-    onBackClick: () -> Unit,
-    networkConnected: Boolean
+    onBackClick: () -> Unit, networkConnected: Boolean
 ) {
     TopAppBar(
         title = {
@@ -584,27 +581,21 @@ private fun SendTopBar(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 DropLogoIcon(
-                    size = 24.dp,
-                    tint = MaterialTheme.colorScheme.primary
+                    size = 24.dp, tint = MaterialTheme.colorScheme.primary
                 )
                 Text(
-                    text = "Send Files",
-                    style = MaterialTheme.typography.headlineSmall.copy(
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 20.sp
-                    ),
-                    color = MaterialTheme.colorScheme.onSurface
+                    text = "Send Files", style = MaterialTheme.typography.headlineSmall.copy(
+                        fontWeight = FontWeight.SemiBold, fontSize = 20.sp
+                    ), color = MaterialTheme.colorScheme.onSurface
                 )
             }
-        },
-        navigationIcon = {
+        }, navigationIcon = {
             IconButton(
                 onClick = onBackClick,
                 modifier = Modifier
                     .size(44.dp)
                     .clip(CircleShape)
-                    .semantics { contentDescription = "Go back" }
-            ) {
+                    .semantics { contentDescription = "Go back" }) {
                 Icon(
                     Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = null,
@@ -612,15 +603,12 @@ private fun SendTopBar(
                     modifier = Modifier.size(24.dp)
                 )
             }
-        },
-        actions = {
+        }, actions = {
             // Network status indicator
             NetworkStatusIndicator(
-                connected = networkConnected,
-                modifier = Modifier.padding(end = 8.dp)
+                connected = networkConnected, modifier = Modifier.padding(end = 8.dp)
             )
-        },
-        colors = TopAppBarDefaults.topAppBarColors(
+        }, colors = TopAppBarDefaults.topAppBarColors(
             containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
             titleContentColor = MaterialTheme.colorScheme.onSurface
         )
@@ -629,8 +617,7 @@ private fun SendTopBar(
 
 @Composable
 private fun NetworkStatusIndicator(
-    connected: Boolean,
-    modifier: Modifier = Modifier
+    connected: Boolean, modifier: Modifier = Modifier
 ) {
     val alpha by animateFloatAsState(
         targetValue = if (connected) 0.7f else 1f,
@@ -644,10 +631,8 @@ private fun NetworkStatusIndicator(
         modifier = modifier
             .size(20.dp)
             .alpha(alpha),
-        tint = if (connected)
-            MaterialTheme.colorScheme.primary
-        else
-            MaterialTheme.colorScheme.error
+        tint = if (connected) MaterialTheme.colorScheme.primary
+        else MaterialTheme.colorScheme.error
     )
 }
 
@@ -692,7 +677,11 @@ private fun FileSelectionPhase(
                             if (selectedFiles.isNotEmpty()) {
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = "${selectedFiles.size} file${if (selectedFiles.size != 1) "s" else ""} • ${formatBytes(totalFileSize)}",
+                                    text = "${selectedFiles.size} file${if (selectedFiles.size != 1) "s" else ""} • ${
+                                        formatBytes(
+                                            totalFileSize
+                                        )
+                                    }",
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -711,8 +700,7 @@ private fun FileSelectionPhase(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                "Add Files",
-                                style = MaterialTheme.typography.labelLarge.copy(
+                                "Add Files", style = MaterialTheme.typography.labelLarge.copy(
                                     fontWeight = FontWeight.Medium
                                 )
                             )
@@ -734,9 +722,7 @@ private fun FileSelectionPhase(
                         ) {
                             items(selectedFiles) { uri ->
                                 SendFileItem(
-                                    uri = uri,
-                                    onRemove = { onRemoveFile(uri) }
-                                )
+                                    uri = uri, onRemove = { onRemoveFile(uri) })
                             }
                         }
                     }
@@ -770,8 +756,7 @@ private fun FileSelectionPhase(
                         !networkConnected -> "No Network Connection"
                         selectedFiles.isEmpty() -> "Select Files First"
                         else -> "Send ${selectedFiles.size} File${if (selectedFiles.size != 1) "s" else ""}"
-                    },
-                    style = MaterialTheme.typography.titleMedium.copy(
+                    }, style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.SemiBold
                     )
                 )
@@ -790,8 +775,7 @@ private fun GeneratingQRPhase(
     onCancel: () -> Unit
 ) {
     Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
     ) {
         SendCard {
             Column(
@@ -805,9 +789,7 @@ private fun GeneratingQRPhase(
                 Spacer(modifier = Modifier.height(32.dp))
 
                 SendButton(
-                    onClick = onCancel,
-                    variant = ButtonVariant.Secondary,
-                    size = ButtonSize.Medium
+                    onClick = onCancel, variant = ButtonVariant.Secondary, size = ButtonSize.Medium
                 ) {
                     Text("Cancel")
                 }
@@ -818,8 +800,7 @@ private fun GeneratingQRPhase(
 
 @Composable
 private fun WaitingForReceiverPhase(
-    fileCount: Int,
-    onCancel: () -> Unit
+    fileCount: Int, onCancel: () -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -834,12 +815,9 @@ private fun WaitingForReceiverPhase(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "Ready to Send",
-                        style = MaterialTheme.typography.headlineSmall.copy(
+                        text = "Ready to Send", style = MaterialTheme.typography.headlineSmall.copy(
                             fontWeight = FontWeight.Bold
-                        ),
-                        color = MaterialTheme.colorScheme.onSurface,
-                        textAlign = TextAlign.Center
+                        ), color = MaterialTheme.colorScheme.onSurface, textAlign = TextAlign.Center
                     )
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -878,8 +856,7 @@ private fun WaitingForReceiverPhase(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    "Cancel Transfer",
-                    style = MaterialTheme.typography.titleMedium.copy(
+                    "Cancel Transfer", style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Medium
                     )
                 )
@@ -890,8 +867,7 @@ private fun WaitingForReceiverPhase(
 
 @Composable
 private fun TransferringPhase(
-    progress: TransferProgressState?,
-    onCancel: () -> Unit
+    progress: TransferProgressState?, onCancel: () -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -969,14 +945,15 @@ private fun TransferringPhase(
                             )
 
                             val progressValue = if (p.totalBytes > 0) {
-                                (p.bytesTransferred.toFloat() / p.totalBytes.toFloat()).coerceIn(0f, 1f)
+                                (p.bytesTransferred.toFloat() / p.totalBytes.toFloat()).coerceIn(
+                                    0f, 1f
+                                )
                             } else 0f
 
                             Spacer(modifier = Modifier.height(16.dp))
 
                             SendProgressBar(
-                                progress = progressValue,
-                                modifier = Modifier.fillMaxWidth()
+                                progress = progressValue, modifier = Modifier.fillMaxWidth()
                             )
 
                             Spacer(modifier = Modifier.height(12.dp))
@@ -995,7 +972,9 @@ private fun TransferringPhase(
                                     Text(
                                         text = "${formatBytes(p.transferSpeedBps)}/s",
                                         style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(
+                                            alpha = 0.7f
+                                        )
                                     )
                                 }
                             }
@@ -1031,18 +1010,15 @@ private fun TransferCompletePhase(
         if (showSuccessAnimation) {
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             successScale.animateTo(
-                targetValue = 1f,
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                    stiffness = Spring.StiffnessLow
+                targetValue = 1f, animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow
                 )
             )
         }
     }
 
     Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
     ) {
         Column(
             modifier = Modifier.padding(20.dp),
@@ -1051,14 +1027,12 @@ private fun TransferCompletePhase(
         ) {
             // Success animation
             AnimatedVisibility(
-                visible = showSuccessAnimation && successCountdown > 0,
-                enter = scaleIn(
+                visible = showSuccessAnimation && successCountdown > 0, enter = scaleIn(
                     animationSpec = spring(
                         dampingRatio = Spring.DampingRatioMediumBouncy,
                         stiffness = Spring.StiffnessLow
                     )
-                ) + fadeIn(),
-                exit = scaleOut() + fadeOut()
+                ) + fadeIn(), exit = scaleOut() + fadeOut()
             ) {
                 SendCard(
                     backgroundColor = MaterialTheme.colorScheme.primaryContainer,
@@ -1100,12 +1074,10 @@ private fun TransferCompletePhase(
 
             // Action buttons
             AnimatedVisibility(
-                visible = !showSuccessAnimation || successCountdown <= 0,
-                enter = slideInVertically(
+                visible = !showSuccessAnimation || successCountdown <= 0, enter = slideInVertically(
                     initialOffsetY = { it },
                     animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
-                ) + fadeIn(),
-                exit = slideOutVertically() + fadeOut()
+                ) + fadeIn(), exit = slideOutVertically() + fadeOut()
             ) {
                 SendCard(
                     backgroundColor = MaterialTheme.colorScheme.tertiaryContainer
@@ -1160,8 +1132,7 @@ private fun TransferCompletePhase(
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    "Send More",
-                                    fontWeight = FontWeight.Medium
+                                    "Send More", fontWeight = FontWeight.Medium
                                 )
                             }
 
@@ -1172,8 +1143,7 @@ private fun TransferCompletePhase(
                                 modifier = Modifier.weight(1f)
                             ) {
                                 Text(
-                                    "Done",
-                                    fontWeight = FontWeight.Medium
+                                    "Done", fontWeight = FontWeight.Medium
                                 )
                             }
                         }
@@ -1186,13 +1156,10 @@ private fun TransferCompletePhase(
 
 @Composable
 private fun ErrorPhase(
-    error: SendException?,
-    onRetry: () -> Unit,
-    onCancel: () -> Unit
+    error: SendException?, onRetry: () -> Unit, onCancel: () -> Unit
 ) {
     Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
     ) {
         Column(
             modifier = Modifier.padding(20.dp),
@@ -1201,8 +1168,7 @@ private fun ErrorPhase(
         ) {
             error?.let { err ->
                 SendErrorCard(
-                    error = err,
-                    onAction = if (err.isRecoverable) onRetry else null
+                    error = err, onAction = if (err.isRecoverable) onRetry else null
                 )
             }
 
@@ -1213,8 +1179,7 @@ private fun ErrorPhase(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    "Cancel",
-                    style = MaterialTheme.typography.titleMedium.copy(
+                    "Cancel", style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Medium
                     )
                 )
@@ -1230,14 +1195,10 @@ private fun SendCard(
     content: @Composable () -> Unit
 ) {
     Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
+        modifier = modifier, shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(
             containerColor = backgroundColor
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 1.dp,
-            pressedElevation = 2.dp
+        ), elevation = CardDefaults.cardElevation(
+            defaultElevation = 1.dp, pressedElevation = 2.dp
         )
     ) {
         content()
@@ -1276,9 +1237,7 @@ private fun SendButton(
                     disabledContentColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f)
                 ),
                 elevation = ButtonDefaults.buttonElevation(
-                    defaultElevation = 2.dp,
-                    pressedElevation = 4.dp,
-                    disabledElevation = 0.dp
+                    defaultElevation = 2.dp, pressedElevation = 4.dp, disabledElevation = 0.dp
                 )
             ) {
                 if (loading) {
@@ -1320,8 +1279,7 @@ private fun SendButton(
 
 @Composable
 private fun SendFileItem(
-    uri: Uri,
-    onRemove: () -> Unit
+    uri: Uri, onRemove: () -> Unit
 ) {
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
@@ -1385,8 +1343,7 @@ private fun SendFileItem(
                 onClick = {
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     onRemove()
-                },
-                modifier = Modifier
+                }, modifier = Modifier
                     .size(36.dp)
                     .clip(CircleShape)
             ) {
@@ -1403,9 +1360,7 @@ private fun SendFileItem(
 
 @Composable
 private fun SendEmptyState(
-    title: String,
-    description: String,
-    icon: ImageVector
+    title: String, description: String, icon: ImageVector
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -1413,8 +1368,7 @@ private fun SendEmptyState(
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
     ) {
         Column(
-            modifier = Modifier.padding(32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier = Modifier.padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Icon(
                 imageVector = icon,
@@ -1426,12 +1380,9 @@ private fun SendEmptyState(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium.copy(
+                text = title, style = MaterialTheme.typography.titleMedium.copy(
                     fontWeight = FontWeight.SemiBold
-                ),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center
+                ), color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -1455,11 +1406,9 @@ private fun SendInstructionsCard() {
             modifier = Modifier.padding(20.dp)
         ) {
             Text(
-                text = "How to Send Files",
-                style = MaterialTheme.typography.titleMedium.copy(
+                text = "How to Send Files", style = MaterialTheme.typography.titleMedium.copy(
                     fontWeight = FontWeight.Bold
-                ),
-                color = MaterialTheme.colorScheme.onSurface
+                ), color = MaterialTheme.colorScheme.onSurface
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -1524,12 +1473,9 @@ private fun SendLoadingIndicator(
         message?.let {
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = it,
-                style = MaterialTheme.typography.bodyMedium.copy(
+                text = it, style = MaterialTheme.typography.bodyMedium.copy(
                     fontWeight = FontWeight.Medium
-                ),
-                color = MaterialTheme.colorScheme.onSurface,
-                textAlign = TextAlign.Center
+                ), color = MaterialTheme.colorScheme.onSurface, textAlign = TextAlign.Center
             )
         }
     }
@@ -1537,8 +1483,7 @@ private fun SendLoadingIndicator(
 
 @Composable
 private fun SendProgressBar(
-    progress: Float,
-    modifier: Modifier = Modifier
+    progress: Float, modifier: Modifier = Modifier
 ) {
     LinearProgressIndicator(
         progress = { progress },
@@ -1552,15 +1497,13 @@ private fun SendProgressBar(
 
 @Composable
 private fun SendErrorCard(
-    error: SendException,
-    onAction: (() -> Unit)? = null
+    error: SendException, onAction: (() -> Unit)? = null
 ) {
     SendCard(
         backgroundColor = MaterialTheme.colorScheme.errorContainer
     ) {
         Column(
-            modifier = Modifier.padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier = Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Icon(
                 imageVector = error.icon,
@@ -1572,12 +1515,9 @@ private fun SendErrorCard(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = error.title,
-                style = MaterialTheme.typography.titleLarge.copy(
+                text = error.title, style = MaterialTheme.typography.titleLarge.copy(
                     fontWeight = FontWeight.Bold
-                ),
-                color = MaterialTheme.colorScheme.onErrorContainer,
-                textAlign = TextAlign.Center
+                ), color = MaterialTheme.colorScheme.onErrorContainer, textAlign = TextAlign.Center
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -1593,13 +1533,10 @@ private fun SendErrorCard(
                 Spacer(modifier = Modifier.height(20.dp))
 
                 SendButton(
-                    onClick = onAction,
-                    variant = ButtonVariant.Primary,
-                    size = ButtonSize.Medium
+                    onClick = onAction, variant = ButtonVariant.Primary, size = ButtonSize.Medium
                 ) {
                     Text(
-                        error.actionLabel,
-                        fontWeight = FontWeight.Medium
+                        error.actionLabel, fontWeight = FontWeight.Medium
                     )
                 }
             }
@@ -1609,28 +1546,22 @@ private fun SendErrorCard(
 
 @Composable
 private fun SendErrorOverlay(
-    error: SendException,
-    onDismiss: () -> Unit,
-    onAction: (String) -> Unit
+    error: SendException, onDismiss: () -> Unit, onAction: (String) -> Unit
 ) {
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black.copy(alpha = 0.5f))
             .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null
-            ) { onDismiss() },
-        contentAlignment = Alignment.Center
+                interactionSource = remember { MutableInteractionSource() }, indication = null
+            ) { onDismiss() }, contentAlignment = Alignment.Center
     ) {
         SendCard(
             modifier = Modifier
                 .padding(20.dp)
                 .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null
-                ) { /* Prevent dismiss on card click */ }
-        ) {
+                    interactionSource = remember { MutableInteractionSource() }, indication = null
+                ) { /* Prevent dismiss on card click */ }) {
             Column(
                 modifier = Modifier.padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
@@ -1645,12 +1576,9 @@ private fun SendErrorOverlay(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
-                    text = error.title,
-                    style = MaterialTheme.typography.titleLarge.copy(
+                    text = error.title, style = MaterialTheme.typography.titleLarge.copy(
                         fontWeight = FontWeight.Bold
-                    ),
-                    color = MaterialTheme.colorScheme.onSurface,
-                    textAlign = TextAlign.Center
+                    ), color = MaterialTheme.colorScheme.onSurface, textAlign = TextAlign.Center
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -1674,8 +1602,7 @@ private fun SendErrorOverlay(
                             size = ButtonSize.Medium
                         ) {
                             Text(
-                                error.actionLabel,
-                                fontWeight = FontWeight.Medium
+                                error.actionLabel, fontWeight = FontWeight.Medium
                             )
                         }
                     }
@@ -1686,8 +1613,7 @@ private fun SendErrorOverlay(
                         size = ButtonSize.Medium
                     ) {
                         Text(
-                            "Dismiss",
-                            fontWeight = FontWeight.Medium
+                            "Dismiss", fontWeight = FontWeight.Medium
                         )
                     }
                 }
@@ -1698,14 +1624,10 @@ private fun SendErrorOverlay(
 
 @Composable
 private fun SendQRDialog(
-    qrBitmap: Bitmap,
-    fileCount: Int,
-    onDismiss: () -> Unit,
-    onCancel: () -> Unit
+    qrBitmap: Bitmap, fileCount: Int, onDismiss: () -> Unit, onCancel: () -> Unit
 ) {
     AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
+        onDismissRequest = onDismiss, title = {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -1717,21 +1639,17 @@ private fun SendQRDialog(
                     tint = MaterialTheme.colorScheme.primary
                 )
                 Text(
-                    "QR Code for Transfer",
-                    style = MaterialTheme.typography.headlineSmall.copy(
+                    "QR Code for Transfer", style = MaterialTheme.typography.headlineSmall.copy(
                         fontWeight = FontWeight.Bold
                     )
                 )
             }
-        },
-        text = {
+        }, text = {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = Color.White,
-                    shadowElevation = 4.dp
+                    shape = RoundedCornerShape(16.dp), color = Color.White, shadowElevation = 4.dp
                 ) {
                     Image(
                         bitmap = qrBitmap.asImageBitmap(),
@@ -1778,31 +1696,27 @@ private fun SendQRDialog(
                     )
                 }
             }
-        },
-        confirmButton = {},
-        dismissButton = {
+        }, confirmButton = {}, dismissButton = {
             TextButton(
-                onClick = onCancel,
-                shape = RoundedCornerShape(8.dp)
+                onClick = onCancel, shape = RoundedCornerShape(8.dp)
             ) {
                 Text(
-                    "Cancel Transfer",
-                    fontWeight = FontWeight.Medium
+                    "Cancel Transfer", fontWeight = FontWeight.Medium
                 )
             }
-        },
-        shape = RoundedCornerShape(20.dp)
+        }, shape = RoundedCornerShape(20.dp)
     )
 }
 
 // Utility Functions with Error Handling
 
 data class FileValidationResult(
-    val validFiles: List<Uri>,
-    val skippedCount: Int
+    val validFiles: List<Uri>, val skippedCount: Int
 )
 
-private fun validateAndFilterFiles(context: android.content.Context, uris: List<Uri>): FileValidationResult {
+private fun validateAndFilterFiles(
+    context: android.content.Context, uris: List<Uri>
+): FileValidationResult {
     val validFiles = mutableListOf<Uri>()
     var skippedCount = 0
 
@@ -1894,7 +1808,8 @@ private fun getFileInfo(context: android.content.Context, uri: Uri): Pair<String
                 val nameIndex = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
                 val sizeIndex = cursor.getColumnIndex(android.provider.OpenableColumns.SIZE)
 
-                val name = if (nameIndex >= 0) cursor.getString(nameIndex) ?: "Unknown" else "Unknown"
+                val name =
+                    if (nameIndex >= 0) cursor.getString(nameIndex) ?: "Unknown" else "Unknown"
                 val size = if (sizeIndex >= 0) cursor.getLong(sizeIndex) else 0L
 
                 Pair(name, size)
@@ -1907,8 +1822,8 @@ private fun getFileInfo(context: android.content.Context, uri: Uri): Pair<String
 
 private fun checkNetworkConnection(context: android.content.Context): Boolean {
     return try {
-        val connectivityManager = context.getSystemService(android.content.Context.CONNECTIVITY_SERVICE)
-                as? android.net.ConnectivityManager
+        val connectivityManager =
+            context.getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as? android.net.ConnectivityManager
         val activeNetwork = connectivityManager?.activeNetworkInfo
         activeNetwork?.isConnected == true
     } catch (e: Exception) {

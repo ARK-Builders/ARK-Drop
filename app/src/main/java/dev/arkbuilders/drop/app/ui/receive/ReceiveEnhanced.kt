@@ -107,14 +107,28 @@ import java.util.concurrent.Executors
 
 // Enhanced error types for better UX
 sealed class ReceiveError(val message: String, val isRecoverable: Boolean = true) {
-    object CameraPermissionDenied : ReceiveError("Camera permission is required to scan QR codes", true)
-    object CameraInitializationFailed : ReceiveError("Unable to initialize camera. Please try again.", true)
-    object InvalidQRCode : ReceiveError("This QR code is not from Drop. Please scan a valid Drop QR code.", true)
-    object ConnectionFailed : ReceiveError("Unable to connect to sender. Please ensure you're on the same network.", true)
-    object TransferInterrupted : ReceiveError("File transfer was interrupted. Please try again.", true)
+    object CameraPermissionDenied :
+        ReceiveError("Camera permission is required to scan QR codes", true)
+
+    object CameraInitializationFailed :
+        ReceiveError("Unable to initialize camera. Please try again.", true)
+
+    object InvalidQRCode :
+        ReceiveError("This QR code is not from Drop. Please scan a valid Drop QR code.", true)
+
+    object ConnectionFailed :
+        ReceiveError("Unable to connect to sender. Please ensure you're on the same network.", true)
+
+    object TransferInterrupted :
+        ReceiveError("File transfer was interrupted. Please try again.", true)
+
     object NoFilesReceived : ReceiveError("No files were received from the sender.", true)
-    object StorageError : ReceiveError("Unable to save files. Please check your storage permissions.", true)
-    object NetworkError : ReceiveError("Network connection lost. Please check your connection and try again.", true)
+    object StorageError :
+        ReceiveError("Unable to save files. Please check your storage permissions.", true)
+
+    object NetworkError :
+        ReceiveError("Network connection lost. Please check your connection and try again.", true)
+
     object UnknownError : ReceiveError("An unexpected error occurred. Please try again.", true)
 }
 
@@ -140,7 +154,14 @@ fun ReceiveEnhanced(
     val scope = rememberCoroutineScope()
 
     // Enhanced state management
-    var workflowState by remember { mutableStateOf<ReceiveWorkflowState>(ReceiveWorkflowState.Initial) }
+    var workflowState by remember {
+        val receiveProgress = transferManager.receiveProgress?.value
+        if (receiveProgress != null && receiveProgress.isConnected) {
+            mutableStateOf<ReceiveWorkflowState>(ReceiveWorkflowState.Receiving)
+        } else {
+            mutableStateOf<ReceiveWorkflowState>(ReceiveWorkflowState.Initial)
+        }
+    }
     var scannedTicket by remember { mutableStateOf<String?>(null) }
     var scannedConfirmation by remember { mutableStateOf<UByte?>(null) }
     var receivedFiles by remember { mutableStateOf<List<String>>(emptyList()) }
@@ -149,7 +170,8 @@ fun ReceiveEnhanced(
     val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
 
     // Observe receiving progress with enhanced error handling
-    val receiveProgress by (transferManager.receiveProgress?.collectAsState() ?: remember { mutableStateOf(null) })
+    val receiveProgress by (transferManager.receiveProgress?.collectAsState()
+        ?: remember { mutableStateOf(null) })
 
     val requestPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -173,26 +195,40 @@ fun ReceiveEnhanced(
                                 receivedFiles = savedFiles.map { it.name }
                                 workflowState = ReceiveWorkflowState.Success
                                 showSuccessAnimation = true
-                                
-                                // Auto-hide success animation after 3 seconds
-                                delay(3000)
-                                showSuccessAnimation = false
                             } else {
-                                workflowState = ReceiveWorkflowState.Error(ReceiveError.NoFilesReceived)
+                                workflowState =
+                                    ReceiveWorkflowState.Error(ReceiveError.NoFilesReceived)
                             }
                         }
                     } catch (e: Exception) {
                         workflowState = ReceiveWorkflowState.Error(
                             when {
-                                e.message?.contains("storage", ignoreCase = true) == true -> ReceiveError.StorageError
-                                e.message?.contains("network", ignoreCase = true) == true -> ReceiveError.NetworkError
+                                e.message?.contains(
+                                    "storage",
+                                    ignoreCase = true
+                                ) == true -> ReceiveError.StorageError
+
+                                e.message?.contains(
+                                    "network",
+                                    ignoreCase = true
+                                ) == true -> ReceiveError.NetworkError
+
                                 else -> ReceiveError.UnknownError
                             }
                         )
                     }
                 }
-                else -> { /* No action needed for other states */ }
+
+                else -> { /* No action needed for other states */
+                }
             }
+        }
+    }
+
+    LaunchedEffect(showSuccessAnimation) {
+        if (showSuccessAnimation) {
+            delay(3000)
+            showSuccessAnimation = false
         }
     }
 
@@ -311,18 +347,18 @@ fun ReceiveEnhanced(
                                 tint = MaterialTheme.colorScheme.primary
                             )
                         }
-                        
+
                         Spacer(modifier = Modifier.height(DesignTokens.Spacing.lg))
-                        
+
                         Text(
                             text = "Files Received!",
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold,
                             textAlign = TextAlign.Center
                         )
-                        
+
                         Spacer(modifier = Modifier.height(DesignTokens.Spacing.sm))
-                        
+
                         Text(
                             text = "All files have been successfully saved to your Downloads folder.",
                             style = MaterialTheme.typography.bodyLarge,
@@ -342,11 +378,11 @@ fun ReceiveEnhanced(
                 slideInVertically(
                     initialOffsetY = { it / 3 },
                     animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
-                ) + fadeIn() togetherWith 
-                slideOutVertically(
-                    targetOffsetY = { -it / 3 },
-                    animationSpec = tween(DesignTokens.Animation.fast)
-                ) + fadeOut()
+                ) + fadeIn() togetherWith
+                        slideOutVertically(
+                            targetOffsetY = { -it / 3 },
+                            animationSpec = tween(DesignTokens.Animation.fast)
+                        ) + fadeOut()
             },
             label = "workflowStateTransition"
         ) { state ->
@@ -354,9 +390,9 @@ fun ReceiveEnhanced(
                 is ReceiveWorkflowState.Initial -> {
                     if (!cameraPermissionState.status.isGranted) {
                         PermissionRequestCard(
-                            onRequestPermission = { 
+                            onRequestPermission = {
                                 workflowState = ReceiveWorkflowState.RequestingPermission
-                                requestPermissionLauncher.launch(Manifest.permission.CAMERA) 
+                                requestPermissionLauncher.launch(Manifest.permission.CAMERA)
                             }
                         )
                     } else {
@@ -397,12 +433,17 @@ fun ReceiveEnhanced(
                                     if (bubble != null) {
                                         workflowState = ReceiveWorkflowState.Receiving
                                     } else {
-                                        workflowState = ReceiveWorkflowState.Error(ReceiveError.ConnectionFailed)
+                                        workflowState =
+                                            ReceiveWorkflowState.Error(ReceiveError.ConnectionFailed)
                                     }
                                 } catch (e: Exception) {
                                     workflowState = ReceiveWorkflowState.Error(
                                         when {
-                                            e.message?.contains("network", ignoreCase = true) == true -> ReceiveError.NetworkError
+                                            e.message?.contains(
+                                                "network",
+                                                ignoreCase = true
+                                            ) == true -> ReceiveError.NetworkError
+
                                             else -> ReceiveError.ConnectionFailed
                                         }
                                     )
@@ -446,7 +487,10 @@ fun ReceiveEnhanced(
                                 scannedConfirmation = null
                                 transferManager.cancelReceive()
                             },
-                            onDone = { navController.navigateUp() }
+                            onDone = {
+                                transferManager.cancelReceive()
+                                navController.navigateUp()
+                            }
                         )
                     }
                 }
@@ -459,7 +503,11 @@ fun ReceiveEnhanced(
                             scannedTicket = null
                             scannedConfirmation = null
                         },
-                        onDismiss = { navController.navigateUp() }
+                        onDismiss = {
+                            transferManager.cancelReceive()
+                            navController.navigateUp()
+
+                        }
                     )
                 }
             }
@@ -485,14 +533,14 @@ fun ReceiveEnhanced(
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(modifier = Modifier.height(DesignTokens.Spacing.md))
-                    
+
                     val steps = listOf(
                         "Ask the sender to start a transfer",
                         "Tap 'Start Scanning' and point camera at QR code",
                         "Accept the transfer",
                         "Files will be saved to your Downloads folder"
                     )
-                    
+
                     steps.forEachIndexed { index, step ->
                         Row(
                             verticalAlignment = Alignment.Top,
@@ -553,18 +601,18 @@ private fun PermissionRequestCard(
                     tint = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(DesignTokens.Spacing.lg))
-            
+
             Text(
                 text = "Camera Permission Required",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
             )
-            
+
             Spacer(modifier = Modifier.height(DesignTokens.Spacing.md))
-            
+
             Text(
                 text = "We need camera access to scan QR codes for receiving files. Your privacy is protected - we only use the camera for QR code scanning.",
                 style = MaterialTheme.typography.bodyLarge,
@@ -572,9 +620,9 @@ private fun PermissionRequestCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.3
             )
-            
+
             Spacer(modifier = Modifier.height(DesignTokens.Spacing.xl))
-            
+
             Button(
                 onClick = onRequestPermission,
                 modifier = Modifier
@@ -633,17 +681,17 @@ private fun ReadyToScanCard(
                     tint = MaterialTheme.colorScheme.onPrimary
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(DesignTokens.Spacing.lg))
-            
+
             Text(
                 text = "Ready to Receive",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold
             )
-            
+
             Spacer(modifier = Modifier.height(DesignTokens.Spacing.md))
-            
+
             Text(
                 text = "Scan the QR code from the sender's device to start receiving files securely.",
                 style = MaterialTheme.typography.bodyLarge,
@@ -651,9 +699,9 @@ private fun ReadyToScanCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.3
             )
-            
+
             Spacer(modifier = Modifier.height(DesignTokens.Spacing.xl))
-            
+
             Button(
                 onClick = onStartScanning,
                 modifier = Modifier
@@ -803,18 +851,18 @@ private fun QRCodeScannedCard(
                     tint = MaterialTheme.colorScheme.primary
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(DesignTokens.Spacing.lg))
-            
+
             Text(
                 text = "QR Code Scanned!",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
             )
-            
+
             Spacer(modifier = Modifier.height(DesignTokens.Spacing.md))
-            
+
             Text(
                 text = "Ready to receive files from sender. Tap Accept to start the transfer.",
                 style = MaterialTheme.typography.bodyLarge,
@@ -822,7 +870,7 @@ private fun QRCodeScannedCard(
                 textAlign = TextAlign.Center,
                 lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.2
             )
-            
+
             Spacer(modifier = Modifier.height(DesignTokens.Spacing.xl))
 
             Row(
@@ -1012,18 +1060,18 @@ private fun TransferCompleteCard(
                     tint = MaterialTheme.colorScheme.primary
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(DesignTokens.Spacing.lg))
-            
+
             Text(
                 text = "Files Received Successfully!",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
             )
-            
+
             Spacer(modifier = Modifier.height(DesignTokens.Spacing.sm))
-            
+
             Text(
                 text = "${receivedFiles.size} file${if (receivedFiles.size != 1) "s" else ""} saved to Downloads",
                 style = MaterialTheme.typography.bodyLarge,
@@ -1146,18 +1194,18 @@ private fun ErrorCard(
                     tint = MaterialTheme.colorScheme.error
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(DesignTokens.Spacing.lg))
-            
+
             Text(
                 text = if (error.isRecoverable) "Something went wrong" else "Error occurred",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
             )
-            
+
             Spacer(modifier = Modifier.height(DesignTokens.Spacing.sm))
-            
+
             Text(
                 text = error.message,
                 style = MaterialTheme.typography.bodyLarge,
@@ -1165,7 +1213,7 @@ private fun ErrorCard(
                 color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f),
                 lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.2
             )
-            
+
             Spacer(modifier = Modifier.height(DesignTokens.Spacing.xl))
 
             Row(
@@ -1384,7 +1432,11 @@ private fun processImageProxy(
             .addOnFailureListener { exception ->
                 onError(
                     when {
-                        exception.message?.contains("camera", ignoreCase = true) == true -> ReceiveError.CameraInitializationFailed
+                        exception.message?.contains(
+                            "camera",
+                            ignoreCase = true
+                        ) == true -> ReceiveError.CameraInitializationFailed
+
                         else -> ReceiveError.UnknownError
                     }
                 )

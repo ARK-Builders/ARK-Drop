@@ -816,6 +816,7 @@ private fun GeneratingQRPhase(
         ) {
             DropCardContent(size = DropCardSize.Large) {
                 Column(
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     LoadingIndicator(
@@ -1353,6 +1354,7 @@ private fun QRCodeDialog(
                         modifier = Modifier
                             .size(220.dp)
                             .padding(DesignTokens.Spacing.lg)
+                            .align(Alignment.CenterHorizontally)
                     )
                 }
 

@@ -26,6 +26,7 @@ import dev.arkbuilders.drop.app.ui.home.Home
 import dev.arkbuilders.drop.app.ui.profile.EditProfile
 import dev.arkbuilders.drop.app.ui.profile.EditProfileEnhanced
 import dev.arkbuilders.drop.app.ui.receive.Receive
+import dev.arkbuilders.drop.app.ui.receive.ReceiveEnhanced
 import dev.arkbuilders.drop.app.ui.send.Send
 import dev.arkbuilders.drop.app.ui.send.SendEnhanced
 import dev.arkbuilders.drop.app.ui.theme.DropTheme
@@ -108,10 +109,14 @@ fun DropNavigation(
                 }
             )
         ) {
-            Receive(
+            ReceiveEnhanced(
                 navController = navController,
                 transferManager = transferManager
             )
+//            Receive(
+//                navController = navController,
+//                transferManager = transferManager
+//            )
         }
         composable(DropDestination.History.route) {
             History(

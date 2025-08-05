@@ -312,6 +312,8 @@ fun SendEnhanced(
                     estimatedTimeRemaining = calculateETA(progress.sent.toLong(), progress.remaining.toLong())
                 )
 
+                delay(750)
+
                 when {
                     progress.isConnected && sendState.phase == SendPhase.WaitingForReceiver -> {
                         sendState = sendState.copy(

@@ -105,7 +105,6 @@ import kotlinx.coroutines.launch
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
-// Enhanced error types for better UX
 sealed class ReceiveError(val message: String, val isRecoverable: Boolean = true) {
     object CameraPermissionDenied :
         ReceiveError("Camera permission is required to scan QR codes", true)
@@ -132,7 +131,6 @@ sealed class ReceiveError(val message: String, val isRecoverable: Boolean = true
     object UnknownError : ReceiveError("An unexpected error occurred. Please try again.", true)
 }
 
-// Enhanced workflow states
 sealed class ReceiveWorkflowState {
     object Initial : ReceiveWorkflowState()
     object RequestingPermission : ReceiveWorkflowState()
@@ -153,7 +151,6 @@ fun ReceiveEnhanced(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    // Enhanced state management
     var workflowState by remember {
         val receiveProgress = transferManager.receiveProgress?.value
         if (receiveProgress != null && receiveProgress.isConnected) {
@@ -169,7 +166,6 @@ fun ReceiveEnhanced(
 
     val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
 
-    // Observe receiving progress with enhanced error handling
     val receiveProgress by (transferManager.receiveProgress?.collectAsState()
         ?: remember { mutableStateOf(null) })
 
@@ -183,22 +179,22 @@ fun ReceiveEnhanced(
         }
     }
 
-    // Enhanced transfer monitoring with better error handling
+
+
     LaunchedEffect(receiveProgress) {
         receiveProgress?.let { progress ->
-            when (workflowState) {
-                is ReceiveWorkflowState.Receiving -> {
+            delay(3000)
+            when {
+                transferManager.isReceiveFinished() -> {
                     try {
-                        if (transferManager.isReceiveFinished()) {
-                            val savedFiles = transferManager.saveReceivedFiles()
-                            if (savedFiles.isNotEmpty()) {
-                                receivedFiles = savedFiles.map { it.name }
-                                workflowState = ReceiveWorkflowState.Success
-                                showSuccessAnimation = true
-                            } else {
-                                workflowState =
-                                    ReceiveWorkflowState.Error(ReceiveError.NoFilesReceived)
-                            }
+                        val savedFiles = transferManager.saveReceivedFiles()
+                        if (savedFiles.isNotEmpty()) {
+                            receivedFiles = savedFiles.map { it.name }
+                            workflowState = ReceiveWorkflowState.Success
+                            showSuccessAnimation = true
+                        } else {
+                            workflowState =
+                                ReceiveWorkflowState.Error(ReceiveError.NoFilesReceived)
                         }
                     } catch (e: Exception) {
                         workflowState = ReceiveWorkflowState.Error(
@@ -218,9 +214,6 @@ fun ReceiveEnhanced(
                         )
                     }
                 }
-
-                else -> { /* No action needed for other states */
-                }
             }
         }
     }
@@ -232,7 +225,6 @@ fun ReceiveEnhanced(
         }
     }
 
-    // Success animation with enhanced spring physics
     val successScale by animateFloatAsState(
         targetValue = if (showSuccessAnimation) 1f else 0f,
         animationSpec = spring(
@@ -242,13 +234,11 @@ fun ReceiveEnhanced(
         label = "successScale"
     )
 
-    // Enhanced UI with better visual hierarchy
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(DesignTokens.Spacing.lg)
     ) {
-        // Enhanced top bar with better spacing
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
@@ -292,7 +282,6 @@ fun ReceiveEnhanced(
 
         Spacer(modifier = Modifier.height(DesignTokens.Spacing.xl))
 
-        // Enhanced success animation with better visual feedback
         AnimatedVisibility(
             visible = showSuccessAnimation,
             enter = scaleIn(
@@ -324,7 +313,6 @@ fun ReceiveEnhanced(
                         modifier = Modifier.padding(DesignTokens.Spacing.xxl),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        // Enhanced success icon with gradient background
                         Box(
                             modifier = Modifier
                                 .size(80.dp)
@@ -371,7 +359,6 @@ fun ReceiveEnhanced(
             }
         }
 
-        // Enhanced main content with smooth state transitions
         AnimatedContent(
             targetState = workflowState,
             transitionSpec = {
@@ -513,7 +500,6 @@ fun ReceiveEnhanced(
             }
         }
 
-        // Enhanced instructions with better visual hierarchy
         if (workflowState !is ReceiveWorkflowState.Success && workflowState !is ReceiveWorkflowState.Error) {
             Spacer(modifier = Modifier.weight(1f))
 
@@ -565,8 +551,6 @@ fun ReceiveEnhanced(
         }
     }
 }
-
-// Enhanced component cards with better visual design
 
 @Composable
 private fun PermissionRequestCard(
@@ -961,7 +945,6 @@ private fun ReceivingCard(
             if (progress.isConnected) {
                 Spacer(modifier = Modifier.height(DesignTokens.Spacing.md))
 
-                // Enhanced sender info with better visual hierarchy
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.md)
@@ -1079,7 +1062,6 @@ private fun TransferCompleteCard(
                 color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.8f)
             )
 
-            // Enhanced received files list
             if (receivedFiles.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(DesignTokens.Spacing.lg))
                 Card(
@@ -1124,7 +1106,6 @@ private fun TransferCompleteCard(
 
             Spacer(modifier = Modifier.height(DesignTokens.Spacing.xl))
 
-            // Enhanced action buttons
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.md)

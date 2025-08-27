@@ -7,21 +7,20 @@ import dev.arkbuilders.drop.SenderFileData
 import java.io.InputStream
 
 class SenderFileDataImpl(
-    private val context: Context,
-    private val uri: Uri
+    private val context: Context, private val uri: Uri
 ) : SenderFileData {
-    
+
     companion object {
         private const val TAG = "SenderFileDataImpl"
     }
-    
+
     private var inputStream: InputStream? = null
     private var totalLength: ULong = 0UL
     private var isInitialized = false
-    
+
     private fun initialize() {
         if (isInitialized) return
-        
+
         try {
             // Get file size
             context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
@@ -32,22 +31,22 @@ class SenderFileDataImpl(
                     }
                 }
             }
-            
+
             // Open input stream
             inputStream = context.contentResolver.openInputStream(uri)
             isInitialized = true
-            
+
             Log.d(TAG, "Initialized SenderFileData for URI: $uri, size: $totalLength")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to initialize SenderFileData", e)
         }
     }
-    
+
     override fun len(): ULong {
         initialize()
         return totalLength
     }
-    
+
     override fun read(): UByte? {
         initialize()
         return try {
@@ -63,12 +62,26 @@ class SenderFileDataImpl(
             null
         }
     }
-    
-    fun close() {
-        try {
-            inputStream?.close()
+
+    override fun readChunk(size: Int): ByteArray {
+        initialize()
+        return try {
+            var size = size
+            inputStream?.available()?.let {
+                if (it == 0) {
+                    inputStream?.close()
+                    return ByteArray(0)
+                }
+                if (it < size) {
+                    size = it
+                }
+            }
+            val bytes = ByteArray(size)
+            inputStream?.read(bytes) ?: 0
+            bytes
         } catch (e: Exception) {
-            Log.e(TAG, "Error closing input stream", e)
+            Log.e(TAG, "Error reading chunk of size $size", e)
+            ByteArray(0)
         }
     }
 }

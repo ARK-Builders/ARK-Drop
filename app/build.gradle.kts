@@ -151,7 +151,7 @@ dependencies {
         }
     }
     //noinspection Aligned16KB
-    implementation("dev.arkbuilders:drop:16406646503") {
+    implementation("dev.arkbuilders:drop:17246793283") {
         artifact {
             extension = "aar"
             type = "aar"

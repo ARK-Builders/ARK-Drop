@@ -30,7 +30,11 @@ class SendFilesSubscriberImpl : SendFilesSubscriber {
     val progress: StateFlow<SendingProgress> = _progress.asStateFlow()
     
     override fun getId(): String = id
-    
+
+    override fun log(message: String) {
+        Log.d(TAG, message)
+    }
+
     override fun notifySending(event: SendFilesSendingEvent) {
         Log.d(TAG, "Sending progress: ${event.name} - sent: ${event.sent}, remaining: ${event.remaining}")
         

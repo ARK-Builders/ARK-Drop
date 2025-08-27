@@ -74,7 +74,10 @@ class TransferManager @Inject constructor(
 
             val request = SendFilesRequest(
                 profile = senderProfile,
-                files = senderFiles
+                files = senderFiles,
+                config = SenderConfig(
+                    bufferSize = 1024U,
+                ),
             )
 
             // Create and subscribe to bubble
@@ -86,7 +89,7 @@ class TransferManager @Inject constructor(
                 bubble.subscribe(subscriber)
             }
 
-            Log.d(TAG, "Send bubble created with ticket: ${bubble.getTicket()}")
+            Log.d(TAG, "Send bubble created with ticket and confirmation: ${bubble.getTicket()} ${bubble.getConfirmation()}")
             bubble
 
         } catch (e: Exception) {
@@ -95,42 +98,43 @@ class TransferManager @Inject constructor(
         }
     }
 
-    suspend fun receiveFiles(ticket: String, confirmation: UByte): ReceiveFilesBubble? = withContext(Dispatchers.IO) {
-        try {
-            Log.d(TAG, "Starting file receive with ticket: $ticket")
+    suspend fun receiveFiles(ticket: String, confirmation: UByte): ReceiveFilesBubble? =
+        withContext(Dispatchers.IO) {
+            try {
+                Log.d(TAG, "Starting file receive with ticket: $ticket")
 
-            val profile = profileManager.getCurrentProfile()
-            val receiverProfile = ReceiverProfile(
-                name = profile.name.ifEmpty { "Anonymous" },
-                avatarB64 = profile.avatarB64.takeIf { it.isNotEmpty() }
-            )
+                val profile = profileManager.getCurrentProfile()
+                val receiverProfile = ReceiverProfile(
+                    name = profile.name.ifEmpty { "Anonymous" },
+                    avatarB64 = profile.avatarB64.takeIf { it.isNotEmpty() }
+                )
 
-            val request = ReceiveFilesRequest(
-                ticket = ticket,
-                confirmation = confirmation,
-                profile = receiverProfile
-            )
+                val request = ReceiveFilesRequest(
+                    ticket = ticket,
+                    confirmation = confirmation,
+                    profile = receiverProfile,
+                )
 
-            // Create and subscribe to bubble
-            val bubble = receiveFiles(request)
-            currentReceiveBubble = bubble
+                // Create and subscribe to bubble
+                val bubble = receiveFiles(request)
+                currentReceiveBubble = bubble
 
-            // Set up subscriber
-            receiveSubscriber = ReceiveFilesSubscriberImpl().also { subscriber ->
-                bubble.subscribe(subscriber)
+                // Set up subscriber
+                receiveSubscriber = ReceiveFilesSubscriberImpl().also { subscriber ->
+                    bubble.subscribe(subscriber)
+                }
+
+                // Start receiving
+                bubble.start()
+
+                Log.d(TAG, "Receive bubble created and started")
+                bubble
+
+            } catch (e: Exception) {
+                Log.e(TAG, "Error starting file receive", e)
+                null
             }
-
-            // Start receiving
-            bubble.start()
-
-            Log.d(TAG, "Receive bubble created and started")
-            bubble
-
-        } catch (e: Exception) {
-            Log.e(TAG, "Error starting file receive", e)
-            null
         }
-    }
 
     suspend fun saveReceivedFiles(): List<File> = withContext(Dispatchers.IO) {
         val subscriber = receiveSubscriber ?: return@withContext emptyList()
@@ -222,15 +226,16 @@ class TransferManager @Inject constructor(
         }
     }
 
-    private suspend fun saveFileToDownloads(fileName: String, data: ByteArray): File? = withContext(Dispatchers.IO) {
-        try {
-            // Use MediaStore for Android 10+ (Scoped Storage)
-            return@withContext saveFileUsingMediaStore(fileName, data)
-        } catch (e: Exception) {
-            Log.e(TAG, "Error saving file: $fileName", e)
-            return@withContext null
+    private suspend fun saveFileToDownloads(fileName: String, data: ByteArray): File? =
+        withContext(Dispatchers.IO) {
+            try {
+                // Use MediaStore for Android 10+ (Scoped Storage)
+                return@withContext saveFileUsingMediaStore(fileName, data)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error saving file: $fileName", e)
+                return@withContext null
+            }
         }
-    }
 
     private fun saveFileUsingMediaStore(fileName: String, data: ByteArray): File? {
         try {
@@ -272,7 +277,8 @@ class TransferManager @Inject constructor(
 
     private fun saveFileUsingLegacyStorage(fileName: String, data: ByteArray): File? {
         try {
-            val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+            val downloadsDir =
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
             if (!downloadsDir.exists()) {
                 downloadsDir.mkdirs()
             }
@@ -295,11 +301,15 @@ class TransferManager @Inject constructor(
     }
 
     private fun generateUniqueFileName(originalFileName: String): String {
-        val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+        val downloadsDir =
+            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
         return generateUniqueFileNameForDirectory(downloadsDir, originalFileName)
     }
 
-    private fun generateUniqueFileNameForDirectory(directory: File, originalFileName: String): String {
+    private fun generateUniqueFileNameForDirectory(
+        directory: File,
+        originalFileName: String
+    ): String {
         val nameWithoutExt = originalFileName.substringBeforeLast(".", originalFileName)
         val extension = originalFileName.substringAfterLast(".", "")
 
@@ -338,7 +348,8 @@ class TransferManager @Inject constructor(
         return try {
             val resolver = context.contentResolver
             val projection = arrayOf(MediaStore.MediaColumns.DISPLAY_NAME)
-            val selection = "${MediaStore.MediaColumns.DISPLAY_NAME} = ? AND ${MediaStore.MediaColumns.RELATIVE_PATH} = ?"
+            val selection =
+                "${MediaStore.MediaColumns.DISPLAY_NAME} = ? AND ${MediaStore.MediaColumns.RELATIVE_PATH} = ?"
             val selectionArgs = arrayOf(fileName, "${Environment.DIRECTORY_DOWNLOADS}/")
 
             resolver.query(
@@ -359,7 +370,8 @@ class TransferManager @Inject constructor(
     private fun getFileFromMediaStoreUri(uri: Uri, fileName: String): File {
         // For MediaStore files, we create a reference file object
         // The actual file is managed by the system
-        val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+        val downloadsDir =
+            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
         return File(downloadsDir, fileName)
     }
 

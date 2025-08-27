@@ -126,7 +126,6 @@ private enum class SendPhase {
     Error
 }
 
-// Enhanced UI State with comprehensive error handling
 private data class SendState(
     val phase: SendPhase = SendPhase.FileSelection,
     val isLoading: Boolean = false,
@@ -301,6 +300,7 @@ fun SendEnhanced(
 
     // Transfer progress monitoring with error handling
     LaunchedEffect(sendProgress) {
+        delay(3000)
         sendProgress?.let { progress ->
             try {
                 val progressState = TransferProgressState(
@@ -315,7 +315,6 @@ fun SendEnhanced(
                         progress.sent.toLong(), progress.remaining.toLong()
                     )
                 )
-
                 when {
                     progress.isConnected && sendState.phase == SendPhase.WaitingForReceiver -> {
                         sendState = sendState.copy(
@@ -344,8 +343,6 @@ fun SendEnhanced(
                     )
                 }
             }
-
-            delay(750)
             when {
                 transferManager.isSendFinished() -> {
                     if (sendState.phase != SendPhase.Complete) {

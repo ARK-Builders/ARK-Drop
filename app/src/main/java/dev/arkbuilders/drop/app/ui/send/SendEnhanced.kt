@@ -1,5 +1,8 @@
 package dev.arkbuilders.drop.app.ui.send
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -108,6 +111,7 @@ import com.google.zxing.qrcode.QRCodeWriter
 import compose.icons.TablerIcons
 import compose.icons.tablericons.AlertCircle
 import compose.icons.tablericons.CloudUpload
+import compose.icons.tablericons.Copy
 import compose.icons.tablericons.FileText
 import compose.icons.tablericons.Plus
 import compose.icons.tablericons.Qrcode
@@ -135,7 +139,8 @@ private data class SendState(
     val showQRDialog: Boolean = false,
     val showSuccessAnimation: Boolean = false,
     val successCountdown: Int = 0,
-    val networkConnected: Boolean = true
+    val networkConnected: Boolean = true,
+    val copyString: String? = null
 )
 
 // Comprehensive exception handling
@@ -300,7 +305,6 @@ fun SendEnhanced(
 
     // Transfer progress monitoring with error handling
     LaunchedEffect(sendProgress) {
-        delay(3000)
         sendProgress?.let { progress ->
             try {
                 val progressState = TransferProgressState(
@@ -343,6 +347,7 @@ fun SendEnhanced(
                     )
                 }
             }
+            delay(3000)
             when {
                 transferManager.isSendFinished() -> {
                     if (sendState.phase != SendPhase.Complete) {
@@ -386,12 +391,15 @@ fun SendEnhanced(
                             throw Exception("Invalid transfer ticket")
                         }
 
+                        val copyString = "${bubble.getTicket()} ${bubble.getConfirmation()}"
+
                         val qrBitmap = generateQRCodeSafely(ticket, confirmation)
                         sendState = sendState.copy(
                             phase = SendPhase.WaitingForReceiver,
                             isLoading = false,
                             qrBitmap = qrBitmap,
-                            showQRDialog = true
+                            showQRDialog = true,
+                            copyString = copyString
                         )
 
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -558,6 +566,7 @@ fun SendEnhanced(
                 SendQRDialog(
                     qrBitmap = sendState.qrBitmap!!,
                     fileCount = selectedFiles.size,
+                    copyString = sendState.copyString,
                     onDismiss = { sendState = sendState.copy(showQRDialog = false) },
                     onCancel = cancelTransfer
                 )
@@ -1619,12 +1628,27 @@ private fun SendErrorOverlay(
     }
 }
 
+private fun copyToClipboard(context: Context, text: String, label: String = "Transfer Info") {
+    val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+    val clipData = ClipData.newPlainText(label, text)
+    clipboardManager.setPrimaryClip(clipData)
+}
+
 @Composable
 private fun SendQRDialog(
-    qrBitmap: Bitmap, fileCount: Int, onDismiss: () -> Unit, onCancel: () -> Unit
+    qrBitmap: Bitmap,
+    fileCount: Int,
+    copyString: String?,
+    onDismiss: () -> Unit,
+    onCancel: () -> Unit
 ) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var showCopySuccess by remember { mutableStateOf(false) }
+
     AlertDialog(
-        onDismissRequest = onDismiss, title = {
+        onDismissRequest = onDismiss,
+        title = {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -1636,17 +1660,21 @@ private fun SendQRDialog(
                     tint = MaterialTheme.colorScheme.primary
                 )
                 Text(
-                    "QR Code for Transfer", style = MaterialTheme.typography.headlineSmall.copy(
+                    "QR Code for Transfer",
+                    style = MaterialTheme.typography.headlineSmall.copy(
                         fontWeight = FontWeight.Bold
                     )
                 )
             }
-        }, text = {
+        },
+        text = {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Surface(
-                    shape = RoundedCornerShape(16.dp), color = Color.White, shadowElevation = 4.dp
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color.White,
+                    shadowElevation = 4.dp
                 ) {
                     Image(
                         bitmap = qrBitmap.asImageBitmap(),
@@ -1677,6 +1705,45 @@ private fun SendQRDialog(
                     textAlign = TextAlign.Center
                 )
 
+                // Copy functionality
+                if (!copyString.isNullOrEmpty()) {
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    SendButton(
+                        onClick = {
+                            copyToClipboard(context, copyString, "Transfer Code")
+                            showCopySuccess = true
+                            scope.launch {
+                                delay(2000)
+                                showCopySuccess = false
+                            }
+                        },
+                        variant = ButtonVariant.Secondary,
+                        size = ButtonSize.Medium
+                    ) {
+                        Icon(
+                            TablerIcons.Copy,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            if (showCopySuccess) "Copied!" else "Copy Code",
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+
+                    if (showCopySuccess) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Transfer code copied to clipboard",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Row(
@@ -1693,18 +1760,22 @@ private fun SendQRDialog(
                     )
                 }
             }
-        }, confirmButton = {}, dismissButton = {
+        },
+        confirmButton = {},
+        dismissButton = {
             TextButton(
-                onClick = onCancel, shape = RoundedCornerShape(8.dp)
+                onClick = onCancel,
+                shape = RoundedCornerShape(8.dp)
             ) {
                 Text(
-                    "Cancel Transfer", fontWeight = FontWeight.Medium
+                    "Cancel Transfer",
+                    fontWeight = FontWeight.Medium
                 )
             }
-        }, shape = RoundedCornerShape(20.dp)
+        },
+        shape = RoundedCornerShape(20.dp)
     )
 }
-
 // Utility Functions with Error Handling
 
 data class FileValidationResult(

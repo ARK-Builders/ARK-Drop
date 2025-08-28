@@ -38,7 +38,16 @@ jobs:
 
       - name: Decode keystore
         run: |
-          echo -n "${{ secrets.KEYSTORE_BASE64 }}" | tr -d '\r\n' | base64 -d > keystore.jks
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > keystore.jks
+          
+      - name: Verify keystore
+        run: |
+          if [ ! -f keystore.jks ]; then
+            echo "Error: keystore.jks not found"
+            exit 1
+          fi
+          file keystore.jks
+          ls -la keystore.jks
 
       - name: Run tests
         run: ./gradlew test

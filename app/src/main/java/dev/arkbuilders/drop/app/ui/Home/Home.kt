@@ -1,4 +1,4 @@
-package dev.arkbuilders.drop.app.ui.home
+package dev.arkbuilders.drop.app.ui.Home
 
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -65,7 +65,7 @@ import java.util.Date
 import java.util.Locale
 
 @Composable
-fun EnhancedHome(
+fun Home(
     navController: NavController,
     profileManager: ProfileManager,
     historyRepository: HistoryRepository,

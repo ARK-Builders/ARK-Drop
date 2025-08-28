@@ -76,7 +76,7 @@ class TransferManager @Inject constructor(
                 profile = senderProfile,
                 files = senderFiles,
                 config = SenderConfig(
-                    bufferSize = 1024U,
+                    bufferSize = 1024u * 512u,
                 ),
             )
 

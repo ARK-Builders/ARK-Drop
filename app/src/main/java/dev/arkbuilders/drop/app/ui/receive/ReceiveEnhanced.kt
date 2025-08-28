@@ -182,8 +182,8 @@ fun ReceiveEnhanced(
 
 
     LaunchedEffect(receiveProgress) {
+        delay(3000)
         receiveProgress?.let { progress ->
-            delay(3000)
             when {
                 transferManager.isReceiveFinished() -> {
                     try {

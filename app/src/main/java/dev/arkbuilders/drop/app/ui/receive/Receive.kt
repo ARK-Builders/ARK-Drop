@@ -10,18 +10,20 @@ import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.expandVertically
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -37,12 +39,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -55,6 +61,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -67,10 +75,17 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
@@ -83,15 +98,62 @@ import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
 import compose.icons.TablerIcons
+import compose.icons.tablericons.AlertCircle
+import compose.icons.tablericons.ArrowForward
 import compose.icons.tablericons.Camera
+import compose.icons.tablericons.CameraOff
+import compose.icons.tablericons.Qrcode
 import dev.arkbuilders.drop.app.TransferManager
 import dev.arkbuilders.drop.app.data.ReceiveFileInfo
+import dev.arkbuilders.drop.app.data.ReceivingProgress
 import dev.arkbuilders.drop.app.ui.components.DropLogoIcon
 import dev.arkbuilders.drop.app.ui.profile.AvatarUtils
+import dev.arkbuilders.drop.app.ui.theme.DesignTokens
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+
+sealed class ReceiveError(val message: String, val isRecoverable: Boolean = true) {
+    object CameraPermissionDenied :
+        ReceiveError("Camera permission is required to scan QR codes", true)
+
+    object CameraInitializationFailed :
+        ReceiveError("Unable to initialize camera. Please try again.", true)
+
+    object InvalidQRCode :
+        ReceiveError("This QR code is not from Drop. Please scan a valid Drop QR code.", true)
+
+    object InvalidManualInput :
+        ReceiveError("Invalid format. Please enter: ticket confirmation", true)
+
+    object ConnectionFailed :
+        ReceiveError("Unable to connect to sender. Please ensure you're on the same network.", true)
+
+    object TransferInterrupted :
+        ReceiveError("File transfer was interrupted. Please try again.", true)
+
+    object NoFilesReceived : ReceiveError("No files were received from the sender.", true)
+    object StorageError :
+        ReceiveError("Unable to save files. Please check your storage permissions.", true)
+
+    object NetworkError :
+        ReceiveError("Network connection lost. Please check your connection and try again.", true)
+
+    object UnknownError : ReceiveError("An unexpected error occurred. Please try again.", true)
+}
+
+sealed class ReceiveWorkflowState {
+    object Initial : ReceiveWorkflowState()
+    object RequestingPermission : ReceiveWorkflowState()
+    object Scanning : ReceiveWorkflowState()
+    object ManualInput : ReceiveWorkflowState()
+    object QRCodeScanned : ReceiveWorkflowState()
+    object Connecting : ReceiveWorkflowState()
+    object Receiving : ReceiveWorkflowState()
+    object Success : ReceiveWorkflowState()
+    data class Error(val error: ReceiveError) : ReceiveWorkflowState()
+}
 
 @OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -101,59 +163,127 @@ fun Receive(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val clipboardManager = LocalClipboardManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
 
-    var isScanning by remember { mutableStateOf(false) }
+    var workflowState by remember {
+        val receiveProgress = transferManager.receiveProgress?.value
+        if (receiveProgress != null && receiveProgress.isConnected) {
+            mutableStateOf<ReceiveWorkflowState>(ReceiveWorkflowState.Receiving)
+        } else {
+            mutableStateOf<ReceiveWorkflowState>(ReceiveWorkflowState.Initial)
+        }
+    }
     var scannedTicket by remember { mutableStateOf<String?>(null) }
     var scannedConfirmation by remember { mutableStateOf<UByte?>(null) }
-    var isReceiving by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
-    var isTransferComplete by remember { mutableStateOf(false) }
-    var showSuccessAnimation by remember { mutableStateOf(false) }
+    var manualInputText by remember { mutableStateOf("") }
+    var manualInputError by remember { mutableStateOf<String?>(null) }
     var receivedFiles by remember { mutableStateOf<List<String>>(emptyList()) }
+    var showSuccessAnimation by remember { mutableStateOf(false) }
 
     val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
 
-    // Observe receiving progress
-    val receiveProgress by (transferManager.receiveProgress?.collectAsState() ?: remember { mutableStateOf(null) })
+    val receiveProgress by (transferManager.receiveProgress?.collectAsState()
+        ?: remember { mutableStateOf(null) })
 
     val requestPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (isGranted) {
-            isScanning = true
+            workflowState = ReceiveWorkflowState.Scanning
+        } else {
+            workflowState = ReceiveWorkflowState.Error(ReceiveError.CameraPermissionDenied)
         }
     }
 
-    // Monitor transfer completion with enhanced UX
+    // Function to parse manual input
+    fun parseManualInput(input: String): Pair<String, UByte>? {
+        return try {
+            val trimmed = input.trim()
+            val parts = trimmed.split(" ")
+
+            if (parts.size == 2) {
+                val ticket = parts[0].trim()
+                val confirmation = parts[1].trim().toUByte()
+
+                if (ticket.isNotEmpty()) {
+                    Pair(ticket, confirmation)
+                } else {
+                    null
+                }
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    // Function to handle manual input submission
+    fun handleManualInputSubmit() {
+        val parsed = parseManualInput(manualInputText)
+        if (parsed != null) {
+            scannedTicket = parsed.first
+            scannedConfirmation = parsed.second
+            workflowState = ReceiveWorkflowState.QRCodeScanned
+            manualInputError = null
+            keyboardController?.hide()
+        } else {
+            manualInputError = "Invalid format. Please enter: ticket confirmation"
+        }
+    }
+
+    // Function to paste from clipboard
+    fun pasteFromClipboard() {
+        val clipText = clipboardManager.getText()?.text
+        if (!clipText.isNullOrEmpty()) {
+            manualInputText = clipText
+            manualInputError = null
+        }
+    }
+
+    // Monitor receive progress and handle completion
     LaunchedEffect(receiveProgress) {
         receiveProgress?.let { progress ->
-            if (isReceiving && transferManager.isReceiveFinished()) {
-                // Save received files
-                val savedFiles = transferManager.saveReceivedFiles()
-                if (savedFiles.isNotEmpty()) {
-                    receivedFiles = savedFiles.map { it.name }
+            // Check if we're connected and have files
+            if (progress.isConnected && progress.files.isNotEmpty()) {
+                if (progress.files.all { progress.fileProgress[it.id]?.receivedBytes?.toULong() == it.size }) {
+                    // Small delay to ensure UI updates are visible
+                    delay(1000)
+                    try {
+                        val savedFiles = transferManager.saveReceivedFiles()
+                        if (savedFiles.isNotEmpty()) {
+                            receivedFiles = savedFiles.map { it.name }
+                            workflowState = ReceiveWorkflowState.Success
+                            showSuccessAnimation = true
+                        } else {
+                            workflowState = ReceiveWorkflowState.Error(ReceiveError.NoFilesReceived)
+                        }
+                    } catch (e: Exception) {
+                        workflowState = ReceiveWorkflowState.Error(
+                            when {
+                                e.message?.contains("storage", ignoreCase = true) == true ->
+                                    ReceiveError.StorageError
 
-                    // Transfer completed successfully - trigger celebration
-                    if (!isTransferComplete) {
-                        isTransferComplete = true
-                        showSuccessAnimation = true
-                        isReceiving = false
+                                e.message?.contains("network", ignoreCase = true) == true ->
+                                    ReceiveError.NetworkError
 
-                        // Auto-hide success animation after 3 seconds
-                        delay(3000)
-                        showSuccessAnimation = false
+                                else -> ReceiveError.UnknownError
+                            }
+                        )
                     }
-                } else if (progress.files.isNotEmpty()) {
-                    // Still receiving
-                } else {
-                    errorMessage = "No files were received"
-                    isReceiving = false
                 }
             }
         }
     }
 
-    // Success animation scale with bouncy spring physics
+    LaunchedEffect(showSuccessAnimation) {
+        if (showSuccessAnimation) {
+            delay(3000)
+            showSuccessAnimation = false
+        }
+    }
+
     val successScale by animateFloatAsState(
         targetValue = if (showSuccessAnimation) 1f else 0f,
         animationSpec = spring(
@@ -166,27 +296,39 @@ fun Receive(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(20.dp)
+            .padding(DesignTokens.Spacing.lg)
     ) {
-        // Top bar with logo
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = { navController.navigateUp() }) {
-                Icon(
-                    Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
-                    tint = MaterialTheme.colorScheme.onSurface
-                )
+            Surface(
+                onClick = { navController.navigateUp() },
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
+                modifier = Modifier.size(DesignTokens.TouchTarget.minimum)
+            ) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
 
+            Spacer(modifier = Modifier.width(DesignTokens.Spacing.md))
+
             DropLogoIcon(
-                size = 28.dp,
+                size = 32.dp,
                 tint = MaterialTheme.colorScheme.primary
             )
 
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(DesignTokens.Spacing.md))
 
             Text(
                 text = "Receive Files",
@@ -197,9 +339,8 @@ fun Receive(
             )
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(DesignTokens.Spacing.xl))
 
-        // Success Animation Overlay - Celebratory 3-second animation
         AnimatedVisibility(
             visible = showSuccessAnimation,
             enter = scaleIn(
@@ -208,7 +349,9 @@ fun Receive(
                     stiffness = Spring.StiffnessLow
                 )
             ) + fadeIn(),
-            exit = scaleOut() + fadeOut()
+            exit = scaleOut(
+                animationSpec = tween(DesignTokens.Animation.normal)
+            ) + fadeOut()
         ) {
             Box(
                 modifier = Modifier.fillMaxWidth(),
@@ -218,602 +361,1180 @@ fun Receive(
                     modifier = Modifier
                         .fillMaxWidth()
                         .scale(successScale),
-                    shape = RoundedCornerShape(24.dp),
+                    shape = RoundedCornerShape(DesignTokens.CornerRadius.xl),
                     colors = CardDefaults.elevatedCardColors(
                         containerColor = MaterialTheme.colorScheme.primaryContainer,
                         contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                     ),
-                    elevation = CardDefaults.elevatedCardElevation(defaultElevation = 12.dp)
+                    elevation = CardDefaults.elevatedCardElevation(defaultElevation = DesignTokens.Elevation.xl)
                 ) {
                     Column(
-                        modifier = Modifier.padding(32.dp),
+                        modifier = Modifier.padding(DesignTokens.Spacing.xxl),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Icon(
-                            Icons.Default.CheckCircle,
-                            contentDescription = "Success",
-                            modifier = Modifier.size(64.dp),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Box(
+                            modifier = Modifier
+                                .size(80.dp)
+                                .background(
+                                    brush = Brush.radialGradient(
+                                        colors = listOf(
+                                            MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                                            Color.Transparent
+                                        )
+                                    ),
+                                    shape = CircleShape
+                                )
+                                .clip(CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.CheckCircle,
+                                contentDescription = "Success",
+                                modifier = Modifier.size(48.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(DesignTokens.Spacing.lg))
+
                         Text(
                             text = "Files Received!",
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold,
                             textAlign = TextAlign.Center
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Spacer(modifier = Modifier.height(DesignTokens.Spacing.sm))
+
                         Text(
                             text = "All files have been successfully saved to your Downloads folder.",
                             style = MaterialTheme.typography.bodyLarge,
                             textAlign = TextAlign.Center,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
+                            lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.2
                         )
                     }
                 }
             }
         }
 
-        // Transfer Complete Actions Card
-        AnimatedVisibility(
-            visible = isTransferComplete && !showSuccessAnimation,
-            enter = slideInVertically(
-                initialOffsetY = { it },
-                animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
-            ) + fadeIn(),
-            exit = slideOutVertically() + fadeOut()
-        ) {
-            ElevatedCard(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.elevatedCardColors(
-                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer
-                ),
-                elevation = CardDefaults.elevatedCardElevation(defaultElevation = 8.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Icon(
-                        Icons.Default.CheckCircle,
-                        contentDescription = "Complete",
-                        modifier = Modifier.size(48.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "Files Received Successfully!",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "${receivedFiles.size} file${if (receivedFiles.size != 1) "s" else ""} saved to Downloads",
-                        style = MaterialTheme.typography.bodyLarge,
-                        textAlign = TextAlign.Center,
-                        color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.8f)
-                    )
+        AnimatedContent(
+            targetState = workflowState,
+            transitionSpec = {
+                slideInVertically(
+                    initialOffsetY = { it / 3 },
+                    animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
+                ) + fadeIn() togetherWith
+                        slideOutVertically(
+                            targetOffsetY = { -it / 3 },
+                            animationSpec = tween(DesignTokens.Animation.fast)
+                        ) + fadeOut()
+            },
+            label = "workflowStateTransition"
+        ) { state ->
+            when (state) {
+                is ReceiveWorkflowState.Initial -> {
+                    if (!cameraPermissionState.status.isGranted) {
+                        PermissionRequestCard(
+                            onRequestPermission = {
+                                workflowState = ReceiveWorkflowState.RequestingPermission
+                                requestPermissionLauncher.launch(Manifest.permission.CAMERA)
+                            },
+                            onEnterManually = {
+                                workflowState = ReceiveWorkflowState.ManualInput
+                            }
+                        )
+                    } else {
+                        ReadyToScanCard(
+                            onStartScanning = { workflowState = ReceiveWorkflowState.Scanning },
+                            onEnterManually = { workflowState = ReceiveWorkflowState.ManualInput }
+                        )
+                    }
+                }
 
-                    // Received Files List
-                    if (receivedFiles.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Card(
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surface,
-                                contentColor = MaterialTheme.colorScheme.onSurface
-                            ),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(16.dp)
-                            ) {
-                                Text(
-                                    text = "Received Files:",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
+                is ReceiveWorkflowState.RequestingPermission -> {
+                    LoadingCard(message = "Requesting camera permission...")
+                }
 
-                                // Show first 3 files, then "... and X more" if needed
-                                receivedFiles.take(3).forEach { fileName ->
-                                    Text(
-                                        text = "• $fileName",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
-                                    )
-                                }
-                                if (receivedFiles.size > 3) {
-                                    Text(
-                                        text = "• ... and ${receivedFiles.size - 3} more",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                                        fontWeight = FontWeight.Medium
+                is ReceiveWorkflowState.Scanning -> {
+                    ScanningCard(
+                        onQRCodeScanned = { ticket, confirmation ->
+                            scannedTicket = ticket
+                            scannedConfirmation = confirmation
+                            workflowState = ReceiveWorkflowState.QRCodeScanned
+                        },
+                        onError = { error ->
+                            workflowState = ReceiveWorkflowState.Error(error)
+                        },
+                        onStopScanning = { workflowState = ReceiveWorkflowState.Initial },
+                        onEnterManually = { workflowState = ReceiveWorkflowState.ManualInput }
+                    )
+                }
+
+                is ReceiveWorkflowState.ManualInput -> {
+                    ManualInputCard(
+                        inputText = manualInputText,
+                        onInputChange = {
+                            manualInputText = it
+                            manualInputError = null
+                        },
+                        inputError = manualInputError,
+                        onPasteFromClipboard = { pasteFromClipboard() },
+                        onSubmit = { handleManualInputSubmit() },
+                        onCancel = {
+                            workflowState = ReceiveWorkflowState.Initial
+                            manualInputText = ""
+                            manualInputError = null
+                            keyboardController?.hide()
+                        }
+                    )
+                }
+
+                is ReceiveWorkflowState.QRCodeScanned -> {
+                    QRCodeScannedCard(
+                        onAccept = {
+                            scope.launch {
+                                try {
+                                    workflowState = ReceiveWorkflowState.Connecting
+                                    val ticket = scannedTicket!!
+                                    val confirmation = scannedConfirmation!!
+
+                                    val bubble = transferManager.receiveFiles(ticket, confirmation)
+                                    if (bubble != null) {
+                                        workflowState = ReceiveWorkflowState.Receiving
+                                    } else {
+                                        workflowState =
+                                            ReceiveWorkflowState.Error(ReceiveError.ConnectionFailed)
+                                    }
+                                } catch (e: Exception) {
+                                    workflowState = ReceiveWorkflowState.Error(
+                                        when {
+                                            e.message?.contains(
+                                                "network",
+                                                ignoreCase = true
+                                            ) == true -> ReceiveError.NetworkError
+
+                                            else -> ReceiveError.ConnectionFailed
+                                        }
                                     )
                                 }
                             }
+                        },
+                        onScanAgain = {
+                            scannedTicket = null
+                            scannedConfirmation = null
+                            manualInputText = ""
+                            manualInputError = null
+                            if (cameraPermissionState.status.isGranted) {
+                                workflowState = ReceiveWorkflowState.Scanning
+                            } else {
+                                workflowState = ReceiveWorkflowState.ManualInput
+                            }
                         }
-                    }
+                    )
+                }
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                is ReceiveWorkflowState.Connecting -> {
+                    LoadingCard(message = "Connecting to sender...")
+                }
 
-                    // Action buttons
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        OutlinedButton(
-                            onClick = {
-                                // Reset for new transfer
-                                receivedFiles = emptyList()
-                                isTransferComplete = false
-                                isReceiving = false
+                is ReceiveWorkflowState.Receiving -> {
+                    receiveProgress?.let { progress ->
+                        ReceivingCard(
+                            progress = progress,
+                            onCancel = {
+                                transferManager.cancelReceive()
+                                workflowState = ReceiveWorkflowState.Initial
                                 scannedTicket = null
                                 scannedConfirmation = null
-                                errorMessage = null
+                                manualInputText = ""
+                                manualInputError = null
+                            }
+                        )
+                    }
+                }
+
+                is ReceiveWorkflowState.Success -> {
+                    if (!showSuccessAnimation) {
+                        TransferCompleteCard(
+                            receivedFiles = receivedFiles,
+                            onReceiveMore = {
+                                receivedFiles = emptyList()
+                                workflowState = ReceiveWorkflowState.Initial
+                                scannedTicket = null
+                                scannedConfirmation = null
+                                manualInputText = ""
+                                manualInputError = null
                                 transferManager.cancelReceive()
                             },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.Refresh,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Receive More", fontWeight = FontWeight.Medium)
-                        }
-
-                        Button(
-                            onClick = { navController.navigateUp() },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Text("Done", fontWeight = FontWeight.Medium)
-                        }
-                    }
-                }
-            }
-        }
-
-        if (isTransferComplete) {
-            Spacer(modifier = Modifier.height(20.dp))
-        }
-
-        when {
-            !cameraPermissionState.status.isGranted -> {
-                // Permission not granted
-                AnimatedVisibility(
-                    visible = !isTransferComplete,
-                    enter = expandVertically() + fadeIn(),
-                    exit = shrinkVertically() + fadeOut()
-                ) {
-                    ElevatedCard(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.elevatedCardColors(
-                            containerColor = MaterialTheme.colorScheme.surface,
-                            contentColor = MaterialTheme.colorScheme.onSurface
-                        ),
-                        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 8.dp)
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(32.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Icon(
-                                TablerIcons.Camera,
-                                contentDescription = null,
-                                modifier = Modifier.size(64.dp),
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                            Spacer(modifier = Modifier.height(20.dp))
-                            Text(
-                                text = "Camera Permission Required",
-                                style = MaterialTheme.typography.headlineSmall,
-                                fontWeight = FontWeight.Bold,
-                                textAlign = TextAlign.Center
-                            )
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Text(
-                                text = "We need camera access to scan QR codes for receiving files.",
-                                style = MaterialTheme.typography.bodyLarge,
-                                textAlign = TextAlign.Center,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.3
-                            )
-                            Spacer(modifier = Modifier.height(24.dp))
-                            Button(
-                                onClick = { requestPermissionLauncher.launch(Manifest.permission.CAMERA) },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(56.dp),
-                                shape = RoundedCornerShape(16.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.primary
-                                )
-                            ) {
-                                Text(
-                                    "Grant Permission",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.SemiBold
-                                )
+                            onDone = {
+                                transferManager.cancelReceive()
+                                navController.navigateUp()
                             }
-                        }
-                    }
-                }
-            }
-
-            isReceiving -> {
-                // Receiving files
-                AnimatedVisibility(
-                    visible = !isTransferComplete,
-                    enter = expandVertically() + fadeIn(),
-                    exit = shrinkVertically() + fadeOut()
-                ) {
-                    receiveProgress?.let { progress ->
-                        ElevatedCard(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.elevatedCardColors(
-                                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                            ),
-                            elevation = CardDefaults.elevatedCardElevation(defaultElevation = 8.dp)
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(20.dp)
-                            ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = if (progress.isConnected) "Receiving Files..." else "Connecting...",
-                                        style = MaterialTheme.typography.headlineSmall,
-                                        fontWeight = FontWeight.Bold
-                                    )
-
-                                    IconButton(
-                                        onClick = {
-                                            transferManager.cancelReceive()
-                                            isReceiving = false
-                                            scannedTicket = null
-                                            scannedConfirmation = null
-                                            isTransferComplete = false
-                                        }
-                                    ) {
-                                        Icon(
-                                            Icons.Default.Close,
-                                            contentDescription = "Cancel",
-                                            tint = MaterialTheme.colorScheme.onPrimaryContainer
-                                        )
-                                    }
-                                }
-
-                                if (progress.isConnected) {
-                                    Spacer(modifier = Modifier.height(8.dp))
-
-                                    // Show sender info with avatar
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                                    ) {
-                                        AvatarUtils.AvatarImageWithFallback(
-                                            base64String = progress.senderAvatar,
-                                            fallbackText = progress.senderName,
-                                            size = 32.dp
-                                        )
-
-                                        Text(
-                                            text = "From: ${progress.senderName}",
-                                            style = MaterialTheme.typography.bodyLarge,
-                                            fontWeight = FontWeight.Medium,
-                                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
-                                        )
-                                    }
-
-                                    Spacer(modifier = Modifier.height(20.dp))
-
-                                    Text(
-                                        text = "Files (${progress.files.size}):",
-                                        style = MaterialTheme.typography.titleLarge,
-                                        fontWeight = FontWeight.Bold
-                                    )
-
-                                    Spacer(modifier = Modifier.height(12.dp))
-
-                                    LazyColumn(
-                                        modifier = Modifier.heightIn(max = 240.dp),
-                                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        items(progress.files) { file ->
-                                            ReceivingFileItem(
-                                                file = file,
-                                                receivedData = progress.receivedData[file.id]
-                                            )
-                                        }
-                                    }
-                                } else {
-                                    Spacer(modifier = Modifier.height(20.dp))
-                                    CircularProgressIndicator(
-                                        modifier = Modifier
-                                            .size(40.dp)
-                                            .align(Alignment.CenterHorizontally),
-                                        strokeWidth = 4.dp,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            scannedTicket != null && scannedConfirmation != null -> {
-                // QR code scanned, show connection info
-                AnimatedVisibility(
-                    visible = !isTransferComplete,
-                    enter = expandVertically() + fadeIn(),
-                    exit = shrinkVertically() + fadeOut()
-                ) {
-                    ElevatedCard(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.elevatedCardColors(
-                            containerColor = MaterialTheme.colorScheme.surface,
-                            contentColor = MaterialTheme.colorScheme.onSurface
-                        ),
-                        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 8.dp)
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(32.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Icon(
-                                Icons.Default.CheckCircle,
-                                contentDescription = null,
-                                modifier = Modifier.size(64.dp),
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                            Spacer(modifier = Modifier.height(20.dp))
-                            Text(
-                                text = "QR Code Scanned!",
-                                style = MaterialTheme.typography.headlineSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Text(
-                                text = "Ready to receive files from sender",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                textAlign = TextAlign.Center
-                            )
-                            Spacer(modifier = Modifier.height(24.dp))
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(16.dp)
-                            ) {
-                                OutlinedButton(
-                                    onClick = {
-                                        scannedTicket = null
-                                        scannedConfirmation = null
-                                        isScanning = true
-                                    },
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .height(56.dp),
-                                    shape = RoundedCornerShape(16.dp)
-                                ) {
-                                    Text(
-                                        "Scan Again",
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                }
-
-                                Button(
-                                    onClick = {
-                                        scope.launch {
-                                            val ticket = scannedTicket!!
-                                            val confirmation = scannedConfirmation!!
-
-                                            val bubble = transferManager.receiveFiles(ticket, confirmation)
-                                            if (bubble != null) {
-                                                isReceiving = true
-                                                errorMessage = null
-                                            } else {
-                                                errorMessage = "Failed to start receiving files"
-                                            }
-                                        }
-                                    },
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .height(56.dp),
-                                    shape = RoundedCornerShape(16.dp),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = MaterialTheme.colorScheme.primary
-                                    )
-                                ) {
-                                    Text(
-                                        "Accept",
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            else -> {
-                // Camera preview for QR scanning
-                AnimatedVisibility(
-                    visible = !isTransferComplete,
-                    enter = expandVertically() + fadeIn(),
-                    exit = shrinkVertically() + fadeOut()
-                ) {
-                    if (isScanning) {
-                        ElevatedCard(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .aspectRatio(1f),
-                            shape = RoundedCornerShape(20.dp),
-                            elevation = CardDefaults.elevatedCardElevation(defaultElevation = 8.dp)
-                        ) {
-                            QRCodeScanner(
-                                onQRCodeScanned = { ticket, confirmation ->
-                                    scannedTicket = ticket
-                                    scannedConfirmation = confirmation
-                                    isScanning = false
-                                },
-                                onError = { error ->
-                                    errorMessage = error
-                                    isScanning = false
-                                }
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(24.dp))
-
-                        Text(
-                            text = "Point your camera at the QR code",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Medium,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth(),
-                            color = MaterialTheme.colorScheme.onSurface
                         )
-
-                        Spacer(modifier = Modifier.height(20.dp))
-
-                        OutlinedButton(
-                            onClick = { isScanning = false },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(56.dp),
-                            shape = RoundedCornerShape(16.dp)
-                        ) {
-                            Text(
-                                "Stop Scanning",
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-                    } else {
-                        // Start scanning button
-                        ElevatedCard(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(20.dp),
-                            colors = CardDefaults.elevatedCardColors(
-                                containerColor = MaterialTheme.colorScheme.surface,
-                                contentColor = MaterialTheme.colorScheme.onSurface
-                            ),
-                            elevation = CardDefaults.elevatedCardElevation(defaultElevation = 8.dp)
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(32.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Icon(
-                                    TablerIcons.Camera,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(64.dp),
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                                Spacer(modifier = Modifier.height(20.dp))
-                                Text(
-                                    text = "Ready to Receive",
-                                    style = MaterialTheme.typography.headlineSmall,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Spacer(modifier = Modifier.height(12.dp))
-                                Text(
-                                    text = "Scan the QR code from the sender's device to start receiving files.",
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    textAlign = TextAlign.Center,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.3
-                                )
-                                Spacer(modifier = Modifier.height(24.dp))
-                                Button(
-                                    onClick = { isScanning = true },
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(56.dp),
-                                    shape = RoundedCornerShape(16.dp),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = MaterialTheme.colorScheme.primary
-                                    )
-                                ) {
-                                    Text(
-                                        "Start Scanning",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-                                }
-                            }
-                        }
                     }
                 }
-            }
-        }
 
-        // Error message - only show when not in completion state
-        AnimatedVisibility(
-            visible = errorMessage != null && !isTransferComplete,
-            enter = expandVertically() + fadeIn(),
-            exit = shrinkVertically() + fadeOut()
-        ) {
-            errorMessage?.let { message ->
-                Spacer(modifier = Modifier.height(20.dp))
-                ElevatedCard(
-                    colors = CardDefaults.elevatedCardColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer,
-                        contentColor = MaterialTheme.colorScheme.onErrorContainer
-                    ),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Text(
-                        text = message,
-                        modifier = Modifier.padding(20.dp),
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Medium
+                is ReceiveWorkflowState.Error -> {
+                    ErrorCard(
+                        error = state.error,
+                        onRetry = {
+                            workflowState = ReceiveWorkflowState.Initial
+                            scannedTicket = null
+                            scannedConfirmation = null
+                            manualInputText = ""
+                            manualInputError = null
+                        },
+                        onDismiss = {
+                            transferManager.cancelReceive()
+                            navController.navigateUp()
+
+                        }
                     )
                 }
             }
         }
 
-        // Instructions - only show when not in completion state
-        if (!isTransferComplete) {
+        if (workflowState !is ReceiveWorkflowState.Success && workflowState !is ReceiveWorkflowState.Error) {
             Spacer(modifier = Modifier.weight(1f))
 
             Card(
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                     contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                 ),
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(DesignTokens.CornerRadius.lg)
             ) {
                 Column(
-                    modifier = Modifier.padding(20.dp)
+                    modifier = Modifier.padding(DesignTokens.Spacing.lg)
                 ) {
                     Text(
                         text = "How to receive files:",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        text = "1. Ask the sender to start a transfer\n2. Tap 'Start Scanning' and point camera at QR code\n3. Accept the transfer\n4. Files will be saved to your Downloads folder",
-                        style = MaterialTheme.typography.bodyMedium,
-                        lineHeight = MaterialTheme.typography.bodyMedium.lineHeight * 1.2
+                    Spacer(modifier = Modifier.height(DesignTokens.Spacing.md))
+
+                    val steps = listOf(
+                        "Ask the sender to start a transfer",
+                        "Scan QR code OR enter transfer code manually",
+                        "Accept the transfer",
+                        "Files will be saved to your Downloads folder"
                     )
+
+                    steps.forEachIndexed { index, step ->
+                        Row(
+                            verticalAlignment = Alignment.Top,
+                            modifier = Modifier.padding(vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = "${index + 1}.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.width(DesignTokens.Spacing.sm))
+                            Text(
+                                text = step,
+                                style = MaterialTheme.typography.bodyMedium,
+                                lineHeight = MaterialTheme.typography.bodyMedium.lineHeight * 1.2
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PermissionRequestCard(
+    onRequestPermission: () -> Unit,
+    onEnterManually: () -> Unit
+) {
+    ElevatedCard(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(DesignTokens.CornerRadius.xl),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.onSurface
+        ),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = DesignTokens.Elevation.lg)
+    ) {
+        Column(
+            modifier = Modifier.padding(DesignTokens.Spacing.xxl),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        shape = CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    TablerIcons.Camera,
+                    contentDescription = null,
+                    modifier = Modifier.size(40.dp),
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+
+            Spacer(modifier = Modifier.height(DesignTokens.Spacing.lg))
+
+            Text(
+                text = "Camera Permission Required",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(DesignTokens.Spacing.md))
+
+            Text(
+                text = "We need camera access to scan QR codes for receiving files. Your privacy is protected - we only use the camera for QR code scanning.",
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.3
+            )
+
+            Spacer(modifier = Modifier.height(DesignTokens.Spacing.xl))
+
+            Button(
+                onClick = onRequestPermission,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(DesignTokens.TouchTarget.comfortable),
+                shape = RoundedCornerShape(DesignTokens.CornerRadius.lg),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                )
+            ) {
+                Text(
+                    "Grant Permission",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+
+            Spacer(modifier = Modifier.height(DesignTokens.Spacing.md))
+
+            Text(
+                text = "Or",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(DesignTokens.Spacing.md))
+
+            OutlinedButton(
+                onClick = onEnterManually,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(DesignTokens.TouchTarget.comfortable),
+                shape = RoundedCornerShape(DesignTokens.CornerRadius.lg)
+            ) {
+                Icon(
+                    TablerIcons.ArrowForward,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(DesignTokens.Spacing.sm))
+                Text(
+                    "Enter Code Manually",
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReadyToScanCard(
+    onStartScanning: () -> Unit,
+    onEnterManually: () -> Unit
+) {
+    ElevatedCard(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(DesignTokens.CornerRadius.xl),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.onSurface
+        ),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = DesignTokens.Elevation.lg)
+    ) {
+        Column(
+            modifier = Modifier.padding(DesignTokens.Spacing.xxl),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .background(
+                        brush = Brush.radialGradient(
+                            colors = listOf(
+                                MaterialTheme.colorScheme.primary,
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+                            )
+                        ),
+                        shape = CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    TablerIcons.Qrcode,
+                    contentDescription = null,
+                    modifier = Modifier.size(40.dp),
+                    tint = MaterialTheme.colorScheme.onPrimary
+                )
+            }
+
+            Spacer(modifier = Modifier.height(DesignTokens.Spacing.lg))
+
+            Text(
+                text = "Ready to Receive",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(modifier = Modifier.height(DesignTokens.Spacing.md))
+
+            Text(
+                text = "Scan the QR code from the sender's device or enter the transfer code manually to start receiving files securely.",
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.3
+            )
+
+            Spacer(modifier = Modifier.height(DesignTokens.Spacing.xl))
+
+            Button(
+                onClick = onStartScanning,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(DesignTokens.TouchTarget.comfortable),
+                shape = RoundedCornerShape(DesignTokens.CornerRadius.lg),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                )
+            ) {
+                Icon(
+                    TablerIcons.Camera,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(DesignTokens.Spacing.sm))
+                Text(
+                    "Start Scanning",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+
+            Spacer(modifier = Modifier.height(DesignTokens.Spacing.md))
+
+            Text(
+                text = "Or",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(DesignTokens.Spacing.md))
+
+            OutlinedButton(
+                onClick = onEnterManually,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(DesignTokens.TouchTarget.comfortable),
+                shape = RoundedCornerShape(DesignTokens.CornerRadius.lg)
+            ) {
+                Icon(
+                    TablerIcons.ArrowForward,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(DesignTokens.Spacing.sm))
+                Text(
+                    "Enter Code Manually",
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun LoadingCard(
+    message: String
+) {
+    ElevatedCard(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(DesignTokens.CornerRadius.lg),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+        ),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = DesignTokens.Elevation.md)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(DesignTokens.Spacing.xl),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(24.dp),
+                strokeWidth = 3.dp,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.width(DesignTokens.Spacing.lg))
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium
+            )
+        }
+    }
+}
+
+@Composable
+private fun ScanningCard(
+    onQRCodeScanned: (String, UByte) -> Unit,
+    onError: (ReceiveError) -> Unit,
+    onStopScanning: () -> Unit,
+    onEnterManually: () -> Unit
+) {
+    Column {
+        ElevatedCard(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(1f),
+            shape = RoundedCornerShape(DesignTokens.CornerRadius.xl),
+            elevation = CardDefaults.elevatedCardElevation(defaultElevation = DesignTokens.Elevation.lg)
+        ) {
+            QRCodeScanner(
+                onQRCodeScanned = onQRCodeScanned,
+                onError = onError
+            )
+        }
+
+        Spacer(modifier = Modifier.height(DesignTokens.Spacing.xl))
+
+        Text(
+            text = "Point your camera at the QR code",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Medium,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
+            color = MaterialTheme.colorScheme.onSurface
+        )
+
+        Spacer(modifier = Modifier.height(DesignTokens.Spacing.lg))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.md)
+        ) {
+            OutlinedButton(
+                onClick = onStopScanning,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(DesignTokens.TouchTarget.comfortable),
+                shape = RoundedCornerShape(DesignTokens.CornerRadius.lg)
+            ) {
+                Icon(
+                    TablerIcons.CameraOff,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(DesignTokens.Spacing.sm))
+                Text(
+                    "Stop Scanning",
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+            Button(
+                onClick = onEnterManually,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(DesignTokens.TouchTarget.comfortable),
+                shape = RoundedCornerShape(DesignTokens.CornerRadius.lg)
+            ) {
+                Icon(
+                    TablerIcons.ArrowForward,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(DesignTokens.Spacing.sm))
+                Text(
+                    "Enter Code",
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ManualInputCard(
+    inputText: String,
+    onInputChange: (String) -> Unit,
+    inputError: String?,
+    onPasteFromClipboard: () -> Unit,
+    onSubmit: () -> Unit,
+    onCancel: () -> Unit
+) {
+    ElevatedCard(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(DesignTokens.CornerRadius.xl),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.onSurface
+        ),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = DesignTokens.Elevation.lg)
+    ) {
+        Column(
+            modifier = Modifier.padding(DesignTokens.Spacing.xxl),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        shape = CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    TablerIcons.ArrowForward,
+                    contentDescription = null,
+                    modifier = Modifier.size(40.dp),
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+
+            Spacer(modifier = Modifier.height(DesignTokens.Spacing.lg))
+
+            Text(
+                text = "Enter Transfer Code",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(DesignTokens.Spacing.md))
+
+            Text(
+                text = "Paste or type the transfer code from the sender in the format: ticket confirmation",
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.3
+            )
+
+            Spacer(modifier = Modifier.height(DesignTokens.Spacing.xl))
+
+            OutlinedTextField(
+                value = inputText,
+                onValueChange = onInputChange,
+                label = { Text("Transfer Code") },
+                placeholder = { Text("ticket confirmation") },
+                modifier = Modifier.fillMaxWidth(),
+                isError = inputError != null,
+                supportingText = inputError?.let { error ->
+                    { Text(error, color = MaterialTheme.colorScheme.error) }
+                },
+                trailingIcon = {
+                    IconButton(onClick = onPasteFromClipboard) {
+                        Icon(
+                            TablerIcons.ArrowForward,
+                            contentDescription = "Paste",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                },
+                keyboardOptions = KeyboardOptions(
+                    imeAction = ImeAction.Done
+                ),
+                keyboardActions = KeyboardActions(
+                    onDone = { onSubmit() }
+                ),
+                shape = RoundedCornerShape(DesignTokens.CornerRadius.lg)
+            )
+
+            Spacer(modifier = Modifier.height(DesignTokens.Spacing.xl))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.md)
+            ) {
+                OutlinedButton(
+                    onClick = onCancel,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(DesignTokens.TouchTarget.comfortable),
+                    shape = RoundedCornerShape(DesignTokens.CornerRadius.lg)
+                ) {
+                    Text(
+                        "Cancel",
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+
+                Button(
+                    onClick = onSubmit,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(DesignTokens.TouchTarget.comfortable),
+                    shape = RoundedCornerShape(DesignTokens.CornerRadius.lg),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    ),
+                    enabled = inputText.trim().isNotEmpty()
+                ) {
+                    Text(
+                        "Connect",
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun QRCodeScannedCard(
+    onAccept: () -> Unit,
+    onScanAgain: () -> Unit
+) {
+    ElevatedCard(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(DesignTokens.CornerRadius.xl),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.onSurface
+        ),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = DesignTokens.Elevation.lg)
+    ) {
+        Column(
+            modifier = Modifier.padding(DesignTokens.Spacing.xxl),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        shape = CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Default.CheckCircle,
+                    contentDescription = null,
+                    modifier = Modifier.size(40.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+
+            Spacer(modifier = Modifier.height(DesignTokens.Spacing.lg))
+
+            Text(
+                text = "Code Received!",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+
+            Spacer(modifier = Modifier.height(DesignTokens.Spacing.md))
+
+            Text(
+                text = "Ready to receive files from sender. Tap Accept to start the transfer.",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.2
+            )
+
+            Spacer(modifier = Modifier.height(DesignTokens.Spacing.xl))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.md)
+            ) {
+                OutlinedButton(
+                    onClick = onScanAgain,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(DesignTokens.TouchTarget.comfortable),
+                    shape = RoundedCornerShape(DesignTokens.CornerRadius.lg)
+                ) {
+                    Text(
+                        "Try Again",
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+
+                Button(
+                    onClick = onAccept,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(DesignTokens.TouchTarget.comfortable),
+                    shape = RoundedCornerShape(DesignTokens.CornerRadius.lg),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Text(
+                        "Accept",
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReceivingCard(
+    progress: ReceivingProgress,
+    onCancel: () -> Unit
+) {
+    ElevatedCard(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(DesignTokens.CornerRadius.lg),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+        ),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = DesignTokens.Elevation.lg)
+    ) {
+        Column(
+            modifier = Modifier.padding(DesignTokens.Spacing.lg)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = if (progress.isConnected) "Receiving Files..." else "Connecting...",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Surface(
+                    onClick = onCancel,
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        Icon(
+                            Icons.Default.Close,
+                            contentDescription = "Cancel",
+                            tint = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+            }
+
+            if (progress.isConnected) {
+                Spacer(modifier = Modifier.height(DesignTokens.Spacing.md))
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.md)
+                ) {
+                    AvatarUtils.AvatarImageWithFallback(
+                        base64String = progress.senderAvatar,
+                        fallbackText = progress.senderName,
+                        size = 36.dp
+                    )
+
+                    Column {
+                        Text(
+                            text = "From:",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                        )
+                        Text(
+                            text = progress.senderName,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(DesignTokens.Spacing.lg))
+
+                Text(
+                    text = "Files (${progress.files.size}):",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(modifier = Modifier.height(DesignTokens.Spacing.md))
+
+                LazyColumn(
+                    modifier = Modifier.heightIn(max = 280.dp),
+                    verticalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.sm)
+                ) {
+                    items(progress.files) { file ->
+                        ReceivingFileItem(
+                            file = file,
+                            receivedBytes = progress.fileProgress.map { it.value.receivedBytes }
+                                .sum(),
+                        )
+                    }
+                }
+            } else {
+                Spacer(modifier = Modifier.height(DesignTokens.Spacing.lg))
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(48.dp),
+                        strokeWidth = 4.dp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TransferCompleteCard(
+    receivedFiles: List<String>,
+    onReceiveMore: () -> Unit,
+    onDone: () -> Unit
+) {
+    ElevatedCard(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(DesignTokens.CornerRadius.lg),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+            contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+        ),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = DesignTokens.Elevation.lg)
+    ) {
+        Column(
+            modifier = Modifier.padding(DesignTokens.Spacing.xl),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                        shape = CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Default.CheckCircle,
+                    contentDescription = "Complete",
+                    modifier = Modifier.size(48.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+
+            Spacer(modifier = Modifier.height(DesignTokens.Spacing.lg))
+
+            Text(
+                text = "Files Received Successfully!",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(DesignTokens.Spacing.sm))
+
+            Text(
+                text = "${receivedFiles.size} file${if (receivedFiles.size != 1) "s" else ""} saved to Downloads",
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.8f)
+            )
+
+            if (receivedFiles.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(DesignTokens.Spacing.lg))
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        contentColor = MaterialTheme.colorScheme.onSurface
+                    ),
+                    shape = RoundedCornerShape(DesignTokens.CornerRadius.md)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(DesignTokens.Spacing.lg)
+                    ) {
+                        Text(
+                            text = "Received Files:",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(DesignTokens.Spacing.sm))
+
+                        // Show first 3 files, then "... and X more" if needed
+                        receivedFiles.take(3).forEach { fileName ->
+                            Text(
+                                text = "• $fileName",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                        if (receivedFiles.size > 3) {
+                            Text(
+                                text = "• ... and ${receivedFiles.size - 3} more",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(DesignTokens.Spacing.xl))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.md)
+            ) {
+                OutlinedButton(
+                    onClick = onReceiveMore,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(DesignTokens.TouchTarget.comfortable),
+                    shape = RoundedCornerShape(DesignTokens.CornerRadius.md)
+                ) {
+                    Icon(
+                        Icons.Default.Refresh,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(DesignTokens.Spacing.sm))
+                    Text("Receive More", fontWeight = FontWeight.Medium)
+                }
+
+                Button(
+                    onClick = onDone,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(DesignTokens.TouchTarget.comfortable),
+                    shape = RoundedCornerShape(DesignTokens.CornerRadius.md)
+                ) {
+                    Text("Done", fontWeight = FontWeight.Medium)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ErrorCard(
+    error: ReceiveError,
+    onRetry: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    ElevatedCard(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(DesignTokens.CornerRadius.lg),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.errorContainer,
+            contentColor = MaterialTheme.colorScheme.onErrorContainer
+        ),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = DesignTokens.Elevation.lg)
+    ) {
+        Column(
+            modifier = Modifier.padding(DesignTokens.Spacing.xl),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.error.copy(alpha = 0.1f),
+                        shape = CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    if (error.isRecoverable) Icons.Default.Warning else TablerIcons.AlertCircle,
+                    contentDescription = null,
+                    modifier = Modifier.size(40.dp),
+                    tint = MaterialTheme.colorScheme.error
+                )
+            }
+
+            Spacer(modifier = Modifier.height(DesignTokens.Spacing.lg))
+
+            Text(
+                text = if (error.isRecoverable) "Something went wrong" else "Error occurred",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(DesignTokens.Spacing.sm))
+
+            Text(
+                text = error.message,
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f),
+                lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.2
+            )
+
+            Spacer(modifier = Modifier.height(DesignTokens.Spacing.xl))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.md)
+            ) {
+                OutlinedButton(
+                    onClick = onDismiss,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(DesignTokens.TouchTarget.comfortable),
+                    shape = RoundedCornerShape(DesignTokens.CornerRadius.md)
+                ) {
+                    Text("Cancel", fontWeight = FontWeight.Medium)
+                }
+
+                if (error.isRecoverable) {
+                    Button(
+                        onClick = onRetry,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(DesignTokens.TouchTarget.comfortable),
+                        shape = RoundedCornerShape(DesignTokens.CornerRadius.md),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        )
+                    ) {
+                        Text("Try Again", fontWeight = FontWeight.SemiBold)
+                    }
                 }
             }
         }
@@ -823,13 +1544,11 @@ fun Receive(
 @Composable
 private fun ReceivingFileItem(
     file: ReceiveFileInfo,
-    receivedData: ByteArray?
+    receivedBytes: Long,
 ) {
-    val progress = if (receivedData != null && file.size > 0UL) {
-        receivedData.size.toFloat() / file.size.toFloat()
-    } else 0f
 
-    val isComplete = receivedData != null && receivedData.size.toULong() == file.size
+    val progress = receivedBytes.toFloat() / file.size.toLong()
+    val isComplete = receivedBytes.toULong() == file.size
 
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
@@ -837,13 +1556,13 @@ private fun ReceivingFileItem(
             containerColor = MaterialTheme.colorScheme.surface,
             contentColor = MaterialTheme.colorScheme.onSurface
         ),
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
+        shape = RoundedCornerShape(DesignTokens.CornerRadius.md),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = DesignTokens.Elevation.xs)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(DesignTokens.Spacing.lg),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
@@ -851,37 +1570,50 @@ private fun ReceivingFileItem(
                     text = file.name,
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(DesignTokens.Spacing.sm))
 
                 LinearProgressIndicator(
                     progress = { progress },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(6.dp),
+                        .height(6.dp)
+                        .clip(RoundedCornerShape(3.dp)),
                     color = MaterialTheme.colorScheme.primary,
-                    trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+                    trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
                 )
 
                 Spacer(modifier = Modifier.height(6.dp))
 
                 Text(
-                    text = "${formatBytes(receivedData?.size?.toLong() ?: 0L)} / ${formatBytes(file.size.toLong())}",
+                    text = "${formatBytes(receivedBytes)} / ${formatBytes(file.size.toLong())}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
             if (isComplete) {
-                Spacer(modifier = Modifier.width(12.dp))
-                Icon(
-                    Icons.Default.CheckCircle,
-                    contentDescription = "Complete",
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(24.dp)
-                )
+                Spacer(modifier = Modifier.width(DesignTokens.Spacing.md))
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .background(
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                            shape = CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Default.CheckCircle,
+                        contentDescription = "Complete",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
         }
     }
@@ -891,7 +1623,7 @@ private fun ReceivingFileItem(
 @Composable
 private fun QRCodeScanner(
     onQRCodeScanned: (String, UByte) -> Unit,
-    onError: (String) -> Unit
+    onError: (ReceiveError) -> Unit
 ) {
     val context = LocalContext.current
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
@@ -903,24 +1635,24 @@ private fun QRCodeScanner(
             val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
 
             cameraProviderFuture.addListener({
-                val cameraProvider = cameraProviderFuture.get()
+                try {
+                    val cameraProvider = cameraProviderFuture.get()
 
-                val preview = Preview.Builder().build().also {
-                    it.setSurfaceProvider(previewView.surfaceProvider)
-                }
-
-                val imageAnalyzer = ImageAnalysis.Builder()
-                    .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                    .build()
-                    .also {
-                        it.setAnalyzer(cameraExecutor) { imageProxy ->
-                            processImageProxy(imageProxy, onQRCodeScanned, onError)
-                        }
+                    val preview = Preview.Builder().build().also {
+                        it.setSurfaceProvider(previewView.surfaceProvider)
                     }
 
-                val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+                    val imageAnalyzer = ImageAnalysis.Builder()
+                        .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                        .build()
+                        .also {
+                            it.setAnalyzer(cameraExecutor) { imageProxy ->
+                                processImageProxy(imageProxy, onQRCodeScanned, onError)
+                            }
+                        }
 
-                try {
+                    val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+
                     cameraProvider.unbindAll()
                     cameraProvider.bindToLifecycle(
                         lifecycleOwner,
@@ -929,7 +1661,7 @@ private fun QRCodeScanner(
                         imageAnalyzer
                     )
                 } catch (exc: Exception) {
-                    onError("Failed to start camera: ${exc.message}")
+                    onError(ReceiveError.CameraInitializationFailed)
                 }
             }, ContextCompat.getMainExecutor(ctx))
 
@@ -949,7 +1681,7 @@ private fun QRCodeScanner(
 private fun processImageProxy(
     imageProxy: ImageProxy,
     onQRCodeScanned: (String, UByte) -> Unit,
-    onError: (String) -> Unit
+    onError: (ReceiveError) -> Unit
 ) {
     val mediaImage = imageProxy.image
     if (mediaImage != null) {
@@ -975,9 +1707,12 @@ private fun processImageProxy(
                                             return@addOnSuccessListener
                                         }
                                     } catch (_: Exception) {
-                                        onError("Invalid QR code format")
+                                        onError(ReceiveError.InvalidQRCode)
                                         return@addOnSuccessListener
                                     }
+                                } else {
+                                    onError(ReceiveError.InvalidQRCode)
+                                    return@addOnSuccessListener
                                 }
                             }
                         }
@@ -985,7 +1720,16 @@ private fun processImageProxy(
                 }
             }
             .addOnFailureListener { exception ->
-                onError("Failed to scan QR code: ${exception.message}")
+                onError(
+                    when {
+                        exception.message?.contains(
+                            "camera",
+                            ignoreCase = true
+                        ) == true -> ReceiveError.CameraInitializationFailed
+
+                        else -> ReceiveError.UnknownError
+                    }
+                )
             }
             .addOnCompleteListener {
                 imageProxy.close()

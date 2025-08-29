@@ -247,7 +247,13 @@ fun Receive(
         receiveProgress?.let { progress ->
             // Check if we're connected and have files
             if (progress.isConnected && progress.files.isNotEmpty()) {
-                if (progress.files.all { progress.fileProgress[it.id]?.receivedBytes?.toULong() == it.size }) {
+                // Check if all files are complete
+                val allFilesComplete = progress.files.all { file ->
+                    val fileProgress = progress.fileProgress[file.id]
+                    fileProgress?.isComplete == true
+                }
+                
+                if (allFilesComplete) {
                     // Small delay to ensure UI updates are visible
                     delay(1000)
                     try {
@@ -1295,10 +1301,14 @@ private fun ReceivingCard(
                     verticalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.sm)
                 ) {
                     items(progress.files) { file ->
+                        val fileProgress = progress.fileProgress[file.id]
                         ReceivingFileItem(
                             file = file,
-                            receivedBytes = progress.fileProgress.map { it.value.receivedBytes }
-                                .sum(),
+                            progress = if (file.size > 0UL && fileProgress != null) {
+                                (fileProgress.receivedBytes.toFloat() / file.size.toFloat()).coerceIn(0f, 1f)
+                            } else 0f,
+                            receivedBytes = fileProgress?.receivedBytes ?: 0L,
+                            isComplete = fileProgress?.isComplete ?: false
                         )
                     }
                 }
@@ -1544,11 +1554,10 @@ private fun ErrorCard(
 @Composable
 private fun ReceivingFileItem(
     file: ReceiveFileInfo,
+    progress: Float,
     receivedBytes: Long,
+    isComplete: Boolean
 ) {
-
-    val progress = receivedBytes.toFloat() / file.size.toLong()
-    val isComplete = receivedBytes.toULong() == file.size
 
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),

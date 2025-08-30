@@ -76,7 +76,8 @@ class TransferManager @Inject constructor(
                 profile = senderProfile,
                 files = senderFiles,
                 config = SenderConfig(
-                    bufferSize = 1024u * 512u,
+                    chunkSize = 1024u * 512u,
+                    parallelStreams = 4u,
                 ),
             )
 
@@ -113,6 +114,10 @@ class TransferManager @Inject constructor(
                     ticket = ticket,
                     confirmation = confirmation,
                     profile = receiverProfile,
+                    config = ReceiverConfig(
+                        chunkSize = 1024u * 512u,
+                        parallelStreams = 4u,
+                    )
                 )
 
                 // Create and subscribe to bubble

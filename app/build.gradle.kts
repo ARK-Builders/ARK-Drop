@@ -20,8 +20,18 @@ android {
         }
     }
 
+    signingConfigs {
+        create("testRelease") {
+            storeFile = project.rootProject.file("keystore.jks")
+            storePassword = "sw0rdf1sh"
+            keyAlias = "ark-builders-test"
+            keyPassword = "rybamech"
+        }
+    }
+
     buildTypes {
         release {
+            signingConfig = signingConfigs.getByName("testRelease")
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

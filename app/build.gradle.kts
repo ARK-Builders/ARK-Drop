@@ -46,28 +46,6 @@ android {
         setProperty("archivesBaseName", "drop-v$versionName")
     }
 
-    signingConfigs {
-        create("testRelease") {
-            storeFile = project.rootProject.file("keystore.jks")
-            storePassword = "sw0rdf1sh"
-            keyAlias = "ark-builders-test"
-            keyPassword = "rybamech"
-        }
-    }
-
-    defaultConfig {
-        applicationId = "dev.arkbuilders.drop.app"
-        minSdk = 29
-        targetSdk = 36
-        versionCode = getVersionCode()
-        versionName = getVersionName()
-
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
-        // Play Store metadata
-        setProperty("archivesBaseName", "drop-v$versionName")
-    }
-
     buildTypes {
         debug {
             applicationIdSuffix = ".debug"
@@ -88,7 +66,6 @@ android {
             // Enable R8 full mode
             isDebuggable = false
             isJniDebuggable = false
-            isRenderscriptDebuggable = false
             isPseudoLocalesEnabled = false
         }
     }

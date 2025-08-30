@@ -55,6 +55,19 @@ android {
         }
     }
 
+    defaultConfig {
+        applicationId = "dev.arkbuilders.drop.app"
+        minSdk = 29
+        targetSdk = 36
+        versionCode = getVersionCode()
+        versionName = getVersionName()
+
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Play Store metadata
+        setProperty("archivesBaseName", "drop-v$versionName")
+    }
+
     buildTypes {
         debug {
             applicationIdSuffix = ".debug"

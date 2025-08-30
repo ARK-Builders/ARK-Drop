@@ -79,6 +79,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -118,7 +119,9 @@ import compose.icons.tablericons.Qrcode
 import dev.arkbuilders.drop.app.TransferManager
 import dev.arkbuilders.drop.app.ui.components.DropLogoIcon
 import dev.arkbuilders.drop.app.ui.profile.AvatarUtils
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 private enum class SendPhase {
@@ -283,6 +286,40 @@ fun Send(
         }
     }
 
+    val transferStatus by produceState(
+        initialValue = false,
+        key1 = sendState.phase
+    ) {
+        if (sendState.phase == SendPhase.Transferring) {
+            while (currentCoroutineContext().isActive) {
+                delay(700)
+                val isFinished = transferManager.isSendFinished()
+                value = isFinished
+                if (isFinished) {
+                    break
+                }
+            }
+        }
+    }
+
+    // Handle transfer completion
+    LaunchedEffect(transferStatus) {
+        if (transferStatus && sendState.phase == SendPhase.Transferring) {
+            sendState = sendState.copy(
+                phase = SendPhase.Complete,
+                showSuccessAnimation = true,
+                successCountdown = 3000,
+                error = null
+            )
+            try {
+                transferManager.recordSendCompletion(selectedFiles)
+            } catch (e: Exception) {
+                println("Failed to record completion: ${e.message}")
+            }
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        }
+    }
+
     // Network monitoring
     LaunchedEffect(Unit) {
         while (true) {
@@ -335,31 +372,13 @@ fun Send(
                     }
                 }
             } catch (e: Exception) {
-                // temp workaround
                 val stacktrace = e.stackTraceToString()
                 println("DEBUG: $stacktrace")
-                if (stacktrace.startsWith("androidx.compose.runtime.LeftCompositionCancellationException:")) {
-                    // Pass
-                } else {
+                if (!stacktrace.startsWith("androidx.compose.runtime.LeftCompositionCancellationException:")) {
                     sendState = sendState.copy(
                         phase = SendPhase.Error,
                         error = SendException.UnknownError("Progress monitoring failed: ${e.message}")
                     )
-                }
-            }
-            delay(3000)
-            when {
-                transferManager.isSendFinished() -> {
-                    if (sendState.phase != SendPhase.Complete) {
-                        sendState = sendState.copy(
-                            phase = SendPhase.Complete,
-                            showSuccessAnimation = true,
-                            successCountdown = 3000,
-                            error = null
-                        )
-                        transferManager.recordSendCompletion(selectedFiles)
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    }
                 }
             }
         }

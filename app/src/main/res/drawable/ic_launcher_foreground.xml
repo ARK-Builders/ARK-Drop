@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Main drop shape -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,25
+                         C64,25 72,35 72,45
+                         C72,55 64,65 54,75
+                         C44,65 36,55 36,45
+                         C36,35 44,25 54,25Z" />
+
+    <!-- Inner highlight -->
+    <path
+        android:fillColor="#E3F2FD"
+        android:pathData="M54,30
+                         C60,30 65,35 65,40
+                         C65,45 60,50 54,55
+                         C48,50 43,45 43,40
+                         C43,35 48,30 54,30Z"
+        android:fillAlpha="0.6" />
+
+    <!-- Connection dots around the drop (converted from circles to paths) -->
+    <!-- Top dot -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,12 A3,3 0 1,1 54,18 A3,3 0 1,1 54,12 Z"
+        android:fillAlpha="0.8" />
+
+    <!-- Top-right dot -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M69,22.5 A2.5,2.5 0 1,1 69,27.5 A2.5,2.5 0 1,1 69,22.5 Z"
+        android:fillAlpha="0.7" />
+
+    <!-- Right dot -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M75,42.5 A2.5,2.5 0 1,1 75,47.5 A2.5,2.5 0 1,1 75,42.5 Z"
+        android:fillAlpha="0.7" />
+
+    <!-- Bottom-right dot -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M69,62.5 A2.5,2.5 0 1,1 69,67.5 A2.5,2.5 0 1,1 69,62.5 Z"
+        android:fillAlpha="0.7" />
+
+    <!-- Bottom-left dot -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M39,62.5 A2.5,2.5 0 1,1 39,67.5 A2.5,2.5 0 1,1 39,62.5 Z"
+        android:fillAlpha="0.7" />
+
+    <!-- Left dot -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M33,42.5 A2.5,2.5 0 1,1 33,47.5 A2.5,2.5 0 1,1 33,42.5 Z"
+        android:fillAlpha="0.7" />
+
+    <!-- Top-left dot -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M39,22.5 A2.5,2.5 0 1,1 39,27.5 A2.5,2.5 0 1,1 39,22.5 Z"
+        android:fillAlpha="0.7" />
+
+    <!-- Connection lines -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.5"
+        android:strokeAlpha="0.5"
+        android:pathData="M54,15 Q54,20 54,25"
+        android:fillColor="@android:color/transparent" />
+
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.5"
+        android:strokeAlpha="0.5"
+        android:pathData="M69,25 Q65,30 60,35"
+        android:fillColor="@android:color/transparent" />
+
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.5"
+        android:strokeAlpha="0.5"
+        android:pathData="M75,45 Q70,45 65,45"
+        android:fillColor="@android:color/transparent" />
+
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.5"
+        android:strokeAlpha="0.5"
+        android:pathData="M69,65 Q65,60 60,55"
+        android:fillColor="@android:color/transparent" />
+
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.5"
+        android:strokeAlpha="0.5"
+        android:pathData="M39,65 Q43,60 48,55"
+        android:fillColor="@android:color/transparent" />
+
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.5"
+        android:strokeAlpha="0.5"
+        android:pathData="M33,45 Q38,45 43,45"
+        android:fillColor="@android:color/transparent" />
+
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.5"
+        android:strokeAlpha="0.5"
+        android:pathData="M39,25 Q43,30 48,35"
+        android:fillColor="@android:color/transparent" />
+
+</vector>

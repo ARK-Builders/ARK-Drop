@@ -25,11 +25,11 @@ android {
     compileSdk = 36
 
     signingConfigs {
-        create("release") {
-            keyAlias = System.getenv("KEY_ALIAS") ?: devKeyAlias
-            keyPassword = System.getenv("KEY_PASSWORD") ?: devKeystorePassword
-            storePassword = System.getenv("KEYSTORE_PASSWORD") ?: devKeystorePassword
-            storeFile = file(System.getenv("KEYSTORE_PATH") ?: devKeystorePath)
+        create("testRelease") {
+            storeFile = project.rootProject.file("keystore.jks")
+            storePassword = "sw0rdf1sh"
+            keyAlias = "ark-builders-test"
+            keyPassword = "rybamech"
         }
     }
 
@@ -57,7 +57,7 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
-            signingConfig = signingConfigs.getByName("release")
+            signingConfig = signingConfigs.getByName("testRelease")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

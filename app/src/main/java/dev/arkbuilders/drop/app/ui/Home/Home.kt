@@ -154,7 +154,7 @@ private fun HeaderSection(
 
             Column {
                 Text(
-                    text = ARK Drop",
+                    text = "ARK Drop",
                     style = MaterialTheme.typography.headlineLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
@@ -346,7 +346,11 @@ private fun EnhancedTransferHistoryCard(item: TransferHistoryItem) {
                     )
                     Spacer(modifier = Modifier.height(DesignTokens.Spacing.xs))
                     Text(
-                        text = "${item.fileCount} file${if (item.fileCount != 1) "s" else ""} • ${formatTimestamp(item.timestamp)}",
+                        text = "${item.fileCount} file${if (item.fileCount != 1) "s" else ""} • ${
+                            formatTimestamp(
+                                item.timestamp
+                            )
+                        }",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

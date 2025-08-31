@@ -23,8 +23,8 @@ ARK Drop is a secure, peer-to-peer file sharing application for Android that all
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/your-username/drop-android.git
-cd drop-android
+git clone https://github.com/ARK-Builders/ARK-Drop.git
+cd ARK-Drop
 ```
 
 2. Open the project in Android Studio

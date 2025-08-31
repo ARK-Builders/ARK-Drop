@@ -57,7 +57,7 @@ We may update this Privacy Policy from time to time. We will notify you of any c
 
 If you have any questions about this Privacy Policy, please contact us at:
 - Email: privacy@arkbuilders.dev
-- GitHub: [Create an issue](https://github.com/your-username/drop-android/issues)
+- GitHub: [Create an issue](https://github.com/ARK-Builders/ARK-Drop/issues)
 
 ## Your Rights
 

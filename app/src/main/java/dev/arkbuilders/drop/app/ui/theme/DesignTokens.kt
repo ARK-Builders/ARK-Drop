@@ -3,7 +3,7 @@ package dev.arkbuilders.drop.app.ui.theme
 import androidx.compose.ui.unit.dp
 
 /**
- * Design System Tokens for Drop
+ * Design System Tokens for ARK Drop
  * Following Material Design 3 and Apple HIG principles
  */
 object DesignTokens {

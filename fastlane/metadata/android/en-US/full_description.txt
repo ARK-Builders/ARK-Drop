@@ -1,4 +1,4 @@
-Drop is a secure, peer-to-peer file sharing application that allows you to transfer files between devices over the internet. Perfect for sharing documents, photos, videos, and other files quickly and securely across any distance.
+ARK Drop is a secure, peer-to-peer file sharing application that allows you to transfer files between devices over the internet. Perfect for sharing documents, photos, videos, and other files quickly and securely across any distance.
 
 🔒 SECURE & PRIVATE
 • End-to-end encryption for all transfers
@@ -24,7 +24,7 @@ Drop is a secure, peer-to-peer file sharing application that allows you to trans
 • Multiple sharing options (link, QR code)
 • Cross-platform compatibility
 
-Whether you're sharing work documents, family photos, or large media files across the globe, Drop provides a secure and efficient solution for all your file transfer needs.
+Whether you're sharing work documents, family photos, or large media files across the globe, ARK Drop provides a secure and efficient solution for all your file transfer needs.
 
 Perfect for:
 • Remote work collaboration
@@ -33,4 +33,4 @@ Perfect for:
 • Cross-platform file transfers
 • Secure document sharing
 
-Download Drop today and experience the future of secure file sharing over the internet!
+Download ARK Drop today and experience the future of secure file sharing over the internet!

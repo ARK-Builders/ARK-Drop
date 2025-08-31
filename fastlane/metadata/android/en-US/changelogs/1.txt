@@ -1,4 +1,4 @@
-• Initial release of Drop
+• Initial release of ARK Drop
 • Secure file sharing between devices over internet
 • Profile management with custom avatars
 • Transfer history tracking

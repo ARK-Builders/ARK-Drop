@@ -1,21 +1,21 @@
-# Privacy Policy for Drop
+# Privacy Policy for ARK Drop
 
-**Last updated: [Current Date]**
+**Last updated: August 31, 2025**
 
 ## Overview
 
-Drop ("we", "our", or "us") is committed to protecting your privacy. This Privacy Policy explains how we handle information when you use our mobile application.
+ARK Drop ("we", "our", or "us") is committed to protecting your privacy. This Privacy Policy explains how we handle information when you use our mobile application.
 
 ## Information We Don't Collect
 
-Drop is designed with privacy in mind:
+ARK Drop is designed with privacy in mind:
 
 - **No Personal Data Collection**: We do not collect, store, or transmit any personal information
 - **No Analytics**: We do not use analytics services or tracking tools
 - **No Advertising**: We do not display ads or work with advertising networks
 - **No Cloud Storage**: Files are never uploaded to our servers or any cloud service
 
-## How Drop Works
+## How ARK Drop Works
 
 - **Direct Transfer**: Files are transferred directly between devices over the internet
 - **Local Storage**: All app data (profiles, history) is stored locally on your device
@@ -32,7 +32,7 @@ The following data is stored only on your device:
 
 ## Permissions
 
-Drop requests the following permissions:
+ARK Drop requests the following permissions:
 
 - **Camera**: To scan QR codes for device pairing
 - **Storage**: To access files you want to share and save received files
@@ -47,7 +47,7 @@ Drop requests the following permissions:
 
 ## Third-Party Services
 
-Drop does not integrate with any third-party services that collect data.
+ARK Drop does not integrate with any third-party services that collect data.
 
 ## Changes to This Policy
 

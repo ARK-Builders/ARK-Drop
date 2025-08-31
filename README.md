@@ -1,6 +1,6 @@
-# Drop - Secure File Sharing
+# ARK Drop - Secure File Sharing
 
-Drop is a secure, peer-to-peer file sharing application for Android that allows you to transfer files between devices over the internet.
+ARK Drop is a secure, peer-to-peer file sharing application for Android that allows you to transfer files between devices over the internet.
 
 ## Features
 
@@ -103,9 +103,9 @@ Versions are automatically managed:
 - **Version Code**: GitHub run number
 - **Version Name**: Git tag (for releases) or dev build number
 
-## How Drop Works
+## How ARK Drop Works
 
-Drop uses peer-to-peer technology to transfer files directly between devices over the internet:
+ARK Drop uses peer-to-peer technology to transfer files directly between devices over the internet:
 
 1. **Sender** selects files and starts transfer
 2. **System** generates a secure transfer link and QR code
@@ -115,7 +115,7 @@ Drop uses peer-to-peer technology to transfer files directly between devices ove
 
 ## Sharing Options
 
-Drop provides multiple ways to share transfers:
+ARK Drop provides multiple ways to share transfers:
 
 - **Deep Links**: Share via messaging apps, email, or any text-based communication
 - **QR Codes**: Perfect for in-person sharing or when devices are nearby
@@ -168,7 +168,7 @@ For support and questions:
 
 ## Privacy Policy
 
-Drop respects your privacy:
+ARK Drop respects your privacy:
 - No data is collected or stored on external servers
 - All transfers are direct device-to-device over internet
 - Files are encrypted during transfer

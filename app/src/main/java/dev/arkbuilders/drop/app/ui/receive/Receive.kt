@@ -122,7 +122,7 @@ sealed class ReceiveError(val message: String, val isRecoverable: Boolean = true
         ReceiveError("Unable to initialize camera. Please try again.", true)
 
     object InvalidQRCode :
-        ReceiveError("This QR code is not from Drop. Please scan a valid Drop QR code.", true)
+        ReceiveError("This QR code is not from ARK Drop. Please scan a valid ARK Drop QR code.", true)
 
     object InvalidManualInput :
         ReceiveError("Invalid format. Please enter: ticket confirmation", true)
@@ -1703,7 +1703,7 @@ private fun processImageProxy(
                     when (barcode.valueType) {
                         Barcode.TYPE_TEXT, Barcode.TYPE_URL -> {
                             barcode.rawValue?.let { value ->
-                                // Parse Drop QR code format: drop://receive?ticket=...&confirmation=...
+                                // Parse ARK Drop QR code format: drop://receive?ticket=...&confirmation=...
                                 if (value.startsWith("drop://receive?")) {
                                     try {
                                         val uri = value.toUri()

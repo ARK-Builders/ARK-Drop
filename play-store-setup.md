@@ -1,6 +1,6 @@
 # Google Play Store Setup Guide
 
-This guide walks you through setting up Drop for Google Play Store release.
+This guide walks you through setting up ARK Drop for Google Play Store release.
 
 ## Prerequisites
 
@@ -31,7 +31,7 @@ keytool -genkeypair \
 1. Go to [Google Play Console](https://play.google.com/console)
 2. Click "Create app"
 3. Fill in app details:
-    - **App name**: Drop - Secure File Sharing
+    - **App name**: ARK Drop - Secure File Sharing
     - **Default language**: English (United States)
     - **App or game**: App
     - **Free or paid**: Free
@@ -85,7 +85,7 @@ certutil -encode release-keystore.jks keystore.b64
 
 ### Store Listing
 
-1. **App name**: Drop - Secure File Sharing
+1. **App name**: ARK Drop - Secure File Sharing
 2. **Short description**: Fast, secure file sharing between devices without internet
 3. **Full description**: Use the content from `fastlane/metadata/android/en-US/full_description.txt`
 
@@ -103,7 +103,7 @@ Create these assets (you'll need to upload them manually):
 
 1. Go to "Policy" → "App content"
 2. Complete the content rating questionnaire
-3. Drop should receive an "Everyone" rating
+3. ARK Drop should receive an "Everyone" rating
 
 ### Privacy Policy
 
@@ -183,7 +183,7 @@ For future updates:
 
 ### Support
 
-- GitHub Issues: [Create an issue](https://github.com/Ark-Builders/Ark-Drop/issues)
+- GitHub Issues: [Create an issue](https://github.com/ARK-Builders/ARK-Drop/issues)
 
 ## Security Best Practices
 

@@ -28,7 +28,7 @@ dependencyResolutionManagement {
         maven { url = uri("https://jitpack.io") }
         maven {
             name = "ark-core GitHub Packages"
-            url = uri("https://maven.pkg.github.com/Ark-Builders/ark-core")
+            url = uri("https://maven.pkg.github.com/ARK-Builders/ark-core")
             credentials {
                 username = "token"
                 password = githubToken
@@ -38,6 +38,6 @@ dependencyResolutionManagement {
 
 }
 
-rootProject.name = "Drop"
+rootProject.name = "ARK Drop"
 include(":app")
  

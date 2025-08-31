@@ -154,7 +154,7 @@ private fun HeaderSection(
 
             Column {
                 Text(
-                    text = "Drop",
+                    text = ARK Drop",
                     style = MaterialTheme.typography.headlineLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary

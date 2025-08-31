@@ -1,15 +1,3 @@
-import com.android.build.gradle.internal.tasks.factory.dependsOn
-import java.util.Properties
-
-val localProps = Properties().apply {
-    file("$rootDir/local.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
-}
-fun localProp(key: String): String? = localProps.getProperty(key)
-val devKeystorePath = "${layout.buildDirectory.asFile.get().absolutePath}/drop-keystore.jks"
-val devKeystorePassword = localProp("dev.keystore.password") ?: "defaultPassword123"
-val devKeyAlias = "drop-key"
-val devDname = localProp("dev.keystore.dname") ?: "CN=Unknown, OU=Dev, O=Unknown, L=City, ST=State, C=XX"
-
 plugins {
     kotlin("kapt") version "2.2.0"
     kotlin("plugin.serialization") version "1.9.23"
@@ -37,13 +25,13 @@ android {
         applicationId = "dev.arkbuilders.drop.app"
         minSdk = 29
         targetSdk = 36
-        versionCode = getVersionCode()
-        versionName = getVersionName()
+        versionCode = 1
+        versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // Play Store metadata
-        setProperty("archivesBaseName", "drop-v$versionName")
+
+        setProperty("archivesBaseName", "ark-drop")
     }
 
     buildTypes {
@@ -111,13 +99,6 @@ android {
             enableSplit = true
         }
     }
-}
-
-play {
-    serviceAccountCredentials.set(file("play-store-credentials.json"))
-    track.set("internal") // Start with internal testing
-    releaseStatus.set(com.github.triplet.gradle.androidpublisher.ReleaseStatus.DRAFT)
-    defaultToAppBundles.set(true)
 }
 
 dependencies {
@@ -196,55 +177,7 @@ kapt {
     correctErrorTypes = true
 }
 
-fun getVersionCode(): Int {
-    val versionCode = System.getenv("VERSION_CODE")?.toIntOrNull()
-    return versionCode ?: (System.currentTimeMillis() / 1000).toInt()
-}
-
-fun getVersionName(): String {
-    val versionName = System.getenv("VERSION_NAME")
-    return versionName ?: "1.0.0"
-}
-
 tasks.named<Delete>("clean") {
     delete(fileTree("$projectDir/src/main/jniLibs"))
 }
 
-tasks.register<Exec>("generateDevKeystore") {
-    doFirst {
-        mkdir(layout.buildDirectory)
-    }
-    val keystoreFile = file(devKeystorePath)
-    commandLine = if (keystoreFile.exists()) {
-        listOf("echo", "\"Development keystore already exists.\"")
-    } else {
-        listOf(
-            "keytool", "-genkeypair",
-            "-alias", devKeyAlias,
-            "-keyalg", "RSA",
-            "-keysize", "2048",
-            "-validity", "10000",
-            "-keystore", devKeystorePath,
-            "-storepass", devKeystorePassword,
-            "-keypass", devKeystorePassword,
-            "-dname", devDname
-        )
-    }
-}
-
-tasks.named("preBuild").dependsOn("generateDevKeystore")
-
-// Task to generate release notes
-tasks.register("generateReleaseNotes") {
-    doLast {
-        val releaseNotesFile = file("fastlane/metadata/android/en-US/changelogs/${getVersionCode()}.txt")
-        releaseNotesFile.parentFile.mkdirs()
-        releaseNotesFile.writeText("""
-            • Initial release of Drop
-            • Secure file sharing between devices
-            • Profile management with custom avatars
-            • Transfer history tracking
-            • QR code sharing for easy connections
-        """.trimIndent())
-    }
-}

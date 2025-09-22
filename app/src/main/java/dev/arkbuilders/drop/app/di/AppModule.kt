@@ -9,6 +9,8 @@ import dagger.hilt.components.SingletonComponent
 import dev.arkbuilders.drop.app.TransferManager
 import dev.arkbuilders.drop.app.ProfileManager
 import dev.arkbuilders.drop.app.data.HistoryRepository
+import dev.arkbuilders.drop.app.data.ResourcesHelperImpl
+import dev.arkbuilders.drop.app.domain.ResourcesHelper
 import javax.inject.Singleton
 
 @Module
@@ -30,4 +32,10 @@ object AppModule {
     ): TransferManager {
         return TransferManager(context, profileManager, historyRepository)
     }
+
+    @Provides
+    @Singleton
+    fun provideResourcesHelper(
+        impl: ResourcesHelperImpl
+    ): ResourcesHelper = impl
 }

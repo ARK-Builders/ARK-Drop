@@ -141,6 +141,8 @@ dependencies {
     implementation(libs.mlkit.barcode.scanning)
     implementation(libs.accompanist.permissions)
 
+    implementation(libs.timber)
+
     // DAGGER SETUP
     implementation("com.google.dagger:hilt-android:2.56.2")
     kapt("com.google.dagger:hilt-compiler:2.56.2")

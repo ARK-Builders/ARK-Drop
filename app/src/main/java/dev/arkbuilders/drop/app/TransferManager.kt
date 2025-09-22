@@ -7,13 +7,14 @@ import android.os.Environment
 import android.provider.MediaStore
 import android.provider.OpenableColumns
 import android.util.Log
+import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.arkbuilders.drop.*
 import dev.arkbuilders.drop.app.data.HistoryRepository
 import dev.arkbuilders.drop.app.data.ReceiveFilesSubscriberImpl
 import dev.arkbuilders.drop.app.data.SendFilesSubscriberImpl
-import dev.arkbuilders.drop.app.data.SenderFileDataImpl
 import dev.arkbuilders.drop.app.data.TransferStatus
+import dev.arkbuilders.drop.app.di.TmpEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
@@ -44,59 +45,23 @@ class TransferManager @Inject constructor(
         get() = receiveSubscriber?.progress
 
     suspend fun sendFiles(fileUris: List<Uri>): SendFilesBubble? = withContext(Dispatchers.IO) {
-        try {
-            Log.d(TAG, "Starting file send for ${fileUris.size} files")
-
-            val profile = profileManager.getCurrentProfile()
-            val senderProfile = SenderProfile(
-                name = profile.name.ifEmpty { "Anonymous" },
-                avatarB64 = profile.avatarB64.takeIf { it.isNotEmpty() }
-            )
-
-            val senderFiles = fileUris.mapNotNull { uri ->
-                val fileName = getFileName(uri)
-                if (fileName != null) {
-                    val fileData = SenderFileDataImpl(context, uri)
-                    SenderFile(
-                        name = fileName,
-                        data = fileData
-                    )
-                } else {
-                    Log.w(TAG, "Could not get filename for URI: $uri")
-                    null
+        val entryPoint = EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            TmpEntryPoint::class.java
+        )
+        val sendUseCase = entryPoint.sendFilesUseCase()
+        sendUseCase.invoke(fileUris).fold(
+            onSuccess = { bubble ->
+                currentSendBubble = bubble
+                sendSubscriber = SendFilesSubscriberImpl().also { subscriber ->
+                    bubble.subscribe(subscriber)
                 }
-            }
-
-            if (senderFiles.isEmpty()) {
-                Log.e(TAG, "No valid files to send")
+                return@withContext bubble
+            },
+            onFailure = {
                 return@withContext null
-            }
-
-            val request = SendFilesRequest(
-                profile = senderProfile,
-                files = senderFiles,
-                config = SenderConfig(
-                    chunkSize = 1024u * 512u,
-                    parallelStreams = 4u,
-                ),
-            )
-
-            // Create and subscribe to bubble
-            val bubble = sendFiles(request)
-            currentSendBubble = bubble
-
-            // Set up subscriber
-            sendSubscriber = SendFilesSubscriberImpl().also { subscriber ->
-                bubble.subscribe(subscriber)
-            }
-
-            Log.d(TAG, "Send bubble created with ticket and confirmation: ${bubble.getTicket()} ${bubble.getConfirmation()}")
-            bubble
-
-        } catch (e: Exception) {
-            Log.e(TAG, "Error starting file send", e)
-            null
-        }
+            },
+        )
     }
 
     suspend fun receiveFiles(ticket: String, confirmation: UByte): ReceiveFilesBubble? =

@@ -66,44 +66,25 @@ class TransferManager @Inject constructor(
 
     suspend fun receiveFiles(ticket: String, confirmation: UByte): ReceiveFilesBubble? =
         withContext(Dispatchers.IO) {
-            try {
-                Log.d(TAG, "Starting file receive with ticket: $ticket")
+            val entryPoint = EntryPointAccessors.fromApplication(
+                context.applicationContext,
+                TmpEntryPoint::class.java
+            )
+            val receiveFilesUseCase = entryPoint.receiveFilesUseCase()
 
-                val profile = profileManager.getCurrentProfile()
-                val receiverProfile = ReceiverProfile(
-                    name = profile.name.ifEmpty { "Anonymous" },
-                    avatarB64 = profile.avatarB64.takeIf { it.isNotEmpty() }
-                )
-
-                val request = ReceiveFilesRequest(
-                    ticket = ticket,
-                    confirmation = confirmation,
-                    profile = receiverProfile,
-                    config = ReceiverConfig(
-                        chunkSize = 1024u * 512u,
-                        parallelStreams = 4u,
-                    )
-                )
-
-                // Create and subscribe to bubble
-                val bubble = receiveFiles(request)
-                currentReceiveBubble = bubble
-
-                // Set up subscriber
-                receiveSubscriber = ReceiveFilesSubscriberImpl().also { subscriber ->
-                    bubble.subscribe(subscriber)
-                }
-
-                // Start receiving
-                bubble.start()
-
-                Log.d(TAG, "Receive bubble created and started")
-                bubble
-
-            } catch (e: Exception) {
-                Log.e(TAG, "Error starting file receive", e)
-                null
-            }
+            receiveFilesUseCase.invoke(ticket, confirmation).fold(
+                onSuccess = { bubble ->
+                    currentReceiveBubble = bubble
+                    receiveSubscriber = ReceiveFilesSubscriberImpl().also { subscriber ->
+                        bubble.subscribe(subscriber)
+                    }
+                    bubble.start()
+                    return@withContext bubble
+                },
+                onFailure = {
+                    return@withContext null
+                },
+            )
         }
 
     suspend fun saveReceivedFiles(): List<File> = withContext(Dispatchers.IO) {

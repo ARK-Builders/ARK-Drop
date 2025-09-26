@@ -15,6 +15,7 @@ import dev.arkbuilders.drop.app.data.ReceiveFilesSubscriberImpl
 import dev.arkbuilders.drop.app.data.SendFilesSubscriberImpl
 import dev.arkbuilders.drop.app.data.TransferStatus
 import dev.arkbuilders.drop.app.di.TmpEntryPoint
+import dev.arkbuilders.drop.app.domain.repository.ProfileRepo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
@@ -26,7 +27,7 @@ import javax.inject.Singleton
 @Singleton
 class TransferManager @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val profileManager: ProfileManager,
+    private val profileRepo: ProfileRepo,
     private val historyRepository: HistoryRepository
 ) {
     companion object {

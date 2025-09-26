@@ -1,7 +1,6 @@
 package dev.arkbuilders.drop.app.ui.profile
 
 import android.net.Uri
-import android.text.Layout
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -81,13 +80,13 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
-import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import compose.icons.TablerIcons
 import compose.icons.tablericons.Camera
 import compose.icons.tablericons.Check
-import dev.arkbuilders.drop.app.ProfileManager
+import dev.arkbuilders.drop.app.domain.model.UserProfile
+import dev.arkbuilders.drop.app.domain.repository.ProfileRepo
 import dev.arkbuilders.drop.app.ui.components.DropButton
 import dev.arkbuilders.drop.app.ui.components.DropButtonSize
 import dev.arkbuilders.drop.app.ui.components.DropButtonVariant
@@ -115,7 +114,7 @@ data class EditProfileUiState(
 @Composable
 fun EditProfileEnhanced(
     navController: NavController,
-    profileManager: ProfileManager
+    profileRepo: ProfileRepo
 ) {
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
@@ -123,7 +122,7 @@ fun EditProfileEnhanced(
     val keyboardController = LocalSoftwareKeyboardController.current
 
     // State management
-    val profile by profileManager.profile.collectAsState()
+    val profile by profileRepo.profile.collectAsState()
     var uiState by remember { mutableStateOf(EditProfileUiState()) }
     var name by rememberSaveable { mutableStateOf(profile.name) }
     var selectedAvatarId by rememberSaveable { mutableStateOf(profile.avatarId) }
@@ -194,11 +193,11 @@ fun EditProfileEnhanced(
     val saveProfile =  {
         if (canSave) {
             uiState = uiState.copy(isSaving = true, error = null)
-            profileManager.updateName(name.trim())
+            profileRepo.updateName(name.trim())
             if (selectedAvatarId == "custom" && customAvatarBase64 != null) {
-                profileManager.updateCustomAvatar(customAvatarBase64!!)
+                profileRepo.updateCustomAvatar(customAvatarBase64!!)
             } else {
-                profileManager.updateAvatar(selectedAvatarId)
+                profileRepo.updateAvatar(selectedAvatarId)
             }
 
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -409,7 +408,7 @@ private fun ProfilePreviewSection(
     name: String,
     selectedAvatarId: String,
     customAvatarBase64: String?,
-    profile: dev.arkbuilders.drop.app.UserProfile,
+    profile: UserProfile,
     onNameChange: (String) -> Unit,
     nameError: String?,
     nameFocusRequester: FocusRequester,

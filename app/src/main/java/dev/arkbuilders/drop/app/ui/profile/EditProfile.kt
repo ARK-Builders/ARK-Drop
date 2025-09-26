@@ -1,8 +1,6 @@
 package dev.arkbuilders.drop.app.ui.profile
 
 import android.net.Uri
-import android.widget.ScrollView
-import android.widget.Scroller
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -17,15 +15,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
@@ -55,16 +49,16 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import compose.icons.TablerIcons
 import compose.icons.tablericons.Camera
-import dev.arkbuilders.drop.app.ProfileManager
+import dev.arkbuilders.drop.app.domain.repository.ProfileRepo
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditProfile(
     navController: NavController,
-    profileManager: ProfileManager
+    profileRepo: ProfileRepo
 ) {
     val context = LocalContext.current
-    val profile by profileManager.profile.collectAsState()
+    val profile by profileRepo.profile.collectAsState()
     var name by remember { mutableStateOf(profile.name) }
     var selectedAvatarId by remember { mutableStateOf(profile.avatarId) }
     var customAvatarBase64 by remember { mutableStateOf<String?>(null) }
@@ -110,11 +104,11 @@ fun EditProfile(
             // Save button
             FilledTonalButton(
                 onClick = {
-                    profileManager.updateName(name)
+                    profileRepo.updateName(name)
                     if (selectedAvatarId == "custom" && customAvatarBase64 != null) {
-                        profileManager.updateCustomAvatar(customAvatarBase64!!)
+                        profileRepo.updateCustomAvatar(customAvatarBase64!!)
                     } else {
-                        profileManager.updateAvatar(selectedAvatarId)
+                        profileRepo.updateAvatar(selectedAvatarId)
                     }
                     navController.navigateUp()
                 }

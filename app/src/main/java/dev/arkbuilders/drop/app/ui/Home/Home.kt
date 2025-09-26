@@ -41,11 +41,11 @@ import compose.icons.tablericons.ArrowUpCircle
 import compose.icons.tablericons.CloudDownload
 import compose.icons.tablericons.CloudUpload
 import compose.icons.tablericons.History
-import dev.arkbuilders.drop.app.ProfileManager
-import dev.arkbuilders.drop.app.UserProfile
 import dev.arkbuilders.drop.app.data.HistoryRepository
 import dev.arkbuilders.drop.app.data.TransferHistoryItem
 import dev.arkbuilders.drop.app.data.TransferType
+import dev.arkbuilders.drop.app.domain.model.UserProfile
+import dev.arkbuilders.drop.app.domain.repository.ProfileRepo
 import dev.arkbuilders.drop.app.navigation.DropDestination
 import dev.arkbuilders.drop.app.ui.components.DropButton
 import dev.arkbuilders.drop.app.ui.components.DropButtonSize
@@ -67,10 +67,10 @@ import java.util.Locale
 @Composable
 fun Home(
     navController: NavController,
-    profileManager: ProfileManager,
+    profileRepo: ProfileRepo,
     historyRepository: HistoryRepository,
 ) {
-    val profile = remember { profileManager.getCurrentProfile() }
+    val profile = remember { profileRepo.getCurrentProfile() }
     val historyItems by historyRepository.historyItems.collectAsState()
 
     var logoScale by remember { mutableStateOf(0f) }

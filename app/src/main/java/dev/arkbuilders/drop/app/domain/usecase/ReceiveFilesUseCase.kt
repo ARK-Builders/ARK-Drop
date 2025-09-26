@@ -6,8 +6,8 @@ import dev.arkbuilders.drop.ReceiveFilesBubble
 import dev.arkbuilders.drop.ReceiveFilesRequest
 import dev.arkbuilders.drop.ReceiverConfig
 import dev.arkbuilders.drop.ReceiverProfile
-import dev.arkbuilders.drop.app.ProfileManager
 import dev.arkbuilders.drop.app.domain.ResourcesHelper
+import dev.arkbuilders.drop.app.domain.repository.ProfileRepo
 import dev.arkbuilders.drop.receiveFiles
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -16,7 +16,7 @@ import javax.inject.Inject
 
 class ReceiveFilesUseCase @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val profileManager: ProfileManager,
+    private val profileRepo: ProfileRepo,
     private val resourcesHelper: ResourcesHelper,
 ) {
     suspend operator fun invoke(
@@ -26,7 +26,7 @@ class ReceiveFilesUseCase @Inject constructor(
         runCatching {
             Timber.d("Starting file receive with ticket: $ticket")
 
-            val profile = profileManager.getCurrentProfile()
+            val profile = profileRepo.getCurrentProfile()
             val receiverProfile = ReceiverProfile(
                 name = profile.name.ifEmpty { "Anonymous" },
                 avatarB64 = profile.avatarB64.takeIf { it.isNotEmpty() }

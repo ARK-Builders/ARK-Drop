@@ -8,9 +8,9 @@ import dev.arkbuilders.drop.SendFilesRequest
 import dev.arkbuilders.drop.SenderConfig
 import dev.arkbuilders.drop.SenderFile
 import dev.arkbuilders.drop.SenderProfile
-import dev.arkbuilders.drop.app.ProfileManager
 import dev.arkbuilders.drop.app.data.SenderFileDataImpl
 import dev.arkbuilders.drop.app.domain.ResourcesHelper
+import dev.arkbuilders.drop.app.domain.repository.ProfileRepo
 import dev.arkbuilders.drop.sendFiles
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -19,7 +19,7 @@ import javax.inject.Inject
 
 class SendFilesUseCase @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val profileManager: ProfileManager,
+    private val profileRepo: ProfileRepo,
     private val resourcesHelper: ResourcesHelper,
 ) {
     suspend operator fun invoke(
@@ -28,7 +28,7 @@ class SendFilesUseCase @Inject constructor(
         runCatching {
             Timber.d("Starting file send for ${fileUris.size} files")
 
-            val profile = profileManager.getCurrentProfile()
+            val profile = profileRepo.getCurrentProfile()
             val senderProfile = SenderProfile(
                 name = profile.name.ifEmpty { "Anonymous" },
                 avatarB64 = profile.avatarB64.takeIf { it.isNotEmpty() }

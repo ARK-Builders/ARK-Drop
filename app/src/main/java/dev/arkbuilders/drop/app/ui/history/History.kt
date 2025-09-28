@@ -33,6 +33,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,12 +46,16 @@ import compose.icons.tablericons.ClearAll
 import compose.icons.tablericons.FileDownload
 import compose.icons.tablericons.FileUpload
 import compose.icons.tablericons.History
-import dev.arkbuilders.drop.app.data.HistoryRepository
-import dev.arkbuilders.drop.app.data.TransferHistoryItem
-import dev.arkbuilders.drop.app.data.TransferStatus
-import dev.arkbuilders.drop.app.data.TransferType
+import dev.arkbuilders.drop.app.domain.model.TransferHistoryItem
+import dev.arkbuilders.drop.app.domain.model.TransferStatus
+import dev.arkbuilders.drop.app.domain.model.TransferType
+import dev.arkbuilders.drop.app.domain.repository.TransferHistoryItemRepository
 import dev.arkbuilders.drop.app.ui.profile.AvatarUtils
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
+import java.time.Duration
+import java.time.OffsetDateTime
+import java.time.format.DateTimeFormatter
 import java.util.Date
 import java.util.Locale
 
@@ -58,10 +63,12 @@ import java.util.Locale
 @Composable
 fun History(
     navController: NavController,
-    historyRepository: HistoryRepository
+    transferHistoryItemRepository: TransferHistoryItemRepository
 ) {
-    val historyItems by historyRepository.historyItems.collectAsState()
+    val historyItems by transferHistoryItemRepository
+        .historyItems.collectAsState(emptyList())
     var showClearDialog by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
     Column(
         modifier = Modifier
@@ -140,7 +147,9 @@ fun History(
                     HistoryItemCard(
                         item = item,
                         onDelete = {
-                            historyRepository.deleteHistoryItem(item.id)
+                            scope.launch {
+                                transferHistoryItemRepository.deleteHistoryItem(item.id)
+                            }
                         }
                     )
                 }
@@ -168,7 +177,9 @@ fun History(
             confirmButton = {
                 Button(
                     onClick = {
-                        historyRepository.clearHistory()
+                        scope.launch {
+                            transferHistoryItemRepository.clearHistory()
+                        }
                         showClearDialog = false
                     },
                     colors = ButtonDefaults.buttonColors(
@@ -381,15 +392,17 @@ private fun formatFileSize(bytes: Long): String {
     return "%.1f GB".format(gb)
 }
 
-private fun formatTimestamp(timestamp: Long): String {
-    val now = System.currentTimeMillis()
-    val diff = now - timestamp
+private fun formatTimestamp(timestamp: OffsetDateTime): String {
+    val now = OffsetDateTime.now()
+    val diff = Duration.between(timestamp, now).toMillis()
 
     return when {
         diff < 60000 -> "Just now"
         diff < 3600000 -> "${diff / 60000}m ago"
         diff < 86400000 -> "${diff / 3600000}h ago"
         diff < 604800000 -> "${diff / 86400000}d ago"
-        else -> SimpleDateFormat("MMM dd", Locale.getDefault()).format(Date(timestamp))
+        else -> timestamp.format(
+            DateTimeFormatter.ofPattern("MMM dd", Locale.getDefault())
+        )
     }
 }

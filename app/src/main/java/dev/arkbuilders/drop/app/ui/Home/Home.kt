@@ -34,6 +34,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import compose.icons.TablerIcons
 import compose.icons.tablericons.ArrowDownCircle
@@ -41,11 +42,11 @@ import compose.icons.tablericons.ArrowUpCircle
 import compose.icons.tablericons.CloudDownload
 import compose.icons.tablericons.CloudUpload
 import compose.icons.tablericons.History
-import dev.arkbuilders.drop.app.data.HistoryRepository
-import dev.arkbuilders.drop.app.data.TransferHistoryItem
-import dev.arkbuilders.drop.app.data.TransferType
+import dev.arkbuilders.drop.app.domain.model.TransferHistoryItem
+import dev.arkbuilders.drop.app.domain.model.TransferType
 import dev.arkbuilders.drop.app.domain.model.UserProfile
 import dev.arkbuilders.drop.app.domain.repository.ProfileRepo
+import dev.arkbuilders.drop.app.domain.repository.TransferHistoryItemRepository
 import dev.arkbuilders.drop.app.navigation.DropDestination
 import dev.arkbuilders.drop.app.ui.components.DropButton
 import dev.arkbuilders.drop.app.ui.components.DropButtonSize
@@ -61,6 +62,9 @@ import dev.arkbuilders.drop.app.ui.profile.AvatarUtils
 import dev.arkbuilders.drop.app.ui.theme.DesignTokens
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
+import java.time.Duration
+import java.time.OffsetDateTime
+import java.time.format.DateTimeFormatter
 import java.util.Date
 import java.util.Locale
 
@@ -68,10 +72,11 @@ import java.util.Locale
 fun Home(
     navController: NavController,
     profileRepo: ProfileRepo,
-    historyRepository: HistoryRepository,
+    transferHistoryItemRepository: TransferHistoryItemRepository,
 ) {
     val profile = remember { profileRepo.getCurrentProfile() }
-    val historyItems by historyRepository.historyItems.collectAsState()
+    val historyItems by transferHistoryItemRepository
+        .historyItems.collectAsStateWithLifecycle(emptyList())
 
     var logoScale by remember { mutableStateOf(0f) }
 
@@ -363,15 +368,17 @@ private fun EnhancedTransferHistoryCard(item: TransferHistoryItem) {
     }
 }
 
-private fun formatTimestamp(timestamp: Long): String {
-    val now = System.currentTimeMillis()
-    val diff = now - timestamp
+private fun formatTimestamp(timestamp: OffsetDateTime): String {
+    val now = OffsetDateTime.now()
+    val diff = Duration.between(timestamp, now)
 
     return when {
-        diff < 60000 -> "Just now"
-        diff < 3600000 -> "${diff / 60000}m ago"
-        diff < 86400000 -> "${diff / 3600000}h ago"
-        diff < 604800000 -> "${diff / 86400000}d ago"
-        else -> SimpleDateFormat("MMM dd", Locale.getDefault()).format(Date(timestamp))
+        diff.toMinutes() < 1 -> "Just now"
+        diff.toHours() < 1 -> "${diff.toMinutes()}m ago"
+        diff.toDays() < 1 -> "${diff.toHours()}h ago"
+        diff.toDays() < 7 -> "${diff.toDays()}d ago"
+        else -> timestamp.format(
+            DateTimeFormatter.ofPattern("MMM dd", Locale.getDefault())
+        )
     }
 }

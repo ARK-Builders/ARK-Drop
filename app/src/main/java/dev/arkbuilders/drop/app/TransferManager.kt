@@ -10,12 +10,12 @@ import android.util.Log
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.arkbuilders.drop.*
-import dev.arkbuilders.drop.app.data.HistoryRepository
 import dev.arkbuilders.drop.app.data.ReceiveFilesSubscriberImpl
 import dev.arkbuilders.drop.app.data.SendFilesSubscriberImpl
-import dev.arkbuilders.drop.app.data.TransferStatus
 import dev.arkbuilders.drop.app.di.TmpEntryPoint
+import dev.arkbuilders.drop.app.domain.model.TransferStatus
 import dev.arkbuilders.drop.app.domain.repository.ProfileRepo
+import dev.arkbuilders.drop.app.domain.repository.TransferHistoryItemRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
@@ -28,7 +28,7 @@ import javax.inject.Singleton
 class TransferManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val profileRepo: ProfileRepo,
-    private val historyRepository: HistoryRepository
+    private val transferHistoryRepository: TransferHistoryItemRepository,
 ) {
     companion object {
         private const val TAG = "TransferManager"
@@ -113,7 +113,7 @@ class TransferManager @Inject constructor(
                 val totalSize = completeFiles.sumOf { it.second.size.toLong() }
                 val firstFileName = savedFiles.firstOrNull()?.name ?: "Unknown"
 
-                historyRepository.addReceivedTransfer(
+                transferHistoryRepository.addReceivedTransfer(
                     fileName = firstFileName,
                     fileSize = totalSize,
                     peerName = senderName,
@@ -131,7 +131,7 @@ class TransferManager @Inject constructor(
             val senderName = progress?.senderName ?: "Unknown"
             val senderAvatar = progress?.senderAvatar
 
-            historyRepository.addReceivedTransfer(
+            transferHistoryRepository.addReceivedTransfer(
                 fileName = "Transfer failed",
                 fileSize = 0L,
                 peerName = senderName,
@@ -144,7 +144,7 @@ class TransferManager @Inject constructor(
         savedFiles
     }
 
-    fun recordSendCompletion(fileUris: List<Uri>) {
+    suspend fun recordSendCompletion(fileUris: List<Uri>) {
         try {
             val progress = sendSubscriber?.progress?.value
             val receiverName = progress?.receiverName ?: "Unknown"
@@ -165,7 +165,7 @@ class TransferManager @Inject constructor(
 
             val firstFileName = getFileName(fileUris.firstOrNull()) ?: "Unknown"
 
-            historyRepository.addSentTransfer(
+            transferHistoryRepository.addSentTransfer(
                 fileName = firstFileName,
                 fileSize = totalSize,
                 peerName = receiverName,

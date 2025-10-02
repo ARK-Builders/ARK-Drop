@@ -21,7 +21,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,7 +35,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import compose.icons.TablerIcons
 import compose.icons.tablericons.ArrowDownCircle
@@ -62,11 +61,10 @@ import dev.arkbuilders.drop.app.ui.components.EmptyState
 import dev.arkbuilders.drop.app.ui.profile.AvatarUtils
 import dev.arkbuilders.drop.app.ui.theme.DesignTokens
 import kotlinx.coroutines.delay
-import java.text.SimpleDateFormat
+import org.orbitmvi.orbit.compose.collectAsState
 import java.time.Duration
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
-import java.util.Date
 import java.util.Locale
 
 @Composable
@@ -75,9 +73,8 @@ fun Home(
     profileRepo: ProfileRepo,
     transferHistoryItemRepository: TransferHistoryItemRepository,
 ) {
-    val profile = remember { profileRepo.getCurrentProfile() }
-    val historyItems by transferHistoryItemRepository
-        .historyItems.collectAsStateWithLifecycle(emptyList())
+    val viewModel: HomeViewModel = hiltViewModel()
+    val state by viewModel.collectAsState()
 
     var logoScale by remember { mutableStateOf(0f) }
 
@@ -107,7 +104,7 @@ fun Home(
             HeaderSection(
                 logoScale = animatedLogoScale,
                 onProfileClick = { navController.navigate(DropDestination.EditProfile.route) },
-                profile = profile
+                profile = state.profile
             )
         }
 
@@ -121,11 +118,11 @@ fun Home(
 
         // Recent Transfers Section
         item {
-            if (historyItems.isNotEmpty()) {
+            if (state.historyItems.isNotEmpty()) {
                 RecentTransfersSection(
-                    historyItems = historyItems.take(5),
+                    historyItems = state.historyItems.take(5),
                     onViewAllClick = { navController.navigate(DropDestination.History.route) },
-                    showViewAll = historyItems.isNotEmpty()
+                    showViewAll = state.historyItems.isNotEmpty()
                 )
             } else {
                 EmptyTransfersSection()

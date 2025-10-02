@@ -150,8 +150,12 @@ dependencies {
     implementation(libs.room.ktx)
     ksp(libs.room.compiler)
 
+    implementation(libs.orbit.compose)
+    implementation(libs.orbit.viewmodel)
+
     // DAGGER SETUP
     implementation("com.google.dagger:hilt-android:2.57.1")
+    implementation("androidx.hilt:hilt-navigation-compose:1.3.0")
     ksp("com.google.dagger:hilt-compiler:2.57.1")
 
     // EXTRA ICONS

@@ -9,8 +9,10 @@ import dagger.hilt.components.SingletonComponent
 import dev.arkbuilders.drop.app.TransferManager
 import dev.arkbuilders.drop.app.data.ResourcesHelperImpl
 import dev.arkbuilders.drop.app.data.db.Database
+import dev.arkbuilders.drop.app.data.helper.PermissionsHelperImpl
 import dev.arkbuilders.drop.app.data.repository.ProfileRepoImpl
 import dev.arkbuilders.drop.app.data.repository.TransferHistoryItemRepositoryImpl
+import dev.arkbuilders.drop.app.domain.PermissionsHelper
 import dev.arkbuilders.drop.app.domain.ResourcesHelper
 import dev.arkbuilders.drop.app.domain.repository.ProfileRepo
 import dev.arkbuilders.drop.app.domain.repository.TransferHistoryItemRepository
@@ -56,4 +58,10 @@ object AppModule {
     fun provideTransferHistoryItemRepository(
         impl: TransferHistoryItemRepositoryImpl
     ): TransferHistoryItemRepository = impl
+
+    @Provides
+    @Singleton
+    fun providePermissionHelper(
+        impl: PermissionsHelperImpl
+    ): PermissionsHelper = impl
 }

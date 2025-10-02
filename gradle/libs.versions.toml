@@ -21,6 +21,7 @@ mlkitBarcodeScanning = "17.3.0"
 accompanistPermissions = "0.36.0"
 timber = "5.0.1"
 room = "2.8.1"
+orbitMVI = "9.0.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -52,6 +53,8 @@ room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
 room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 room-testing = { module = "androidx.room:room-testing", version.ref = "room" }
+orbit-compose = { module = "org.orbit-mvi:orbit-compose", version.ref = "orbitMVI" }
+orbit-viewmodel = { module = "org.orbit-mvi:orbit-viewmodel", version.ref = "orbitMVI" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

@@ -4,8 +4,9 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    id("com.google.dagger.hilt.android") version "2.56.2"
+    id("com.google.dagger.hilt.android") version "2.57.1"
     id("com.github.triplet.play") version "3.10.1"
+    alias(libs.plugins.ksp)
 }
 
 android {
@@ -30,8 +31,10 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-
         setProperty("archivesBaseName", "ark-drop")
+        ksp {
+            arg("room.schemaLocation", "$projectDir/schemas")
+        }
     }
 
     buildTypes {
@@ -141,17 +144,19 @@ dependencies {
     implementation(libs.mlkit.barcode.scanning)
     implementation(libs.accompanist.permissions)
 
+    implementation(libs.timber)
+
+    implementation(libs.room.runtime)
+    implementation(libs.room.ktx)
+    ksp(libs.room.compiler)
+
+    implementation(libs.orbit.compose)
+    implementation(libs.orbit.viewmodel)
+
     // DAGGER SETUP
-    implementation("com.google.dagger:hilt-android:2.56.2")
-    kapt("com.google.dagger:hilt-compiler:2.56.2")
-
-    // For instrumentation tests
-    androidTestImplementation("com.google.dagger:hilt-android-testing:2.56.2")
-    kaptAndroidTest("com.google.dagger:hilt-compiler:2.56.2")
-
-    // For local unit tests
-    testImplementation("com.google.dagger:hilt-android-testing:2.56.2")
-    kaptTest("com.google.dagger:hilt-compiler:2.56.2")
+    implementation("com.google.dagger:hilt-android:2.57.1")
+    implementation("androidx.hilt:hilt-navigation-compose:1.3.0")
+    ksp("com.google.dagger:hilt-compiler:2.57.1")
 
     // EXTRA ICONS
     implementation("br.com.devsrsouza.compose.icons:simple-icons:1.1.0")

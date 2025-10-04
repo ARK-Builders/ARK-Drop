@@ -29,39 +29,40 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import compose.icons.TablerIcons
 import compose.icons.tablericons.ClearAll
 import compose.icons.tablericons.FileDownload
 import compose.icons.tablericons.FileUpload
 import compose.icons.tablericons.History
-import dev.arkbuilders.drop.app.data.HistoryRepository
-import dev.arkbuilders.drop.app.data.TransferHistoryItem
-import dev.arkbuilders.drop.app.data.TransferStatus
-import dev.arkbuilders.drop.app.data.TransferType
+import dev.arkbuilders.drop.app.domain.model.TransferHistoryItem
+import dev.arkbuilders.drop.app.domain.model.TransferStatus
+import dev.arkbuilders.drop.app.domain.model.TransferType
+import dev.arkbuilders.drop.app.domain.repository.TransferHistoryItemRepository
 import dev.arkbuilders.drop.app.ui.profile.AvatarUtils
-import java.text.SimpleDateFormat
-import java.util.Date
+import org.orbitmvi.orbit.compose.collectAsState
+import java.time.Duration
+import java.time.OffsetDateTime
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun History(
     navController: NavController,
-    historyRepository: HistoryRepository
+    transferHistoryItemRepository: TransferHistoryItemRepository
 ) {
-    val historyItems by historyRepository.historyItems.collectAsState()
-    var showClearDialog by remember { mutableStateOf(false) }
+    val viewModel: HistoryViewModel = hiltViewModel()
+    val scope = rememberCoroutineScope()
+    val state by viewModel.collectAsState()
 
     Column(
         modifier = Modifier
@@ -83,9 +84,8 @@ fun History(
                 modifier = Modifier.weight(1f)
             )
 
-            // Clear all button
-            if (historyItems.isNotEmpty()) {
-                IconButton(onClick = { showClearDialog = true }) {
+            if (state.historyItems.isNotEmpty()) {
+                IconButton(onClick = { viewModel.onShowClearDialog() }) {
                     Icon(
                         TablerIcons.ClearAll,
                         contentDescription = "Clear All",
@@ -97,7 +97,7 @@ fun History(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        if (historyItems.isEmpty()) {
+        if (state.historyItems.isEmpty()) {
             // Empty state
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -136,11 +136,14 @@ fun History(
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                items(historyItems) { item ->
+                items(state.historyItems) { item ->
                     HistoryItemCard(
+                        state = state,
                         item = item,
+                        onShowDeleteDialog = viewModel::onShowDeleteDialog,
+                        onDismissDeleteDialog = viewModel::onDismissDeleteDialog,
                         onDelete = {
-                            historyRepository.deleteHistoryItem(item.id)
+                            viewModel.onDelete(item.id)
                         }
                     )
                 }
@@ -149,9 +152,9 @@ fun History(
     }
 
     // Clear all confirmation dialog
-    if (showClearDialog) {
+    if (state.showClearDialog) {
         AlertDialog(
-            onDismissRequest = { showClearDialog = false },
+            onDismissRequest = { viewModel.onDismissClearDialog() },
             title = {
                 Text(
                     "Clear All History",
@@ -168,8 +171,7 @@ fun History(
             confirmButton = {
                 Button(
                     onClick = {
-                        historyRepository.clearHistory()
-                        showClearDialog = false
+                        viewModel.onClear()
                     },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.error
@@ -179,7 +181,7 @@ fun History(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showClearDialog = false }) {
+                TextButton(onClick = { viewModel.onClear() }) {
                     Text("Cancel", fontWeight = FontWeight.Medium)
                 }
             },
@@ -190,11 +192,12 @@ fun History(
 
 @Composable
 private fun HistoryItemCard(
+    state: HistoryScreenState,
     item: TransferHistoryItem,
+    onShowDeleteDialog: () -> Unit,
+    onDismissDeleteDialog: () -> Unit,
     onDelete: () -> Unit
 ) {
-    var showDeleteDialog by remember { mutableStateOf(false) }
-
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -321,7 +324,7 @@ private fun HistoryItemCard(
             }
 
             // Delete button
-            IconButton(onClick = { showDeleteDialog = true }) {
+            IconButton(onClick = { onShowDeleteDialog() }) {
                 Icon(
                     Icons.Default.Delete,
                     contentDescription = "Delete",
@@ -332,9 +335,9 @@ private fun HistoryItemCard(
     }
 
     // Delete confirmation dialog
-    if (showDeleteDialog) {
+    if (state.showDeleteDialog) {
         AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
+            onDismissRequest = { onDismissDeleteDialog() },
             title = {
                 Text(
                     "Delete History Item",
@@ -352,7 +355,6 @@ private fun HistoryItemCard(
                 Button(
                     onClick = {
                         onDelete()
-                        showDeleteDialog = false
                     },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.error
@@ -362,7 +364,7 @@ private fun HistoryItemCard(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
+                TextButton(onClick = { onDismissDeleteDialog() }) {
                     Text("Cancel", fontWeight = FontWeight.Medium)
                 }
             },
@@ -381,15 +383,17 @@ private fun formatFileSize(bytes: Long): String {
     return "%.1f GB".format(gb)
 }
 
-private fun formatTimestamp(timestamp: Long): String {
-    val now = System.currentTimeMillis()
-    val diff = now - timestamp
+private fun formatTimestamp(timestamp: OffsetDateTime): String {
+    val now = OffsetDateTime.now()
+    val diff = Duration.between(timestamp, now).toMillis()
 
     return when {
         diff < 60000 -> "Just now"
         diff < 3600000 -> "${diff / 60000}m ago"
         diff < 86400000 -> "${diff / 3600000}h ago"
         diff < 604800000 -> "${diff / 86400000}d ago"
-        else -> SimpleDateFormat("MMM dd", Locale.getDefault()).format(Date(timestamp))
+        else -> timestamp.format(
+            DateTimeFormatter.ofPattern("MMM dd", Locale.getDefault())
+        )
     }
 }

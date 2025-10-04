@@ -7,8 +7,15 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import dev.arkbuilders.drop.app.TransferManager
-import dev.arkbuilders.drop.app.ProfileManager
-import dev.arkbuilders.drop.app.data.HistoryRepository
+import dev.arkbuilders.drop.app.data.ResourcesHelperImpl
+import dev.arkbuilders.drop.app.data.db.Database
+import dev.arkbuilders.drop.app.data.helper.PermissionsHelperImpl
+import dev.arkbuilders.drop.app.data.repository.ProfileRepoImpl
+import dev.arkbuilders.drop.app.data.repository.TransferHistoryItemRepositoryImpl
+import dev.arkbuilders.drop.app.domain.PermissionsHelper
+import dev.arkbuilders.drop.app.domain.ResourcesHelper
+import dev.arkbuilders.drop.app.domain.repository.ProfileRepo
+import dev.arkbuilders.drop.app.domain.repository.TransferHistoryItemRepository
 import javax.inject.Singleton
 
 @Module
@@ -17,17 +24,44 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideProfileManager(@ApplicationContext context: Context): ProfileManager {
-        return ProfileManager(context)
-    }
+    fun provideProfileRepo(impl: ProfileRepoImpl): ProfileRepo = impl
 
     @Provides
     @Singleton
     fun provideTransferManager(
         @ApplicationContext context: Context,
-        profileManager: ProfileManager,
-        historyRepository: HistoryRepository
+        profileRepo: ProfileRepo,
+        transferHistoryItemRepository: TransferHistoryItemRepository
     ): TransferManager {
-        return TransferManager(context, profileManager, historyRepository)
+        return TransferManager(context, profileRepo, transferHistoryItemRepository)
     }
+
+    @Provides
+    @Singleton
+    fun provideResourcesHelper(
+        impl: ResourcesHelperImpl
+    ): ResourcesHelper = impl
+
+    @Provides
+    @Singleton
+    fun provideDatabase(
+        @ApplicationContext context: Context,
+    ) = Database.build(context)
+
+    @Provides
+    fun provideTransferHistoryItemDao(
+        db: Database,
+    ) = db.transferHistoryDao()
+
+    @Provides
+    @Singleton
+    fun provideTransferHistoryItemRepository(
+        impl: TransferHistoryItemRepositoryImpl
+    ): TransferHistoryItemRepository = impl
+
+    @Provides
+    @Singleton
+    fun providePermissionHelper(
+        impl: PermissionsHelperImpl
+    ): PermissionsHelper = impl
 }

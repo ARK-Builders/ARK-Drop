@@ -1,6 +1,7 @@
 [versions]
 agp = "8.12.1"
 kotlin = "2.2.0"
+ksp = "2.2.0-2.0.2"
 coreKtx = "1.15.0"
 junit = "4.13.2"
 junitVersion = "1.2.1"
@@ -18,6 +19,9 @@ cameraLifecycle = "1.4.0"
 cameraView = "1.4.0"
 mlkitBarcodeScanning = "17.3.0"
 accompanistPermissions = "0.36.0"
+timber = "5.0.1"
+room = "2.8.1"
+orbitMVI = "9.0.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -35,6 +39,7 @@ androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-man
 androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
+timber = { module = "com.jakewharton.timber:timber", version.ref = "timber" }
 jna = { group = "net.java.dev.jna", name = "jna", version.ref = "jna" }
 google-zxing-core = { group = "com.google.zxing", name = "core", version.ref = "googleZxingCore" }
 github-yuriy-budiyev-code-scanner = { group = "com.github.yuriy-budiyev", name = "code-scanner", version.ref = "githubYuriyBudiyevCodeScanner" }
@@ -44,8 +49,15 @@ androidx-camera-lifecycle = { group = "androidx.camera", name = "camera-lifecycl
 androidx-camera-view = { group = "androidx.camera", name = "camera-view", version.ref = "cameraView" }
 mlkit-barcode-scanning = { group = "com.google.mlkit", name = "barcode-scanning", version.ref = "mlkitBarcodeScanning" }
 accompanist-permissions = { group = "com.google.accompanist", name = "accompanist-permissions", version.ref = "accompanistPermissions" }
+room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
+room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
+room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
+room-testing = { module = "androidx.room:room-testing", version.ref = "room" }
+orbit-compose = { module = "org.orbit-mvi:orbit-compose", version.ref = "orbitMVI" }
+orbit-viewmodel = { module = "org.orbit-mvi:orbit-viewmodel", version.ref = "orbitMVI" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp"}

@@ -82,6 +82,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
@@ -103,10 +104,10 @@ import compose.icons.tablericons.ArrowForward
 import compose.icons.tablericons.Camera
 import compose.icons.tablericons.CameraOff
 import compose.icons.tablericons.Qrcode
+import dev.arkbuilders.drop.app.R
 import dev.arkbuilders.drop.app.TransferManager
 import dev.arkbuilders.drop.app.data.ReceiveFileInfo
 import dev.arkbuilders.drop.app.data.ReceivingProgress
-import dev.arkbuilders.drop.app.ui.components.DropLogoIcon
 import dev.arkbuilders.drop.app.ui.profile.AvatarUtils
 import dev.arkbuilders.drop.app.ui.theme.DesignTokens
 import kotlinx.coroutines.delay
@@ -329,9 +330,11 @@ fun Receive(
 
             Spacer(modifier = Modifier.width(DesignTokens.Spacing.md))
 
-            DropLogoIcon(
-                size = 32.dp,
-                tint = MaterialTheme.colorScheme.primary
+            Icon(
+                modifier = Modifier.size(32.dp),
+                painter = painterResource(R.drawable.ic_logo),
+                contentDescription = null,
+                tint = Color.Unspecified,
             )
 
             Spacer(modifier = Modifier.width(DesignTokens.Spacing.md))

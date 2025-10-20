@@ -95,6 +95,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -116,8 +117,8 @@ import compose.icons.tablericons.Copy
 import compose.icons.tablericons.FileText
 import compose.icons.tablericons.Plus
 import compose.icons.tablericons.Qrcode
+import dev.arkbuilders.drop.app.R
 import dev.arkbuilders.drop.app.TransferManager
-import dev.arkbuilders.drop.app.ui.components.DropLogoIcon
 import dev.arkbuilders.drop.app.ui.profile.AvatarUtils
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
@@ -605,8 +606,11 @@ private fun SendTopBar(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                DropLogoIcon(
-                    size = 24.dp, tint = MaterialTheme.colorScheme.primary
+                Icon(
+                    modifier = Modifier.size(24.dp),
+                    painter = painterResource(R.drawable.ic_logo),
+                    contentDescription = null,
+                    tint = Color.Unspecified,
                 )
                 Text(
                     text = "Send Files", style = MaterialTheme.typography.headlineSmall.copy(

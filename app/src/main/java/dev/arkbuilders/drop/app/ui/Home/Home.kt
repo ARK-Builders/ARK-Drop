@@ -29,6 +29,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -42,6 +44,7 @@ import compose.icons.tablericons.CloudDownload
 import compose.icons.tablericons.CloudUpload
 import compose.icons.tablericons.History
 import dev.arkbuilders.drop.app.ProfileManager
+import dev.arkbuilders.drop.app.R
 import dev.arkbuilders.drop.app.UserProfile
 import dev.arkbuilders.drop.app.data.HistoryRepository
 import dev.arkbuilders.drop.app.data.TransferHistoryItem
@@ -54,7 +57,6 @@ import dev.arkbuilders.drop.app.ui.components.DropCard
 import dev.arkbuilders.drop.app.ui.components.DropCardContent
 import dev.arkbuilders.drop.app.ui.components.DropCardSize
 import dev.arkbuilders.drop.app.ui.components.DropCardVariant
-import dev.arkbuilders.drop.app.ui.components.DropLogoWithBackground
 import dev.arkbuilders.drop.app.ui.components.DropOutlinedButton
 import dev.arkbuilders.drop.app.ui.components.EmptyState
 import dev.arkbuilders.drop.app.ui.profile.AvatarUtils
@@ -149,7 +151,12 @@ private fun HeaderSection(
             Box(
                 modifier = Modifier.scale(logoScale)
             ) {
-                DropLogoWithBackground(size = 56.dp)
+                Icon(
+                    modifier = Modifier.size(56.dp),
+                    painter = painterResource(R.drawable.ic_logo),
+                    contentDescription = null,
+                    tint = Color.Unspecified,
+                )
             }
 
             Column {

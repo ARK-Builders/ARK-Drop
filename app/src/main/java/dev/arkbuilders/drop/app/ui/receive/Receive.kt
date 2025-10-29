@@ -65,8 +65,8 @@ import androidx.navigation.NavController
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
+import dev.arkbuilders.drop.app.R
 import dev.arkbuilders.drop.app.TransferManager
-import dev.arkbuilders.drop.app.ui.components.DropLogoIcon
 import dev.arkbuilders.drop.app.ui.receive.components.ReceiveCompleteCard
 import dev.arkbuilders.drop.app.ui.receive.components.ReceiveErrorCard
 import dev.arkbuilders.drop.app.ui.receive.components.ReceiveLoadingCard

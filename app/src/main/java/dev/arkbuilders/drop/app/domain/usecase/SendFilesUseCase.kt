@@ -35,7 +35,7 @@ class SendFilesUseCase @Inject constructor(
             )
 
             val senderFiles = fileUris.mapNotNull { uri ->
-                val fileName = resourcesHelper.getFileName(uri)
+                val fileName = resourcesHelper.getFileName(uri.toString())
                 if (fileName != null) {
                     val fileData = SenderFileDataImpl(context, uri)
                     SenderFile(

@@ -10,10 +10,12 @@ import dev.arkbuilders.drop.app.TransferManager
 import dev.arkbuilders.drop.app.data.ResourcesHelperImpl
 import dev.arkbuilders.drop.app.data.db.Database
 import dev.arkbuilders.drop.app.data.helper.PermissionsHelperImpl
+import dev.arkbuilders.drop.app.data.repository.NetworkStatusImpl
 import dev.arkbuilders.drop.app.data.repository.ProfileRepoImpl
 import dev.arkbuilders.drop.app.data.repository.TransferHistoryItemRepositoryImpl
 import dev.arkbuilders.drop.app.domain.PermissionsHelper
 import dev.arkbuilders.drop.app.domain.ResourcesHelper
+import dev.arkbuilders.drop.app.domain.repository.NetworkStatus
 import dev.arkbuilders.drop.app.domain.repository.ProfileRepo
 import dev.arkbuilders.drop.app.domain.repository.TransferHistoryItemRepository
 import javax.inject.Singleton
@@ -64,4 +66,10 @@ object AppModule {
     fun providePermissionHelper(
         impl: PermissionsHelperImpl
     ): PermissionsHelper = impl
+
+    @Provides
+    @Singleton
+    fun provideNetworkStatus(
+        impl: NetworkStatusImpl
+    ): NetworkStatus = impl
 }

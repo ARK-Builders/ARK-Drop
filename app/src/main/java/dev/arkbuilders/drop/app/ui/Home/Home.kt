@@ -43,6 +43,7 @@ import compose.icons.tablericons.ArrowUpCircle
 import compose.icons.tablericons.CloudDownload
 import compose.icons.tablericons.CloudUpload
 import compose.icons.tablericons.History
+import dev.arkbuilders.drop.app.R
 import dev.arkbuilders.drop.app.domain.model.TransferHistoryItem
 import dev.arkbuilders.drop.app.domain.model.TransferType
 import dev.arkbuilders.drop.app.domain.model.UserProfile

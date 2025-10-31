@@ -33,10 +33,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
@@ -58,12 +59,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -81,12 +79,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import compose.icons.TablerIcons
 import compose.icons.tablericons.Camera
-import compose.icons.tablericons.Check
-import dev.arkbuilders.drop.app.domain.model.UserProfile
-import dev.arkbuilders.drop.app.domain.repository.ProfileRepo
+import dagger.hilt.android.EntryPointAccessors
+import dev.arkbuilders.drop.app.di.TmpEntryPoint
+import dev.arkbuilders.drop.app.domain.model.UserAvatar
+import dev.arkbuilders.drop.app.ui.components.AvatarImage
 import dev.arkbuilders.drop.app.ui.components.DropButton
 import dev.arkbuilders.drop.app.ui.components.DropButtonSize
 import dev.arkbuilders.drop.app.ui.components.DropButtonVariant
@@ -96,139 +96,41 @@ import dev.arkbuilders.drop.app.ui.components.DropCardSize
 import dev.arkbuilders.drop.app.ui.components.DropCardVariant
 import dev.arkbuilders.drop.app.ui.components.ErrorStateDisplay
 import dev.arkbuilders.drop.app.ui.components.ErrorType
-import dev.arkbuilders.drop.app.ui.components.LoadingIndicator
 import dev.arkbuilders.drop.app.ui.theme.DesignTokens
 import kotlinx.coroutines.delay
-
-// UI State Management
-data class EditProfileUiState(
-    val isLoading: Boolean = false,
-    val isSaving: Boolean = false,
-    val error: String? = null,
-    val showSuccess: Boolean = false,
-    val nameError: String? = null,
-    val avatarError: String? = null
-)
+import org.orbitmvi.orbit.compose.collectAsState
+import org.orbitmvi.orbit.compose.collectSideEffect
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditProfileEnhanced(
     navController: NavController,
-    profileRepo: ProfileRepo
 ) {
-    val context = LocalContext.current
-    val haptic = LocalHapticFeedback.current
+    val viewModel: EditProfileViewModel = hiltViewModel()
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
-
-    // State management
-    val profile by profileRepo.profile.collectAsState()
-    var uiState by remember { mutableStateOf(EditProfileUiState()) }
-    var name by rememberSaveable { mutableStateOf(profile.name) }
-    var selectedAvatarId by rememberSaveable { mutableStateOf(profile.avatarId) }
-    var customAvatarBase64 by remember { mutableStateOf<String?>(null) }
-
-    // Focus management
     val nameFocusRequester = remember { FocusRequester() }
 
-    // Validation
-    val isNameValid by remember {
-        derivedStateOf {
-            name.isNotBlank() && name.length <= 50 && name.trim().length >= 2
-        }
-    }
+    val state by viewModel.collectAsState()
 
-    val hasChanges by remember {
-        derivedStateOf {
-            name != profile.name ||
-                    selectedAvatarId != profile.avatarId ||
-                    customAvatarBase64 != null
-        }
-    }
 
-    val canSave by remember {
-        derivedStateOf {
-            isNameValid && hasChanges && !uiState.isSaving
-        }
-    }
-
-    // Available avatars
-    val availableAvatars = remember {
-        listOf(
-            "avatar_00", "avatar_01", "avatar_02", "avatar_03",
-            "avatar_04", "avatar_05", "avatar_06", "avatar_07", "avatar_08"
-        )
-    }
-
-    // Image picker launcher with error handling
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         if (uri != null) {
-            try {
-                uiState = uiState.copy(isLoading = true, error = null)
-                val base64 = AvatarUtils.uriToBase64(context, uri)
-                if (base64 != null) {
-                    customAvatarBase64 = base64
-                    selectedAvatarId = "custom"
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                } else {
-                    uiState = uiState.copy(
-                        error = "Unable to process the selected image. Please try a different image.",
-                        avatarError = "Invalid image format"
-                    )
-                }
-            } catch (e: Exception) {
-                uiState = uiState.copy(
-                    error = "Failed to load image. Please check your storage permissions and try again.",
-                    avatarError = "Image loading failed"
-                )
-            } finally {
-                uiState = uiState.copy(isLoading = false)
-            }
+            viewModel.onImagePicked(uri.toString())
         }
     }
 
-    // Save profile function
-    val saveProfile =  {
-        if (canSave) {
-            uiState = uiState.copy(isSaving = true, error = null)
-            profileRepo.updateName(name.trim())
-            if (selectedAvatarId == "custom" && customAvatarBase64 != null) {
-                profileRepo.updateCustomAvatar(customAvatarBase64!!)
-            } else {
-                profileRepo.updateAvatar(selectedAvatarId)
+    viewModel.collectSideEffect { effect ->
+        when (effect) {
+            EditProfileScreenEffect.LaunchImagePicker -> {
+                imagePickerLauncher.launch("image/*")
             }
 
-            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-            uiState = uiState.copy(isSaving = false, showSuccess = true)
-        }
-    }
-
-    LaunchedEffect(uiState.showSuccess) {
-        if (uiState.showSuccess) {
-            delay(1500)
-            navController.navigateUp()
-        }
-    }
-
-
-    // Real-time name validation
-    LaunchedEffect(name) {
-        uiState = uiState.copy(
-            nameError = when {
-                name.isBlank() -> "Name cannot be empty"
-                name.trim().length < 2 -> "Name must be at least 2 characters"
-                name.length > 50 -> "Name cannot exceed 50 characters"
-                else -> null
+            EditProfileScreenEffect.NavigateBack -> {
+                navController.popBackStack()
             }
-        )
-    }
-
-    // Clear success state when user makes changes
-    LaunchedEffect(name, selectedAvatarId, customAvatarBase64) {
-        if (uiState.showSuccess) {
-            uiState = uiState.copy(showSuccess = false)
         }
     }
 
@@ -236,6 +138,7 @@ fun EditProfileEnhanced(
         modifier = Modifier
             .fillMaxSize()
             .windowInsetsPadding(WindowInsets.ime)
+            .verticalScroll(rememberScrollState())
     ) {
         // Enhanced Top App Bar
         TopAppBar(
@@ -249,7 +152,6 @@ fun EditProfileEnhanced(
             navigationIcon = {
                 IconButton(
                     onClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         navController.navigateUp()
                     },
                     modifier = Modifier.semantics {
@@ -265,31 +167,18 @@ fun EditProfileEnhanced(
             },
             actions = {
                 AnimatedVisibility(
-                    visible = canSave,
+                    visible = state.hasChanges,
                     enter = scaleIn(spring(stiffness = Spring.StiffnessHigh)) + fadeIn(),
                     exit = scaleOut(spring(stiffness = Spring.StiffnessHigh)) + fadeOut()
                 ) {
                     DropButton(
-                        onClick = saveProfile,
+                        onClick = { viewModel.onSave() },
                         variant = DropButtonVariant.Primary,
                         size = DropButtonSize.Medium,
-                        loading = uiState.isSaving,
                         contentDescription = "Save profile changes"
                     ) {
-                        if (!uiState.isSaving) {
-                            Icon(
-                                if (uiState.showSuccess) TablerIcons.Check else Icons.Default.Check,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(DesignTokens.Spacing.xs))
-                        }
                         Text(
-                            text = when {
-                                uiState.showSuccess -> "Saved!"
-                                uiState.isSaving -> "Saving..."
-                                else -> "Save"
-                            },
+                            text = "Save",
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -302,9 +191,8 @@ fun EditProfileEnhanced(
             )
         )
 
-        // Error Display
         AnimatedVisibility(
-            visible = uiState.error != null,
+            visible = state.avatarImageLoadingFailed,
             enter = slideInVertically(
                 initialOffsetY = { -it },
                 animationSpec = spring(stiffness = Spring.StiffnessMedium)
@@ -314,91 +202,54 @@ fun EditProfileEnhanced(
                 animationSpec = spring(stiffness = Spring.StiffnessMedium)
             ) + fadeOut()
         ) {
-            uiState.error?.let { error ->
-                ErrorStateDisplay(
-                    errorState = dev.arkbuilders.drop.app.ui.components.ErrorState(
-                        type = ErrorType.Generic,
-                        title = "Profile Update Failed",
-                        message = error,
-                        actionLabel = "Dismiss",
-                        onAction = { uiState = uiState.copy(error = null) }
-                    ),
-                    modifier = Modifier.padding(DesignTokens.Spacing.lg)
-                )
-            }
+            ErrorStateDisplay(
+                errorState = dev.arkbuilders.drop.app.ui.components.ErrorState(
+                    type = ErrorType.Generic,
+                    title = "Profile Update Failed",
+                    message = "Failed to load image. Please check your storage permissions and try again.",
+                    actionLabel = "Dismiss",
+                    onAction = {
+                        viewModel.clearAvatarLoadingError()
+                    }
+                ),
+                modifier = Modifier.padding(DesignTokens.Spacing.lg)
+            )
         }
 
-        // Loading Overlay
-        if (uiState.isLoading) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(DesignTokens.Spacing.lg),
-                contentAlignment = Alignment.Center
-            ) {
-                LoadingIndicator(message = "Processing image...")
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(DesignTokens.Spacing.lg),
-                verticalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.xl)
-            ) {
-                // Profile Preview Section
-                item {
-                    ProfilePreviewSection(
-                        name = name,
-                        selectedAvatarId = selectedAvatarId,
-                        customAvatarBase64 = customAvatarBase64,
-                        profile = profile,
-                        onNameChange = { newName ->
-                            name = newName
-                            uiState = uiState.copy(error = null)
-                        },
-                        nameError = uiState.nameError,
-                        nameFocusRequester = nameFocusRequester,
-                        onDone = {
-                            keyboardController?.hide()
-                            focusManager.clearFocus()
-                        }
-                    )
-                }
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(DesignTokens.Spacing.lg),
+            verticalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.xl)
+        ) {
+            ProfilePreviewSection(
+                name = state.name,
+                avatar = state.avatar,
+                onNameChange = { newName ->
+                    viewModel.onNameChanged(newName)
+                },
+                nameError = state.nameError,
+                nameFocusRequester = nameFocusRequester,
+            )
 
-                // Custom Avatar Upload Section
-                item {
-                    CustomAvatarSection(
-                        onUploadClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            imagePickerLauncher.launch("image/*")
-                        },
-                        hasError = uiState.avatarError != null
-                    )
-                }
+            CustomAvatarSection(
+                onUploadClick = {
+                    viewModel.onPickImage()
+                },
+                hasError = state.avatarImageLoadingFailed
+            )
 
-                // Avatar Selection Section
-                item {
-                    AvatarSelectionSection(
-                        availableAvatars = availableAvatars,
-                        selectedAvatarId = selectedAvatarId,
-                        onAvatarSelected = { avatarId ->
-                            selectedAvatarId = avatarId
-                            customAvatarBase64 = null
-                            uiState = uiState.copy(error = null, avatarError = null)
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        }
-                    )
+            AvatarSelectionSection(
+                availableAvatars = UserAvatar.predefinedIds,
+                avatar = state.avatar,
+                onAvatarSelected = { avatarId ->
+                    viewModel.onAvatarSelected(avatarId)
                 }
+            )
 
-                // Privacy Notice Section
-                item {
-                    PrivacyNoticeSection()
-                }
+            PrivacyNoticeSection()
 
-                // Bottom spacing for better UX
-                item {
-                    Spacer(modifier = Modifier.height(DesignTokens.Spacing.xxxl))
-                }
-            }
+            Spacer(modifier = Modifier.height(DesignTokens.Spacing.xxxl))
         }
     }
 }
@@ -406,16 +257,11 @@ fun EditProfileEnhanced(
 @Composable
 private fun ProfilePreviewSection(
     name: String,
-    selectedAvatarId: String,
-    customAvatarBase64: String?,
-    profile: UserProfile,
+    avatar: UserAvatar,
     onNameChange: (String) -> Unit,
-    nameError: String?,
+    nameError: EditProfileNameError?,
     nameFocusRequester: FocusRequester,
-    onDone: () -> Unit
 ) {
-    val context = LocalContext.current
-
     DropCard(
         variant = DropCardVariant.Elevated,
         size = DropCardSize.Large,
@@ -425,13 +271,6 @@ private fun ProfilePreviewSection(
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Avatar Preview with Animation
-                val displayAvatarBase64 = when {
-                    selectedAvatarId == "custom" && customAvatarBase64 != null -> customAvatarBase64!!
-                    selectedAvatarId == "custom" && profile.avatarId == "custom" -> profile.avatarB64
-                    else -> AvatarUtils.getDefaultAvatarBase64(context, selectedAvatarId)
-                }
-
                 var avatarScale by remember { mutableStateOf(0.8f) }
                 val animatedAvatarScale by animateFloatAsState(
                     targetValue = avatarScale,
@@ -442,7 +281,7 @@ private fun ProfilePreviewSection(
                     label = "avatarScale"
                 )
 
-                LaunchedEffect(selectedAvatarId, customAvatarBase64) {
+                LaunchedEffect(avatar) {
                     avatarScale = 0.8f
                     delay(100)
                     avatarScale = 1f
@@ -454,16 +293,15 @@ private fun ProfilePreviewSection(
                         .scale(animatedAvatarScale),
                     contentAlignment = Alignment.Center
                 ) {
-                    AvatarUtils.AvatarImage(
-                        base64String = displayAvatarBase64,
+                    AvatarImage(
                         modifier = Modifier
                             .size(120.dp)
                             .semantics {
                                 contentDescription = "Current profile avatar"
-                            }
+                            },
+                        avatarB64 = avatar.base64,
                     )
 
-                    // Edit indicator
                     Surface(
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
@@ -513,7 +351,7 @@ private fun ProfilePreviewSection(
                         ) {
                             nameError?.let {
                                 Text(
-                                    text = it,
+                                    text = it.toString(),
                                     color = colorScheme.error,
                                     style = MaterialTheme.typography.bodySmall
                                 )
@@ -540,9 +378,6 @@ private fun ProfilePreviewSection(
                     keyboardOptions = KeyboardOptions(
                         capitalization = KeyboardCapitalization.Words,
                         imeAction = ImeAction.Done
-                    ),
-                    keyboardActions = KeyboardActions(
-                        onDone = { onDone() }
                     ),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = colorScheme.primary,
@@ -633,9 +468,11 @@ private fun CustomAvatarSection(
 @Composable
 private fun AvatarSelectionSection(
     availableAvatars: List<String>,
-    selectedAvatarId: String,
+    avatar: UserAvatar,
     onAvatarSelected: (String) -> Unit
 ) {
+    val columns = 3
+
     Column {
         Text(
             text = "Choose Default Avatar",
@@ -649,18 +486,35 @@ private fun AvatarSelectionSection(
 
         Spacer(modifier = Modifier.height(DesignTokens.Spacing.lg))
 
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(3),
-            horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.lg),
-            verticalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.lg),
-            modifier = Modifier.height(300.dp) // Fixed height to prevent layout issues
+        Column(
+            verticalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.lg)
         ) {
-            items(availableAvatars) { avatarId ->
-                EnhancedAvatarOption(
-                    avatarId = avatarId,
-                    isSelected = selectedAvatarId == avatarId,
-                    onClick = { onAvatarSelected(avatarId) }
-                )
+            availableAvatars.chunked(columns).forEach { rowAvatars ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.lg),
+                ) {
+                    rowAvatars.forEach { avatarId ->
+                        EnhancedAvatarOption(
+                            modifier = Modifier
+                                .aspectRatio(1f)
+                                .weight(1f),
+                            avatarId = avatarId,
+                            isSelected = avatar.predefinedId == avatarId,
+                            onClick = { onAvatarSelected(avatarId) }
+                        )
+                    }
+
+                    if (rowAvatars.size < columns) {
+                        repeat(columns - rowAvatars.size) {
+                            Spacer(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .aspectRatio(1f)
+                            )
+                        }
+                    }
+                }
             }
         }
     }
@@ -668,12 +522,19 @@ private fun AvatarSelectionSection(
 
 @Composable
 private fun EnhancedAvatarOption(
+    modifier: Modifier,
     avatarId: String,
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
+    val avatarHelper = remember {
+        EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            TmpEntryPoint::class.java
+        ).avatarHelper()
+    }
 
     var scale by remember { mutableStateOf(1f) }
     val animatedScale by animateFloatAsState(
@@ -686,12 +547,8 @@ private fun EnhancedAvatarOption(
     )
 
     Card(
-        modifier = Modifier
-            .aspectRatio(1f)
-            .scale(animatedScale)
-            .semantics {
-                contentDescription = "Avatar option ${avatarId.replace("avatar_", "")}"
-            },
+        modifier = modifier
+            .scale(animatedScale),
         onClick = {
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             scale = 0.95f
@@ -720,41 +577,41 @@ private fun EnhancedAvatarOption(
         ),
         shape = RoundedCornerShape(DesignTokens.CornerRadius.lg)
     ) {
-        // Selection indicator
-        AnimatedVisibility(
-            visible = isSelected,
-            enter = scaleIn(spring(stiffness = Spring.StiffnessHigh)) + fadeIn(),
-            exit = scaleOut(spring(stiffness = Spring.StiffnessHigh)) + fadeOut(),
-            modifier = Modifier.align(Alignment.End)
-        ) {
-            Surface(
-                modifier = Modifier
-                    .padding(DesignTokens.Spacing.sm)
-                    .size(24.dp),
-                shape = CircleShape,
-                color = colorScheme.primary,
-                shadowElevation = DesignTokens.Elevation.sm
+
+        Box {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    Icons.Default.Check,
-                    contentDescription = "Selected",
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(DesignTokens.Spacing.xs),
-                    tint = colorScheme.onPrimary
+                AvatarImage(
+                    avatarB64 = avatarHelper.getDefaultAvatarBase64(avatarId),
+                    modifier = Modifier.size(56.dp),
                 )
             }
-        }
-
-
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            AvatarUtils.AvatarImage(
-                base64String = AvatarUtils.getDefaultAvatarBase64(context, avatarId),
-                modifier = Modifier.size(56.dp)
-            )
+            this@Card.AnimatedVisibility(
+                visible = isSelected,
+                enter = scaleIn(spring(stiffness = Spring.StiffnessHigh)) + fadeIn(),
+                exit = scaleOut(spring(stiffness = Spring.StiffnessHigh)) + fadeOut(),
+                modifier = Modifier.align(Alignment.TopEnd)
+            ) {
+                Surface(
+                    modifier = Modifier
+                        .padding(DesignTokens.Spacing.sm)
+                        .size(20.dp),
+                    shape = CircleShape,
+                    color = colorScheme.primary,
+                    shadowElevation = DesignTokens.Elevation.sm
+                ) {
+                    Icon(
+                        Icons.Default.Check,
+                        contentDescription = "Selected",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(DesignTokens.Spacing.xs),
+                        tint = colorScheme.onPrimary
+                    )
+                }
+            }
         }
     }
 

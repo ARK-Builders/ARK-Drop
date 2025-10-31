@@ -31,7 +31,7 @@ class SendFilesUseCase @Inject constructor(
             val profile = profileRepo.getCurrentProfile()
             val senderProfile = SenderProfile(
                 name = profile.name.ifEmpty { "Anonymous" },
-                avatarB64 = profile.avatarB64.takeIf { it.isNotEmpty() }
+                avatarB64 = profile.avatar.base64.takeIf { it.isNotEmpty() }
             )
 
             val senderFiles = fileUris.mapNotNull { uri ->

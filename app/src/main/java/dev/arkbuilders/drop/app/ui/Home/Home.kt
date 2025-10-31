@@ -50,6 +50,8 @@ import dev.arkbuilders.drop.app.domain.model.UserProfile
 import dev.arkbuilders.drop.app.domain.repository.ProfileRepo
 import dev.arkbuilders.drop.app.domain.repository.TransferHistoryItemRepository
 import dev.arkbuilders.drop.app.navigation.DropDestination
+import dev.arkbuilders.drop.app.ui.components.AvatarImage
+import dev.arkbuilders.drop.app.ui.components.AvatarImageWithFallback
 import dev.arkbuilders.drop.app.ui.components.DropButton
 import dev.arkbuilders.drop.app.ui.components.DropButtonSize
 import dev.arkbuilders.drop.app.ui.components.DropButtonVariant
@@ -59,7 +61,6 @@ import dev.arkbuilders.drop.app.ui.components.DropCardSize
 import dev.arkbuilders.drop.app.ui.components.DropCardVariant
 import dev.arkbuilders.drop.app.ui.components.DropOutlinedButton
 import dev.arkbuilders.drop.app.ui.components.EmptyState
-import dev.arkbuilders.drop.app.ui.profile.AvatarUtils
 import dev.arkbuilders.drop.app.ui.theme.DesignTokens
 import kotlinx.coroutines.delay
 import org.orbitmvi.orbit.compose.collectAsState
@@ -176,14 +177,13 @@ private fun HeaderSection(
             }
         }
 
-        // Profile access
         IconButton(
             onClick = onProfileClick,
             modifier = Modifier.semantics {
                 contentDescription = "Open profile settings"
             }
         ) {
-            AvatarUtils.AvatarImageWithFallback(profile.avatarB64)
+            AvatarImage(avatarB64 = profile.avatar.base64)
         }
     }
 }
@@ -362,10 +362,10 @@ private fun EnhancedTransferHistoryCard(item: TransferHistoryItem) {
                 }
 
                 // Peer avatar
-                AvatarUtils.AvatarImageWithFallback(
-                    base64String = item.peerAvatar,
+                AvatarImageWithFallback(
+                    avatarB64 = item.peerAvatar,
                     fallbackText = item.peerName,
-                    size = 40.dp
+                    size = 40.dp,
                 )
             }
         }

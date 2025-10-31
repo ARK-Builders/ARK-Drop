@@ -47,7 +47,7 @@ import dev.arkbuilders.drop.app.domain.model.TransferHistoryItem
 import dev.arkbuilders.drop.app.domain.model.TransferStatus
 import dev.arkbuilders.drop.app.domain.model.TransferType
 import dev.arkbuilders.drop.app.domain.repository.TransferHistoryItemRepository
-import dev.arkbuilders.drop.app.ui.profile.AvatarUtils
+import dev.arkbuilders.drop.app.ui.components.AvatarImageWithFallback
 import org.orbitmvi.orbit.compose.collectAsState
 import java.time.Duration
 import java.time.OffsetDateTime
@@ -213,8 +213,8 @@ private fun HistoryItemCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Peer avatar
-            AvatarUtils.AvatarImageWithFallback(
-                base64String = item.peerAvatar,
+            AvatarImageWithFallback(
+                avatarB64 = item.peerAvatar,
                 fallbackText = item.peerName,
                 size = 48.dp
             )

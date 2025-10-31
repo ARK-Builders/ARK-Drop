@@ -37,7 +37,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.arkbuilders.drop.app.data.ReceiveFileInfo
 import dev.arkbuilders.drop.app.data.ReceivingProgress
-import dev.arkbuilders.drop.app.ui.profile.AvatarUtils
+import dev.arkbuilders.drop.app.ui.components.AvatarImageWithFallback
 import dev.arkbuilders.drop.app.ui.theme.DesignTokens
 
 @Composable
@@ -95,8 +95,8 @@ fun ReceiveProgressCard(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.md)
                 ) {
-                    AvatarUtils.AvatarImageWithFallback(
-                        base64String = progress.senderAvatar,
+                    AvatarImageWithFallback(
+                        avatarB64 = progress.senderAvatar,
                         fallbackText = progress.senderName,
                         size = 36.dp
                     )

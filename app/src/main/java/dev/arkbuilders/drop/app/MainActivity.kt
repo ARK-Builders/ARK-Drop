@@ -108,7 +108,6 @@ fun DropNavigation(
         composable(DropDestination.EditProfile.route) {
             EditProfileEnhanced(
                 navController = navController,
-                profileRepo = profileRepo,
             )
         }
     }

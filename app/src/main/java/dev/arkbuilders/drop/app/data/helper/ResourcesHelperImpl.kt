@@ -1,7 +1,6 @@
-package dev.arkbuilders.drop.app.data
+package dev.arkbuilders.drop.app.data.helper
 
 import android.content.Context
-import android.net.Uri
 import android.provider.OpenableColumns
 import androidx.core.net.toUri
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -24,7 +23,7 @@ class ResourcesHelperImpl @Inject constructor(
                     } else null
                 }
         } catch (e: Exception) {
-            Timber.e(e, "Error getting filename for URI: $uri")
+            Timber.Forest.e(e, "Error getting filename for URI: $uri")
             null
         }
     }
@@ -53,7 +52,7 @@ class ResourcesHelperImpl @Inject constructor(
         return try {
             context.contentResolver.query(uri.toUri(), null, null, null, null)?.use { cursor ->
                 if (cursor.moveToFirst()) {
-                    val sizeIndex = cursor.getColumnIndex(android.provider.OpenableColumns.SIZE)
+                    val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
                     if (sizeIndex >= 0) cursor.getLong(sizeIndex) else 0L
                 } else 0L
             } ?: 0L

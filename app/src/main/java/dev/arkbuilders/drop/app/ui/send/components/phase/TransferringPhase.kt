@@ -27,7 +27,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.arkbuilders.drop.app.ui.DisplayUtils.formatBytes
 import dev.arkbuilders.drop.app.ui.DisplayUtils.formatDuration
-import dev.arkbuilders.drop.app.ui.profile.AvatarUtils
+import dev.arkbuilders.drop.app.ui.components.AvatarImageWithFallback
 import dev.arkbuilders.drop.app.ui.send.SendScreenState
 import dev.arkbuilders.drop.app.ui.send.components.SendCard
 import dev.arkbuilders.drop.app.ui.send.components.SendProgressBar
@@ -84,8 +84,8 @@ fun TransferringPhase(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
-                                AvatarUtils.AvatarImageWithFallback(
-                                    base64String = p.receiverAvatar ?: "",
+                                AvatarImageWithFallback(
+                                    avatarB64 = p.receiverAvatar,
                                     fallbackText = p.receiverName,
                                     size = 32.dp
                                 )

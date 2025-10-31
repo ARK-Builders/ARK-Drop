@@ -3,9 +3,9 @@ package dev.arkbuilders.drop.app.data.repository
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.arkbuilders.drop.app.data.datasource.ProfileLocalDataSource
+import dev.arkbuilders.drop.app.domain.model.UserAvatar
 import dev.arkbuilders.drop.app.domain.model.UserProfile
 import dev.arkbuilders.drop.app.domain.repository.ProfileRepo
-import dev.arkbuilders.drop.app.ui.profile.AvatarUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,7 +15,7 @@ import javax.inject.Singleton
 @Singleton
 class ProfileRepoImpl @Inject constructor(
     private val localDataSource: ProfileLocalDataSource,
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
 ) : ProfileRepo {
 
     private val _profile = MutableStateFlow(localDataSource.loadProfile())
@@ -30,12 +30,7 @@ class ProfileRepoImpl @Inject constructor(
         updateProfile(_profile.value.copy(name = name))
     }
 
-    override fun updateAvatar(avatarId: String) {
-        val avatarB64 = AvatarUtils.getDefaultAvatarBase64(context, avatarId)
-        updateProfile(_profile.value.copy(avatarId = avatarId, avatarB64 = avatarB64))
-    }
-
-    override fun updateCustomAvatar(base64: String) {
-        updateProfile(_profile.value.copy(avatarId = "custom", avatarB64 = base64))
+    override fun updateAvatar(avatar: UserAvatar) {
+        updateProfile(_profile.value.copy(avatar = avatar))
     }
 }

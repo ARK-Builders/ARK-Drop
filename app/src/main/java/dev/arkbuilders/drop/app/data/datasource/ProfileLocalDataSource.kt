@@ -7,6 +7,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import androidx.core.content.edit
+import dev.arkbuilders.drop.app.data.model.UserAvatarDto
 import dev.arkbuilders.drop.app.data.model.UserProfileDto
 import dev.arkbuilders.drop.app.domain.AvatarHelper
 import dev.arkbuilders.drop.app.domain.model.UserAvatar
@@ -64,10 +65,20 @@ class ProfileLocalDataSource @Inject constructor(
 
 private fun UserProfileDto.toDomain() = UserProfile(
     name = name,
-    avatar = avatar
+    avatar = avatar.toDomain(),
 )
 
 private fun UserProfile.toDto() = UserProfileDto(
     name = name,
-    avatar = avatar
+    avatar = avatar.toDto(),
+)
+
+private fun UserAvatar.toDto() = UserAvatarDto(
+    base64 = base64,
+    predefinedId = predefinedId,
+)
+
+private fun UserAvatarDto.toDomain() = UserAvatar(
+    base64 = base64,
+    predefinedId = predefinedId,
 )

@@ -6,7 +6,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import dev.arkbuilders.drop.app.TransferManager
+import dev.arkbuilders.drop.app.data.repository.TransferManager
 import dev.arkbuilders.drop.app.data.helper.ResourcesHelperImpl
 import dev.arkbuilders.drop.app.data.db.Database
 import dev.arkbuilders.drop.app.data.helper.AvatarHelperImpl

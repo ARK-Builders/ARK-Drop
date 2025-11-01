@@ -228,81 +228,65 @@ fun Send(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Main content with phase-based transitions
-            AnimatedContent(
-                targetState = state, transitionSpec = {
-                    slideInVertically(
-                        initialOffsetY = { it / 3 }, animationSpec = spring(
-                            dampingRatio = Spring.DampingRatioMediumBouncy,
-                            stiffness = Spring.StiffnessMedium
-                        )
-                    ) + fadeIn(animationSpec = tween(300)) togetherWith slideOutVertically(
-                        targetOffsetY = { -it / 3 }, animationSpec = spring(
-                            dampingRatio = Spring.DampingRatioMediumBouncy,
-                            stiffness = Spring.StiffnessMedium
-                        )
-                    ) + fadeOut(animationSpec = tween(200))
-                }, label = "phaseTransition"
-            ) { phase ->
-                when (phase) {
-                    is SendScreenState.FileSelection -> {
-                        FileSelectionPhase(
-                            selectedFiles = phase.files,
-                            totalFileSize = phase.size,
-                            onAddFiles = {
-                                viewModel.onAddFiles()
-                            },
-                            onRemoveFile = { uri ->
-                                viewModel.onFileRemove(uri)
-                            },
-                            onStartTransfer = {
-                                viewModel.onStartTransfer()
-                            },
-                            canStartTransfer = phase.canStartTransfer,
-                            listState = listState
-                        )
-                    }
+            val _state = state
+            when (_state) {
+                is SendScreenState.FileSelection -> {
+                    FileSelectionPhase(
+                        selectedFiles = _state.files,
+                        totalFileSize = _state.size,
+                        onAddFiles = {
+                            viewModel.onAddFiles()
+                        },
+                        onRemoveFile = { uri ->
+                            viewModel.onFileRemove(uri)
+                        },
+                        onStartTransfer = {
+                            viewModel.onStartTransfer()
+                        },
+                        canStartTransfer = _state.canStartTransfer,
+                        listState = listState
+                    )
+                }
 
-                    is SendScreenState.GeneratingQR -> {
-                        GeneratingQRPhase(onCancel = { viewModel.onCancelQrGeneration() })
-                    }
+                is SendScreenState.GeneratingQR -> {
+                    GeneratingQRPhase(onCancel = { viewModel.onCancelQrGeneration() })
+                }
 
-                    is SendScreenState.WaitingForReceiver -> {
-                        WaitingForReceiverPhase(
-                            fileCount = phase.files.size,
-                            onCancel = { viewModel.onCancelTransfer() }
-                        )
-                    }
+                is SendScreenState.WaitingForReceiver -> {
+                    WaitingForReceiverPhase(
+                        fileCount = _state.files.size,
+                        onCancel = { viewModel.onCancelTransfer() }
+                    )
+                }
 
-                    is SendScreenState.Transfer -> {
-                        TransferringPhase(
-                            progress = phase,
-                            onCancel = { viewModel.onCancelTransfer() }
-                        )
-                    }
+                is SendScreenState.Transfer -> {
+                    TransferringPhase(
+                        progress = _state,
+                        onCancel = { viewModel.onCancelTransfer() }
+                    )
+                }
 
-                    is SendScreenState.Complete -> {
-                        TransferCompletePhase(
-                            fileCount = phase.files.size,
-                            onSendMore = {
-                                viewModel.onSendMore()
-                            },
-                            onDone = {
-                                viewModel.onDone()
-                            },
-                        )
-                    }
+                is SendScreenState.Complete -> {
+                    TransferCompletePhase(
+                        fileCount = _state.files.size,
+                        onSendMore = {
+                            viewModel.onSendMore()
+                        },
+                        onDone = {
+                            viewModel.onDone()
+                        },
+                    )
+                }
 
-                    is SendScreenState.Error -> {
-//                        ErrorPhase(
-//                            error = sendState.error,
-//                            onRetry = { handleError("Retry") },
-//                            onCancel = {
-//                                transferManager.cancelSend()
-//                                navController.navigateUp()
-//                            }
-//                        )
-                    }
+                is SendScreenState.Error -> {
+//                    ErrorPhase(
+//                        error = sendState.error,
+//                        onRetry = { handleError("Retry") },
+//                        onCancel = {
+//                            transferManager.cancelSend()
+//                            navController.navigateUp()
+//                        }
+//                    )
                 }
             }
 
@@ -321,7 +305,7 @@ fun Send(
                     qrBitmap = s.qrBitmap,
                     fileCount = s.files.size,
                     copyString = s.copyString,
-                    onDismiss = {  },
+                    onDismiss = { },
                     onCancel = {}
                 )
             }

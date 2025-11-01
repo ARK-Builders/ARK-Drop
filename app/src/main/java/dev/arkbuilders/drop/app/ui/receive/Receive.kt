@@ -45,7 +45,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,7 +53,6 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -63,10 +61,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import com.google.accompanist.permissions.isGranted
-import com.google.accompanist.permissions.rememberPermissionState
 import dev.arkbuilders.drop.app.R
-import dev.arkbuilders.drop.app.TransferManager
 import dev.arkbuilders.drop.app.ui.receive.components.ReceiveCompleteCard
 import dev.arkbuilders.drop.app.ui.receive.components.ReceiveErrorCard
 import dev.arkbuilders.drop.app.ui.receive.components.ReceiveLoadingCard
@@ -110,30 +105,14 @@ sealed class ReceiveError(val message: String, val isRecoverable: Boolean = true
     object UnknownError : ReceiveError("An unexpected error occurred. Please try again.", true)
 }
 
-sealed class ReceiveWorkflowState {
-    object Initial : ReceiveWorkflowState()
-    object RequestingPermission : ReceiveWorkflowState()
-    object Scanning : ReceiveWorkflowState()
-    object ManualInput : ReceiveWorkflowState()
-    object QRCodeScanned : ReceiveWorkflowState()
-    object Connecting : ReceiveWorkflowState()
-    object Receiving : ReceiveWorkflowState()
-    object Success : ReceiveWorkflowState()
-    data class Error(val error: ReceiveError) : ReceiveWorkflowState()
-}
-
 @OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun Receive(
     navController: NavController,
-    transferManager: TransferManager,
 ) {
     val viewModel: ReceiveViewModel = hiltViewModel()
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     val clipboardManager = LocalClipboardManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
-    val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
 
     val requestPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -147,12 +126,15 @@ fun Receive(
             ReceiveScreenEffect.HideKeyboard -> {
                 keyboardController?.hide()
             }
+
             ReceiveScreenEffect.NavigateBack -> {
                 navController.navigateUp()
             }
+
             ReceiveScreenEffect.RequestCameraPermission -> {
                 requestPermissionLauncher.launch(Manifest.permission.CAMERA)
             }
+
             ReceiveScreenEffect.ShowSuccessAnimation -> {
 
             }
@@ -305,7 +287,7 @@ fun Receive(
         }
 
         AnimatedContent(
-            targetState = uiState.workflowState,
+            targetState = uiState,
             transitionSpec = {
                 slideInVertically(
                     initialOffsetY = { it / 3 },
@@ -319,8 +301,13 @@ fun Receive(
             label = "workflowStateTransition"
         ) { state ->
             when (state) {
-                is ReceiveWorkflowState.Initial -> {
-                    if (!cameraPermissionState.status.isGranted) {
+                is ReceiveScreenState.Initial -> {
+                    if (state.cameraPermissionGranted) {
+                        ReceiveReadyToScanCard(
+                            onStartScanning = { viewModel.onStartScanning() },
+                            onEnterManually = { viewModel.onEnterManually() }
+                        )
+                    } else {
                         ReceivePermissionRequestCard(
                             onRequestPermission = {
                                 viewModel.onRequestCameraPermission()
@@ -329,19 +316,14 @@ fun Receive(
                                 viewModel.onEnterManually()
                             }
                         )
-                    } else {
-                        ReceiveReadyToScanCard(
-                            onStartScanning = { viewModel.onStartScanning() },
-                            onEnterManually = { viewModel.onEnterManually() }
-                        )
                     }
                 }
 
-                is ReceiveWorkflowState.RequestingPermission -> {
+                ReceiveScreenState.RequestingPermission -> {
                     ReceiveLoadingCard(message = "Requesting camera permission...")
                 }
 
-                is ReceiveWorkflowState.Scanning -> {
+                ReceiveScreenState.Scanning -> {
                     ReceiveScanningCard(
                         onQRCodeScanned = { ticket, confirmation ->
                             viewModel.onQrCodeScanned(ticket, confirmation)
@@ -354,13 +336,13 @@ fun Receive(
                     )
                 }
 
-                is ReceiveWorkflowState.ManualInput -> {
+                is ReceiveScreenState.ManualInput -> {
                     ReceiveManualInputCard(
-                        inputText = uiState.manualInputText,
+                        inputText = state.inputText,
                         onInputChange = {
                             viewModel.onManualInputChanged(it)
                         },
-                        inputError = uiState.manualInputError,
+                        inputError = state.inputError,
                         onPasteFromClipboard = { viewModel.onPasteFromClipboard(clipboardManager.getText()?.text) },
                         onSubmit = { viewModel.handleManualInputSubmit() },
                         onCancel = {
@@ -369,7 +351,7 @@ fun Receive(
                     )
                 }
 
-                is ReceiveWorkflowState.QRCodeScanned -> {
+                is ReceiveScreenState.QRCodeScanned -> {
                     ReceiveQRCodeScannedCard(
                         onAccept = {
                             viewModel.onAccept()
@@ -380,25 +362,23 @@ fun Receive(
                     )
                 }
 
-                is ReceiveWorkflowState.Connecting -> {
+                ReceiveScreenState.Connecting -> {
                     ReceiveLoadingCard(message = "Connecting to sender...")
                 }
 
-                is ReceiveWorkflowState.Receiving -> {
-                    uiState.receiveProgress?.let { progress ->
-                        ReceiveProgressCard(
-                            progress = progress,
-                            onCancel = {
-                                viewModel.onCancelReceiving()
-                            }
-                        )
-                    }
+                is ReceiveScreenState.Receiving -> {
+                    ReceiveProgressCard(
+                        progress = state.progress,
+                        onCancel = {
+                            viewModel.onCancelReceiving()
+                        }
+                    )
                 }
 
-                is ReceiveWorkflowState.Success -> {
+                is ReceiveScreenState.Success -> {
                     if (!showSuccessAnimation) {
                         ReceiveCompleteCard(
-                            receivedFiles = uiState.receivedFiles,
+                            receivedFiles = state.receivedFiles,
                             onReceiveMore = {
                                 viewModel.onReceiveMore()
                             },
@@ -409,7 +389,7 @@ fun Receive(
                     }
                 }
 
-                is ReceiveWorkflowState.Error -> {
+                is ReceiveScreenState.Error -> {
                     ReceiveErrorCard(
                         error = state.error,
                         onRetry = {
@@ -423,8 +403,10 @@ fun Receive(
             }
         }
 
-        if (uiState.workflowState !is ReceiveWorkflowState.Success
-            && uiState.workflowState !is ReceiveWorkflowState.Error) {
+        if (uiState !is ReceiveScreenState.Success
+            && uiState !is ReceiveScreenState.Error
+        ) {
+
             Spacer(modifier = Modifier.weight(1f))
 
             Card(

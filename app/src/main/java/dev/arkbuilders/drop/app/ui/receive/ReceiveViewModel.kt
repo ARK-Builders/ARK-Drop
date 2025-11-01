@@ -1,14 +1,11 @@
 package dev.arkbuilders.drop.app.ui.receive
 
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.accompanist.permissions.isGranted
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.arkbuilders.drop.app.TransferManager
 import dev.arkbuilders.drop.app.data.ReceivingProgress
 import dev.arkbuilders.drop.app.domain.PermissionsHelper
-import dev.arkbuilders.drop.app.domain.model.TransferHistoryItem
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -17,28 +14,16 @@ import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.viewmodel.container
 import javax.inject.Inject
 
-data class ReceiveScreenState(
-    val workflowState: ReceiveWorkflowState,
-    val scannedTicket: String?,
-    val scannedConfirmation: UByte?,
-    val manualInputText: String,
-    val manualInputError: String?,
-    val receivedFiles: List<String>,
-    val isCameraPermissionGranted: Boolean,
-    val receiveProgress: ReceivingProgress?,
-) {
-    companion object {
-        fun initial() = ReceiveScreenState(
-            workflowState = ReceiveWorkflowState.Initial,
-            scannedTicket = null,
-            scannedConfirmation = null,
-            manualInputText = "",
-            manualInputError = null,
-            receivedFiles = emptyList(),
-            isCameraPermissionGranted = false,
-            receiveProgress = null,
-        )
-    }
+sealed class ReceiveScreenState {
+    data class Initial(val cameraPermissionGranted: Boolean) : ReceiveScreenState()
+    data object RequestingPermission : ReceiveScreenState()
+    data object Scanning : ReceiveScreenState()
+    data class ManualInput(val inputText: String, val inputError: String?) : ReceiveScreenState()
+    data class QRCodeScanned(val ticket: String, val confirmation: UByte) : ReceiveScreenState()
+    data object Connecting : ReceiveScreenState()
+    data class Receiving(val progress: ReceivingProgress) : ReceiveScreenState()
+    data class Success(val receivedFiles: List<String>) : ReceiveScreenState()
+    data class Error(val error: ReceiveError) : ReceiveScreenState()
 }
 
 sealed class ReceiveScreenEffect {
@@ -54,154 +39,122 @@ class ReceiveViewModel @Inject constructor(
     private val permissionsHelper: PermissionsHelper,
 ) : ViewModel(), ContainerHost<ReceiveScreenState, ReceiveScreenEffect> {
     override val container: Container<ReceiveScreenState, ReceiveScreenEffect> =
-        container(ReceiveScreenState.initial())
+        container(ReceiveScreenState.Initial(false))
 
     init {
         intent {
             val receiveProgress = transferManager.receiveProgress?.value
-            val workflowState = if (receiveProgress != null && receiveProgress.isConnected) {
+            val state = if (receiveProgress != null && receiveProgress.isConnected) {
                 listenToProgress()
-                ReceiveWorkflowState.Receiving
+                ReceiveScreenState.Receiving(receiveProgress)
             } else {
-                ReceiveWorkflowState.Initial
+                ReceiveScreenState.Initial(permissionsHelper.isCameraGranted())
             }
             reduce {
-                state.copy(
-                    workflowState = workflowState,
-                    receiveProgress = receiveProgress,
-                )
+                state
             }
         }
     }
 
     fun onRequestCameraPermission() = intent {
         reduce {
-            state.copy(
-                workflowState = ReceiveWorkflowState.RequestingPermission
-            )
+            ReceiveScreenState.RequestingPermission
         }
         postSideEffect(ReceiveScreenEffect.RequestCameraPermission)
     }
 
     fun onEnterManually() = intent {
         reduce {
-            state.copy(
-                workflowState = ReceiveWorkflowState.ManualInput
-            )
+            ReceiveScreenState.ManualInput(inputText = "", inputError = null)
         }
     }
 
     fun onStartScanning() = intent {
         reduce {
-            state.copy(
-                workflowState = ReceiveWorkflowState.Scanning
-            )
+            ReceiveScreenState.Scanning
         }
     }
 
     fun onStopScanning() = intent {
         reduce {
-            state.copy(
-                workflowState = ReceiveWorkflowState.Initial
-            )
+            ReceiveScreenState.Initial(permissionsHelper.isCameraGranted())
         }
     }
 
     fun onError(error: ReceiveError) = intent {
         reduce {
-            state.copy(
-                workflowState = ReceiveWorkflowState.Error(error)
-            )
+            ReceiveScreenState.Error(error)
         }
     }
 
     fun onAccept() = intent {
         try {
+            val s = state
+            if (s !is ReceiveScreenState.QRCodeScanned) {
+                return@intent
+            }
+            val ticket = s.ticket
+            val confirmation = s.confirmation
+
             reduce {
-                state.copy(
-                    workflowState = ReceiveWorkflowState.Connecting
-                )
+                ReceiveScreenState.Connecting
             }
 
             val bubble =
-                transferManager.receiveFiles(state.scannedTicket!!, state.scannedConfirmation!!)
+                transferManager.receiveFiles(ticket, confirmation)
             if (bubble != null) {
                 reduce {
-                    state.copy(
-                        receiveProgress = transferManager.receiveProgress!!.value,
-                        workflowState = ReceiveWorkflowState.Receiving
-                    )
+                    ReceiveScreenState.Receiving(transferManager.receiveProgress!!.value)
                 }
                 listenToProgress()
             } else {
                 reduce {
-                    state.copy(
-                        workflowState = ReceiveWorkflowState.Error(ReceiveError.ConnectionFailed)
-                    )
+                    ReceiveScreenState.Error(ReceiveError.ConnectionFailed)
                 }
             }
         } catch (e: Exception) {
-            val workflowState = ReceiveWorkflowState.Error(
-                when {
-                    e.message?.contains(
-                        "network",
-                        ignoreCase = true
-                    ) == true -> ReceiveError.NetworkError
+            val error = when {
+                e.message?.contains(
+                    "network",
+                    ignoreCase = true
+                ) == true -> ReceiveError.NetworkError
 
-                    else -> ReceiveError.ConnectionFailed
-                }
-            )
+                else -> ReceiveError.ConnectionFailed
+            }
+
             reduce {
-                state.copy(
-                    workflowState = workflowState
-                )
+                ReceiveScreenState.Error(error)
             }
         }
     }
 
     fun onCameraPermissionGranted(isGranted: Boolean) = intent {
-        val workflowState = if (isGranted) {
-            ReceiveWorkflowState.Scanning
+        val state = if (isGranted) {
+            ReceiveScreenState.Scanning
         } else {
-            ReceiveWorkflowState.Error(ReceiveError.CameraPermissionDenied)
+            ReceiveScreenState.Error(ReceiveError.CameraPermissionDenied)
         }
         reduce {
-            state.copy(
-                workflowState = workflowState,
-                isCameraPermissionGranted = isGranted,
-            )
+            state
         }
     }
 
     fun onScanAgain() = intent {
-        val workflowState = if (permissionsHelper.isCameraGranted()) {
-            ReceiveWorkflowState.Scanning
+        val state = if (permissionsHelper.isCameraGranted()) {
+            ReceiveScreenState.Scanning
         } else {
-            ReceiveWorkflowState.ManualInput
+            ReceiveScreenState.ManualInput(inputText = "", inputError = null)
         }
         reduce {
-            state.copy(
-                workflowState = workflowState,
-                scannedTicket = null,
-                scannedConfirmation = null,
-                manualInputText = "",
-                manualInputError = null,
-            )
+            state
         }
     }
 
     fun onReceiveMore() = intent {
-        reduce {
-            state.copy(
-                workflowState = ReceiveWorkflowState.Initial,
-                receivedFiles = emptyList(),
-                scannedTicket = null,
-                scannedConfirmation = null,
-                manualInputText = "",
-                manualInputError = null,
-            )
-        }
         transferManager.cancelReceive()
+        reduce {
+            ReceiveScreenState.Initial(permissionsHelper.isCameraGranted())
+        }
     }
 
     fun onDone() = intent {
@@ -210,11 +163,15 @@ class ReceiveViewModel @Inject constructor(
     }
 
     fun onPasteFromClipboard(clipText: String?) = intent {
+        val s = state
+        if (s !is ReceiveScreenState.ManualInput)
+            return@intent
+
         if (!clipText.isNullOrEmpty()) {
             reduce {
-                state.copy(
-                    manualInputText = clipText,
-                    manualInputError = null,
+                s.copy(
+                    inputText = clipText,
+                    inputError = null,
                 )
             }
         }
@@ -222,13 +179,7 @@ class ReceiveViewModel @Inject constructor(
 
     fun onErrorRetry() = intent {
         reduce {
-            state.copy(
-                workflowState = ReceiveWorkflowState.Initial,
-                scannedTicket = null,
-                scannedConfirmation = null,
-                manualInputText = "",
-                manualInputError = null,
-            )
+            ReceiveScreenState.Initial(permissionsHelper.isCameraGranted())
         }
     }
 
@@ -239,19 +190,19 @@ class ReceiveViewModel @Inject constructor(
 
     fun onQrCodeScanned(ticket: String, confirmation: UByte) = intent {
         reduce {
-            state.copy(
-                scannedTicket = ticket,
-                scannedConfirmation = confirmation,
-                workflowState = ReceiveWorkflowState.QRCodeScanned,
-            )
+            ReceiveScreenState.QRCodeScanned(ticket, confirmation)
         }
     }
 
     fun onManualInputChanged(input: String) = blockingIntent {
+        val s = state
+        if (s !is ReceiveScreenState.ManualInput)
+            return@blockingIntent
+
         reduce {
-            state.copy(
-                manualInputText = input,
-                manualInputError = null,
+            s.copy(
+                inputText = input,
+                inputError = null,
             )
         }
     }
@@ -259,43 +210,35 @@ class ReceiveViewModel @Inject constructor(
     fun onCancelReceiving() = intent {
         transferManager.cancelReceive()
         reduce {
-            state.copy(
-                workflowState = ReceiveWorkflowState.Initial,
-                scannedTicket = null,
-                scannedConfirmation = null,
-                manualInputText = "",
-                manualInputError = null,
-            )
+            ReceiveScreenState.Initial(permissionsHelper.isCameraGranted())
         }
     }
 
     fun onCancelManualInput() = intent {
         reduce {
-            state.copy(
-                workflowState = ReceiveWorkflowState.Initial,
-                manualInputText = "",
-                manualInputError = null,
-            )
+            ReceiveScreenState.Initial(permissionsHelper.isCameraGranted())
         }
         postSideEffect(ReceiveScreenEffect.HideKeyboard)
     }
 
     fun handleManualInputSubmit() = intent {
-        val parsed = parseManualInput(state.manualInputText)
+        val s = state
+        if (s !is ReceiveScreenState.ManualInput)
+            return@intent
+
+        val parsed = parseManualInput(s.inputText)
         if (parsed != null) {
             reduce {
-                state.copy(
-                    scannedTicket = parsed.first,
-                    scannedConfirmation = parsed.second,
-                    workflowState = ReceiveWorkflowState.QRCodeScanned,
-                    manualInputError = null,
+                ReceiveScreenState.QRCodeScanned(
+                    ticket = parsed.first,
+                    confirmation = parsed.second
                 )
             }
             postSideEffect(ReceiveScreenEffect.HideKeyboard)
         } else {
             reduce {
-                state.copy(
-                    manualInputError = "Invalid format. Please enter: ticket confirmation"
+                s.copy(
+                    inputError =  "Invalid format. Please enter: ticket confirmation",
                 )
             }
         }
@@ -304,47 +247,44 @@ class ReceiveViewModel @Inject constructor(
     private fun listenToProgress() {
         transferManager.receiveProgress!!.onEach { progress ->
             intent {
+                val s = state
+                if (s !is ReceiveScreenState.Receiving)
+                    return@intent
+
                 reduce {
-                    state.copy(
-                        receiveProgress = progress
+                    s.copy(
+                        progress = progress
                     )
                 }
-            }
 
-            if (progress.isConnected && progress.files.isNotEmpty()) {
-                // Check if all files are complete
-                val allFilesComplete = progress.files.all { file ->
-                    val fileProgress = progress.fileProgress[file.id]
-                    fileProgress?.isComplete == true
-                }
+                if (progress.isConnected && progress.files.isNotEmpty()) {
+                    // Check if all files are complete
+                    val allFilesComplete = progress.files.all { file ->
+                        val fileProgress = progress.fileProgress[file.id]
+                        fileProgress?.isComplete == true
+                    }
 
-                if (allFilesComplete) {
-                    // Small delay to ensure UI updates are visible
-                    delay(1000)
-                    try {
-                        val savedFiles = transferManager.saveReceivedFiles()
-                        if (savedFiles.isNotEmpty()) {
-                            intent {
+                    if (allFilesComplete) {
+                        // Small delay to ensure UI updates are visible
+                        delay(1000)
+                        try {
+                            val savedFiles = transferManager.saveReceivedFiles()
+                            if (savedFiles.isNotEmpty()) {
                                 reduce {
-                                    state.copy(
-                                        receivedFiles = savedFiles.map { it.name },
-                                        workflowState = ReceiveWorkflowState.Success,
+                                    ReceiveScreenState.Success(
+                                        receivedFiles = savedFiles.map { it.name }
                                     )
                                 }
                                 postSideEffect(ReceiveScreenEffect.ShowSuccessAnimation)
-                            }
-                        } else {
-                            intent {
+                            } else {
                                 reduce {
-                                    state.copy(
-                                        workflowState = ReceiveWorkflowState.Error(ReceiveError.NoFilesReceived)
+                                    ReceiveScreenState.Error(
+                                        ReceiveError.NoFilesReceived
                                     )
                                 }
                             }
-                        }
-                    } catch (e: Exception) {
-                        val workflowState = ReceiveWorkflowState.Error(
-                            when {
+                        } catch (e: Exception) {
+                            val error = when {
                                 e.message?.contains("storage", ignoreCase = true) == true ->
                                     ReceiveError.StorageError
 
@@ -353,12 +293,8 @@ class ReceiveViewModel @Inject constructor(
 
                                 else -> ReceiveError.UnknownError
                             }
-                        )
-                        intent {
                             reduce {
-                                state.copy(
-                                    workflowState = workflowState
-                                )
+                                ReceiveScreenState.Error(error)
                             }
                         }
                     }

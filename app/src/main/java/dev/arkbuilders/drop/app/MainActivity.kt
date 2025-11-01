@@ -95,8 +95,7 @@ fun DropNavigation(
             )
         ) {
             Receive(
-                navController = navController,
-                transferManager = transferManager
+                navController = navController
             )
         }
         composable(DropDestination.History.route) {

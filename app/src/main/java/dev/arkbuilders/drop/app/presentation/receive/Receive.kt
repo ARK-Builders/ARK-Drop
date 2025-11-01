@@ -3,7 +3,6 @@ package dev.arkbuilders.drop.app.presentation.receive
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -13,9 +12,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -120,7 +116,7 @@ fun Receive(
         viewModel.onCameraPermissionGranted(isGranted)
     }
 
-    val uiState by viewModel.collectAsState()
+    val state by viewModel.collectAsState()
     viewModel.collectSideEffect { effect ->
         when (effect) {
             ReceiveScreenEffect.HideKeyboard -> {
@@ -286,125 +282,111 @@ fun Receive(
             }
         }
 
-        AnimatedContent(
-            targetState = uiState,
-            transitionSpec = {
-                slideInVertically(
-                    initialOffsetY = { it / 3 },
-                    animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
-                ) + fadeIn() togetherWith
-                        slideOutVertically(
-                            targetOffsetY = { -it / 3 },
-                            animationSpec = tween(DesignTokens.Animation.fast)
-                        ) + fadeOut()
-            },
-            label = "workflowStateTransition"
-        ) { state ->
-            when (state) {
-                is ReceiveScreenState.Initial -> {
-                    if (state.cameraPermissionGranted) {
-                        ReceiveReadyToScanCard(
-                            onStartScanning = { viewModel.onStartScanning() },
-                            onEnterManually = { viewModel.onEnterManually() }
-                        )
-                    } else {
-                        ReceivePermissionRequestCard(
-                            onRequestPermission = {
-                                viewModel.onRequestCameraPermission()
-                            },
-                            onEnterManually = {
-                                viewModel.onEnterManually()
-                            }
-                        )
-                    }
-                }
-
-                ReceiveScreenState.RequestingPermission -> {
-                    ReceiveLoadingCard(message = "Requesting camera permission...")
-                }
-
-                ReceiveScreenState.Scanning -> {
-                    ReceiveScanningCard(
-                        onQRCodeScanned = { ticket, confirmation ->
-                            viewModel.onQrCodeScanned(ticket, confirmation)
-                        },
-                        onError = { error ->
-                            viewModel.onError(error)
-                        },
-                        onStopScanning = { viewModel.onStopScanning() },
+        val _state = state
+        when (_state) {
+            is ReceiveScreenState.Initial -> {
+                if (_state.cameraPermissionGranted) {
+                    ReceiveReadyToScanCard(
+                        onStartScanning = { viewModel.onStartScanning() },
                         onEnterManually = { viewModel.onEnterManually() }
                     )
-                }
-
-                is ReceiveScreenState.ManualInput -> {
-                    ReceiveManualInputCard(
-                        inputText = state.inputText,
-                        onInputChange = {
-                            viewModel.onManualInputChanged(it)
+                } else {
+                    ReceivePermissionRequestCard(
+                        onRequestPermission = {
+                            viewModel.onRequestCameraPermission()
                         },
-                        inputError = state.inputError,
-                        onPasteFromClipboard = { viewModel.onPasteFromClipboard(clipboardManager.getText()?.text) },
-                        onSubmit = { viewModel.handleManualInputSubmit() },
-                        onCancel = {
-                            viewModel.onCancelManualInput()
-                        }
-                    )
-                }
-
-                is ReceiveScreenState.QRCodeScanned -> {
-                    ReceiveQRCodeScannedCard(
-                        onAccept = {
-                            viewModel.onAccept()
-                        },
-                        onScanAgain = {
-                            viewModel.onScanAgain()
-                        }
-                    )
-                }
-
-                ReceiveScreenState.Connecting -> {
-                    ReceiveLoadingCard(message = "Connecting to sender...")
-                }
-
-                is ReceiveScreenState.Receiving -> {
-                    ReceiveProgressCard(
-                        progress = state.progress,
-                        onCancel = {
-                            viewModel.onCancelReceiving()
-                        }
-                    )
-                }
-
-                is ReceiveScreenState.Success -> {
-                    if (!showSuccessAnimation) {
-                        ReceiveCompleteCard(
-                            receivedFiles = state.receivedFiles,
-                            onReceiveMore = {
-                                viewModel.onReceiveMore()
-                            },
-                            onDone = {
-                                viewModel.onDone()
-                            }
-                        )
-                    }
-                }
-
-                is ReceiveScreenState.Error -> {
-                    ReceiveErrorCard(
-                        error = state.error,
-                        onRetry = {
-                            viewModel.onErrorRetry()
-                        },
-                        onDismiss = {
-                            viewModel.onErrorDismiss()
+                        onEnterManually = {
+                            viewModel.onEnterManually()
                         }
                     )
                 }
             }
+
+            ReceiveScreenState.RequestingPermission -> {
+                ReceiveLoadingCard(message = "Requesting camera permission...")
+            }
+
+            ReceiveScreenState.Scanning -> {
+                ReceiveScanningCard(
+                    onQRCodeScanned = { ticket, confirmation ->
+                        viewModel.onQrCodeScanned(ticket, confirmation)
+                    },
+                    onError = { error ->
+                        viewModel.onError(error)
+                    },
+                    onStopScanning = { viewModel.onStopScanning() },
+                    onEnterManually = { viewModel.onEnterManually() }
+                )
+            }
+
+            is ReceiveScreenState.ManualInput -> {
+                ReceiveManualInputCard(
+                    inputText = _state.inputText,
+                    onInputChange = {
+                        viewModel.onManualInputChanged(it)
+                    },
+                    inputError = _state.inputError,
+                    onPasteFromClipboard = { viewModel.onPasteFromClipboard(clipboardManager.getText()?.text) },
+                    onSubmit = { viewModel.handleManualInputSubmit() },
+                    onCancel = {
+                        viewModel.onCancelManualInput()
+                    }
+                )
+            }
+
+            is ReceiveScreenState.QRCodeScanned -> {
+                ReceiveQRCodeScannedCard(
+                    onAccept = {
+                        viewModel.onAccept()
+                    },
+                    onScanAgain = {
+                        viewModel.onScanAgain()
+                    }
+                )
+            }
+
+            ReceiveScreenState.Connecting -> {
+                ReceiveLoadingCard(message = "Connecting to sender...")
+            }
+
+            is ReceiveScreenState.Receiving -> {
+                ReceiveProgressCard(
+                    progress = _state.progress,
+                    onCancel = {
+                        viewModel.onCancelReceiving()
+                    }
+                )
+            }
+
+            is ReceiveScreenState.Success -> {
+                if (!showSuccessAnimation) {
+                    ReceiveCompleteCard(
+                        receivedFiles = _state.receivedFiles,
+                        onReceiveMore = {
+                            viewModel.onReceiveMore()
+                        },
+                        onDone = {
+                            viewModel.onDone()
+                        }
+                    )
+                }
+            }
+
+            is ReceiveScreenState.Error -> {
+                ReceiveErrorCard(
+                    error = _state.error,
+                    onRetry = {
+                        viewModel.onErrorRetry()
+                    },
+                    onDismiss = {
+                        viewModel.onErrorDismiss()
+                    }
+                )
+            }
         }
 
-        if (uiState !is ReceiveScreenState.Success
-            && uiState !is ReceiveScreenState.Error
+        if (state !is ReceiveScreenState.Success
+            && state !is ReceiveScreenState.Error
         ) {
 
             Spacer(modifier = Modifier.weight(1f))

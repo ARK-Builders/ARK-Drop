@@ -105,7 +105,7 @@ class EditProfileViewModel @Inject constructor(
         postSideEffect(EditProfileScreenEffect.NavigateBack)
     }
 
-    fun clearAvatarLoadingError()= intent {
+    fun clearAvatarLoadingError() = intent {
         reduce {
             state.copy(avatarImageLoadingFailed = false)
         }

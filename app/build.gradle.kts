@@ -1,11 +1,10 @@
 plugins {
-    kotlin("kapt") version "2.2.0"
-    kotlin("plugin.serialization") version "1.9.23"
+    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    id("com.google.dagger.hilt.android") version "2.57.1"
-    id("com.github.triplet.play") version "3.10.1"
+    alias(libs.plugins.dagger.hilt)
+    alias(libs.plugins.triplet.play)
     alias(libs.plugins.ksp)
 }
 
@@ -32,9 +31,10 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         setProperty("archivesBaseName", "ark-drop")
-        ksp {
-            arg("room.schemaLocation", "$projectDir/schemas")
-        }
+    }
+
+    ksp {
+        arg("room.schemaLocation", "$projectDir/schemas")
     }
 
     buildTypes {
@@ -112,6 +112,7 @@ dependencies {
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
+
     implementation(libs.androidx.material3)
 
     // NAVIGATION
@@ -176,10 +177,6 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.5.0")
     implementation("androidx.compose.foundation:foundation:1.4.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
-}
-
-kapt {
-    correctErrorTypes = true
 }
 
 tasks.named<Delete>("clean") {

@@ -66,8 +66,10 @@ android {
         targetCompatibility = JavaVersion.VERSION_11
     }
 
-    kotlinOptions {
-        jvmTarget = "11"
+    kotlin {
+        compilerOptions {
+            jvmToolchain(11)
+        }
     }
 
     buildFeatures {
@@ -126,7 +128,7 @@ dependencies {
         }
     }
     //noinspection Aligned16KB
-    implementation("dev.arkbuilders:drop:17348879247") {
+    implementation(libs.arkbuilders.drop) {
         artifact {
             extension = "aar"
             type = "aar"
@@ -155,14 +157,14 @@ dependencies {
     implementation(libs.orbit.viewmodel)
 
     // DAGGER SETUP
-    implementation("com.google.dagger:hilt-android:2.57.1")
-    implementation("androidx.hilt:hilt-navigation-compose:1.3.0")
-    ksp("com.google.dagger:hilt-compiler:2.57.1")
+    implementation(libs.dagger.hilt.android)
+    implementation(libs.androidx.hilt.nav.compose)
+    ksp(libs.dagger.hilt.compiler)
 
     // EXTRA ICONS
-    implementation("br.com.devsrsouza.compose.icons:simple-icons:1.1.0")
-    implementation("br.com.devsrsouza.compose.icons:font-awesome:1.1.0")
-    implementation("br.com.devsrsouza.compose.icons:tabler-icons:1.1.0")
+    implementation(libs.simple.icons)
+    implementation(libs.font.awesome)
+    implementation(libs.tabler.icons)
 
     // DEVELOPMENT SETUP
     testImplementation(libs.junit)
@@ -174,9 +176,9 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
 
     // File-system profile manager
-    implementation("io.coil-kt:coil-compose:2.5.0")
-    implementation("androidx.compose.foundation:foundation:1.4.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+    implementation(libs.io.coil)
+    implementation(libs.androidx.compose.foundation)
+    implementation(libs.kotlinx.serialization)
 }
 
 tasks.named<Delete>("clean") {

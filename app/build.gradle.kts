@@ -1,11 +1,16 @@
 plugins {
-    kotlin("kapt") version "2.2.0"
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.dagger.hilt)
     alias(libs.plugins.triplet.play)
     alias(libs.plugins.ksp)
+}
+
+kotlin {
+    compilerOptions {
+        jvmToolchain(11)
+    }
 }
 
 android {
@@ -64,10 +69,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
-    }
-
-    kotlinOptions {
-        jvmTarget = "11"
     }
 
     buildFeatures {
@@ -176,10 +177,6 @@ dependencies {
     implementation(libs.io.coil)
     implementation(libs.androidx.compose.foundation)
     implementation(libs.kotlinx.serialization)
-}
-
-kapt {
-    correctErrorTypes = true
 }
 
 tasks.named<Delete>("clean") {

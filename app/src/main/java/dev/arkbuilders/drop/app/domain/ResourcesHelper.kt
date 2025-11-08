@@ -3,5 +3,7 @@ package dev.arkbuilders.drop.app.domain
 import android.net.Uri
 
 interface ResourcesHelper {
-    fun getFileName(uri: Uri): String?
+    fun getFileName(uri: String): String?
+    fun validateUris(uris: List<String>): Pair<List<String>, Int>
+    fun getFileSize(uri: String): Long
 }

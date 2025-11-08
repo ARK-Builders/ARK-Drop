@@ -3,16 +3,19 @@ package dev.arkbuilders.drop.app.data.datasource
 import android.content.Context
 import android.content.SharedPreferences
 import dagger.hilt.android.qualifiers.ApplicationContext
-import dev.arkbuilders.drop.app.ui.profile.AvatarUtils
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import androidx.core.content.edit
+import dev.arkbuilders.drop.app.data.model.UserAvatarDto
 import dev.arkbuilders.drop.app.data.model.UserProfileDto
+import dev.arkbuilders.drop.app.domain.AvatarHelper
+import dev.arkbuilders.drop.app.domain.model.UserAvatar
 import dev.arkbuilders.drop.app.domain.model.UserProfile
 
 class ProfileLocalDataSource @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val avatarHelper: AvatarHelper,
 ) {
     private val prefs: SharedPreferences =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -35,10 +38,13 @@ class ProfileLocalDataSource @Inject constructor(
     }
 
     private fun createDefaultProfile(): UserProfile {
+        val defaultAvatarId = "avatar_00"
         val default = UserProfile(
             name = "Anonymous",
-            avatarB64 = AvatarUtils.getDefaultAvatarBase64(context, "avatar_00"),
-            avatarId = "avatar_00"
+            avatar = UserAvatar(
+                base64 = avatarHelper.getDefaultAvatarBase64(defaultAvatarId),
+                predefinedId = defaultAvatarId,
+            )
         )
         saveProfile(default)
         return default
@@ -59,12 +65,20 @@ class ProfileLocalDataSource @Inject constructor(
 
 private fun UserProfileDto.toDomain() = UserProfile(
     name = name,
-    avatarB64 = avatarB64,
-    avatarId = avatarId,
+    avatar = avatar.toDomain(),
 )
 
 private fun UserProfile.toDto() = UserProfileDto(
     name = name,
-    avatarB64 = avatarB64,
-    avatarId = avatarId,
+    avatar = avatar.toDto(),
+)
+
+private fun UserAvatar.toDto() = UserAvatarDto(
+    base64 = base64,
+    predefinedId = predefinedId,
+)
+
+private fun UserAvatarDto.toDomain() = UserAvatar(
+    base64 = base64,
+    predefinedId = predefinedId,
 )

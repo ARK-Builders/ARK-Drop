@@ -29,7 +29,7 @@ class ReceiveFilesUseCase @Inject constructor(
             val profile = profileRepo.getCurrentProfile()
             val receiverProfile = ReceiverProfile(
                 name = profile.name.ifEmpty { "Anonymous" },
-                avatarB64 = profile.avatarB64.takeIf { it.isNotEmpty() }
+                avatarB64 = profile.avatar.base64.takeIf { it.isNotEmpty() }
             )
 
             val request = ReceiveFilesRequest(

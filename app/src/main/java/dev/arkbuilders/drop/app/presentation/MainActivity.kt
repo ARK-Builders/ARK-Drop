@@ -14,30 +14,26 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navDeepLink
-import dagger.hilt.android.AndroidEntryPoint
 import dev.arkbuilders.drop.app.data.repository.TransferManager
 import dev.arkbuilders.drop.app.domain.repository.ProfileRepo
 import dev.arkbuilders.drop.app.domain.repository.TransferHistoryItemRepository
-import dev.arkbuilders.drop.app.presentation.navigation.DropDestination
-import dev.arkbuilders.drop.app.presentation.history.History
 import dev.arkbuilders.drop.app.presentation.Home.Home
+import dev.arkbuilders.drop.app.presentation.history.History
+import dev.arkbuilders.drop.app.presentation.navigation.DropDestination
 import dev.arkbuilders.drop.app.presentation.profile.EditProfileEnhanced
 import dev.arkbuilders.drop.app.presentation.receive.Receive
 import dev.arkbuilders.drop.app.presentation.send.Send
 import dev.arkbuilders.drop.app.presentation.theme.DropTheme
-import javax.inject.Inject
+import org.koin.android.ext.android.get
+import org.koin.android.ext.android.inject
 
-@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
-    @Inject
-    lateinit var transferManager: TransferManager
+    private val transferManager: TransferManager = get()
 
-    @Inject
-    lateinit var profileRepo: ProfileRepo
+    private val profileRepo: ProfileRepo = get()
 
-    @Inject
-    lateinit var transferHistoryItemRepository: TransferHistoryItemRepository
+    private val transferHistoryItemRepository: TransferHistoryItemRepository = get()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

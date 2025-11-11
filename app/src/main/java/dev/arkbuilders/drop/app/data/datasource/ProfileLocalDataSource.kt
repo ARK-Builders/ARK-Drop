@@ -2,16 +2,13 @@ package dev.arkbuilders.drop.app.data.datasource
 
 import android.content.Context
 import android.content.SharedPreferences
-import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
-import javax.inject.Inject
 import androidx.core.content.edit
 import dev.arkbuilders.drop.app.data.model.UserAvatarDto
 import dev.arkbuilders.drop.app.data.model.UserProfileDto
 import dev.arkbuilders.drop.app.domain.AvatarHelper
 import dev.arkbuilders.drop.app.domain.model.UserAvatar
 import dev.arkbuilders.drop.app.domain.model.UserProfile
+import kotlinx.serialization.json.Json
 
 class ProfileLocalDataSource(
     private val context: Context,

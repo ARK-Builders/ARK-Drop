@@ -1,28 +1,23 @@
 package dev.arkbuilders.drop.app.di
 
-import android.content.Context
-import dagger.Module
-import dagger.Provides
-import dagger.hilt.InstallIn
-import dagger.hilt.android.qualifiers.ApplicationContext
-import dagger.hilt.components.SingletonComponent
-import dev.arkbuilders.drop.app.data.repository.TransferManager
-import dev.arkbuilders.drop.app.data.helper.ResourcesHelperImpl
 import dev.arkbuilders.drop.app.data.db.Database
 import dev.arkbuilders.drop.app.data.db.dao.TransferHistoryItemDao
 import dev.arkbuilders.drop.app.data.helper.AvatarHelperImpl
 import dev.arkbuilders.drop.app.data.helper.PermissionsHelperImpl
+import dev.arkbuilders.drop.app.data.helper.ResourcesHelperImpl
 import dev.arkbuilders.drop.app.data.repository.NetworkStatusImpl
 import dev.arkbuilders.drop.app.data.repository.ProfileRepoImpl
 import dev.arkbuilders.drop.app.data.repository.TransferHistoryItemRepositoryImpl
+import dev.arkbuilders.drop.app.data.repository.TransferManager
 import dev.arkbuilders.drop.app.domain.AvatarHelper
 import dev.arkbuilders.drop.app.domain.PermissionsHelper
 import dev.arkbuilders.drop.app.domain.ResourcesHelper
 import dev.arkbuilders.drop.app.domain.repository.NetworkStatus
 import dev.arkbuilders.drop.app.domain.repository.ProfileRepo
 import dev.arkbuilders.drop.app.domain.repository.TransferHistoryItemRepository
+import dev.arkbuilders.drop.app.domain.usecase.ReceiveFilesUseCase
+import dev.arkbuilders.drop.app.domain.usecase.SendFilesUseCase
 import org.koin.dsl.module
-import javax.inject.Singleton
 
 val appModule = module {
     single<ProfileRepo> { ProfileRepoImpl(get(), get()) }
@@ -34,6 +29,8 @@ val appModule = module {
     single<PermissionsHelper> { PermissionsHelperImpl(get()) }
     single<NetworkStatus> { NetworkStatusImpl(get()) }
     single<AvatarHelper> { AvatarHelperImpl(get()) }
+    factory<SendFilesUseCase> { SendFilesUseCase(get(), get(), get()) }
+    factory<ReceiveFilesUseCase> { ReceiveFilesUseCase(get(), get(), get()) }
 }
 
 /*@Module

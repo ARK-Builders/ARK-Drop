@@ -4,9 +4,7 @@ import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
-import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.arkbuilders.drop.app.domain.PermissionsHelper
-import javax.inject.Inject
 
 class PermissionsHelperImpl(
     private val ctx: Context,

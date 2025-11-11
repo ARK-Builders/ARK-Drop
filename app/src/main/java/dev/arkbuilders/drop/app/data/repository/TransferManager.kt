@@ -7,20 +7,22 @@ import android.os.Environment
 import android.provider.MediaStore
 import android.provider.OpenableColumns
 import android.util.Log
-import dagger.hilt.android.EntryPointAccessors
 import dev.arkbuilders.drop.ReceiveFilesBubble
-import dev.arkbuilders.drop.app.data.ReceiveFilesSubscriberImpl
 import dev.arkbuilders.drop.SendFilesBubble
-import dev.arkbuilders.drop.app.data.SendFilesSubscriberImpl
+import dev.arkbuilders.drop.app.data.ReceiveFilesSubscriberImpl
 import dev.arkbuilders.drop.app.data.ReceivingProgress
+import dev.arkbuilders.drop.app.data.SendFilesSubscriberImpl
 import dev.arkbuilders.drop.app.data.SendingProgress
-import dev.arkbuilders.drop.app.di.TmpEntryPoint
 import dev.arkbuilders.drop.app.domain.model.TransferStatus
 import dev.arkbuilders.drop.app.domain.repository.ProfileRepo
 import dev.arkbuilders.drop.app.domain.repository.TransferHistoryItemRepository
+import dev.arkbuilders.drop.app.domain.usecase.ReceiveFilesUseCase
+import dev.arkbuilders.drop.app.domain.usecase.SendFilesUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.get
 import java.io.File
 import java.io.FileOutputStream
 
@@ -28,7 +30,7 @@ class TransferManager(
     private val context: Context,
     private val profileRepo: ProfileRepo,
     private val transferHistoryRepository: TransferHistoryItemRepository,
-) {
+): KoinComponent {
     companion object {
         private const val TAG = "TransferManager"
     }
@@ -45,11 +47,8 @@ class TransferManager(
         get() = receiveSubscriber?.progress
 
     suspend fun sendFiles(fileUris: List<Uri>): SendFilesBubble? = withContext(Dispatchers.IO) {
-        val entryPoint = EntryPointAccessors.fromApplication(
-            context.applicationContext,
-            TmpEntryPoint::class.java
-        )
-        val sendUseCase = entryPoint.sendFilesUseCase()
+        val sendUseCase: SendFilesUseCase = get()
+
         sendUseCase.invoke(fileUris).fold(
             onSuccess = { bubble ->
                 currentSendBubble = bubble
@@ -66,11 +65,7 @@ class TransferManager(
 
     suspend fun receiveFiles(ticket: String, confirmation: UByte): ReceiveFilesBubble? =
         withContext(Dispatchers.IO) {
-            val entryPoint = EntryPointAccessors.fromApplication(
-                context.applicationContext,
-                TmpEntryPoint::class.java
-            )
-            val receiveFilesUseCase = entryPoint.receiveFilesUseCase()
+            val receiveFilesUseCase: ReceiveFilesUseCase = get()
 
             receiveFilesUseCase.invoke(ticket, confirmation).fold(
                 onSuccess = { bubble ->

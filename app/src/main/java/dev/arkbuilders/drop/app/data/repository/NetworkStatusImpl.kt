@@ -1,17 +1,14 @@
 package dev.arkbuilders.drop.app.data.repository
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.os.Build
-import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.arkbuilders.drop.app.domain.repository.NetworkStatus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import javax.inject.Inject
 
 class NetworkStatusImpl(
     private val context: Context,

@@ -2,7 +2,6 @@ package dev.arkbuilders.drop.app.presentation.Home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.arkbuilders.drop.app.domain.model.TransferHistoryItem
 import dev.arkbuilders.drop.app.domain.model.UserProfile
 import dev.arkbuilders.drop.app.domain.repository.ProfileRepo
@@ -13,7 +12,6 @@ import kotlinx.coroutines.flow.onEach
 import org.orbitmvi.orbit.Container
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.viewmodel.container
-import javax.inject.Inject
 
 data class HomeScreenState(
     val historyItems: List<TransferHistoryItem>,

@@ -36,6 +36,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import compose.icons.TablerIcons
 import compose.icons.tablericons.ArrowDownCircle
@@ -75,7 +76,7 @@ fun Home(
     profileRepo: ProfileRepo,
     transferHistoryItemRepository: TransferHistoryItemRepository,
 ) {
-    val viewModel: HomeViewModel = hiltViewModel()
+    val viewModel: HomeViewModel = viewModel()
     val state by viewModel.collectAsState()
 
     var logoScale by remember { mutableStateOf(0f) }

@@ -13,8 +13,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import javax.inject.Inject
 
-class NetworkStatusImpl @Inject constructor(
-    @ApplicationContext private val context: Context,
+class NetworkStatusImpl(
+    private val context: Context,
 ) : NetworkStatus {
     private val cm =
         context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager

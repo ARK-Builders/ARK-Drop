@@ -177,6 +177,11 @@ dependencies {
     implementation(libs.io.coil)
     implementation(libs.androidx.compose.foundation)
     implementation(libs.kotlinx.serialization)
+
+    // Koin Dependency Injection
+    implementation(libs.io.koin.core)
+    implementation(libs.io.koin.android)
+    implementation(libs.io.koin.test)
 }
 
 tasks.named<Delete>("clean") {

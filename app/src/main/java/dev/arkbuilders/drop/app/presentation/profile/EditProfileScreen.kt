@@ -76,6 +76,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import compose.icons.TablerIcons
 import compose.icons.tablericons.Camera
@@ -103,7 +104,7 @@ import org.orbitmvi.orbit.compose.collectSideEffect
 fun EditProfileEnhanced(
     navController: NavController,
 ) {
-    val viewModel: EditProfileViewModel = hiltViewModel()
+    val viewModel: EditProfileViewModel = viewModel()
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
     val nameFocusRequester = remember { FocusRequester() }

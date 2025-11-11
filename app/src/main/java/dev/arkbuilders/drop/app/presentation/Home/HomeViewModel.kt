@@ -22,8 +22,7 @@ data class HomeScreenState(
 
 sealed class HomeScreenEffect
 
-@HiltViewModel
-class HomeViewModel @Inject constructor(
+class HomeViewModel(
     private val historyItemRepository: TransferHistoryItemRepository,
     private val profileRepo: ProfileRepo,
 ): ViewModel(), ContainerHost<HomeScreenState, HomeScreenEffect>{

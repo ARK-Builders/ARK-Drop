@@ -20,8 +20,7 @@ data class HistoryScreenState(
 
 sealed class HistoryScreenEffect
 
-@HiltViewModel
-class HistoryViewModel @Inject constructor(
+class HistoryViewModel(
     private val historyItemRepository: TransferHistoryItemRepository,
 ) : ViewModel(), ContainerHost<HistoryScreenState, HistoryScreenEffect> {
     override val container: Container<HistoryScreenState, HistoryScreenEffect> = container(

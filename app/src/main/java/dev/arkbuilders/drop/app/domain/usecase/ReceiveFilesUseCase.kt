@@ -14,8 +14,8 @@ import kotlinx.coroutines.withContext
 import timber.log.Timber
 import javax.inject.Inject
 
-class ReceiveFilesUseCase @Inject constructor(
-    @ApplicationContext private val context: Context,
+class ReceiveFilesUseCase(
+    private val context: Context,
     private val profileRepo: ProfileRepo,
     private val resourcesHelper: ResourcesHelper,
 ) {

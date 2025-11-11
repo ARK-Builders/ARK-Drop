@@ -12,10 +12,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 import javax.inject.Singleton
 
-@Singleton
-class ProfileRepoImpl @Inject constructor(
+class ProfileRepoImpl(
     private val localDataSource: ProfileLocalDataSource,
-    @ApplicationContext private val context: Context,
+    private val context: Context,
 ) : ProfileRepo {
 
     private val _profile = MutableStateFlow(localDataSource.loadProfile())

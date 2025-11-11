@@ -8,12 +8,11 @@ import android.provider.MediaStore
 import android.provider.OpenableColumns
 import android.util.Log
 import dagger.hilt.android.EntryPointAccessors
-import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.arkbuilders.drop.ReceiveFilesBubble
-import dev.arkbuilders.drop.SendFilesBubble
 import dev.arkbuilders.drop.app.data.ReceiveFilesSubscriberImpl
-import dev.arkbuilders.drop.app.data.ReceivingProgress
+import dev.arkbuilders.drop.SendFilesBubble
 import dev.arkbuilders.drop.app.data.SendFilesSubscriberImpl
+import dev.arkbuilders.drop.app.data.ReceivingProgress
 import dev.arkbuilders.drop.app.data.SendingProgress
 import dev.arkbuilders.drop.app.di.TmpEntryPoint
 import dev.arkbuilders.drop.app.domain.model.TransferStatus
@@ -24,12 +23,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
-import javax.inject.Inject
-import javax.inject.Singleton
 
-@Singleton
-class TransferManager @Inject constructor(
-    @ApplicationContext private val context: Context,
+class TransferManager(
+    private val context: Context,
     private val profileRepo: ProfileRepo,
     private val transferHistoryRepository: TransferHistoryItemRepository,
 ) {

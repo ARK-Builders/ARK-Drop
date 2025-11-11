@@ -13,8 +13,8 @@ import dev.arkbuilders.drop.app.domain.AvatarHelper
 import dev.arkbuilders.drop.app.domain.model.UserAvatar
 import dev.arkbuilders.drop.app.domain.model.UserProfile
 
-class ProfileLocalDataSource @Inject constructor(
-    @ApplicationContext private val context: Context,
+class ProfileLocalDataSource(
+    private val context: Context,
     private val avatarHelper: AvatarHelper,
 ) {
     private val prefs: SharedPreferences =

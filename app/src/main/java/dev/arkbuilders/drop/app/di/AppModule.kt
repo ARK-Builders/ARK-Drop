@@ -9,6 +9,7 @@ import dagger.hilt.components.SingletonComponent
 import dev.arkbuilders.drop.app.data.repository.TransferManager
 import dev.arkbuilders.drop.app.data.helper.ResourcesHelperImpl
 import dev.arkbuilders.drop.app.data.db.Database
+import dev.arkbuilders.drop.app.data.db.dao.TransferHistoryItemDao
 import dev.arkbuilders.drop.app.data.helper.AvatarHelperImpl
 import dev.arkbuilders.drop.app.data.helper.PermissionsHelperImpl
 import dev.arkbuilders.drop.app.data.repository.NetworkStatusImpl
@@ -20,9 +21,22 @@ import dev.arkbuilders.drop.app.domain.ResourcesHelper
 import dev.arkbuilders.drop.app.domain.repository.NetworkStatus
 import dev.arkbuilders.drop.app.domain.repository.ProfileRepo
 import dev.arkbuilders.drop.app.domain.repository.TransferHistoryItemRepository
+import org.koin.dsl.module
 import javax.inject.Singleton
 
-@Module
+val appModule = module {
+    single<ProfileRepo> { ProfileRepoImpl(get(), get()) }
+    single<TransferManager> { TransferManager(get(), get(), get()) }
+    single<ResourcesHelper> { ResourcesHelperImpl(get()) }
+    single<Database> { Database.build(get()) }
+    factory<TransferHistoryItemDao> { get() }
+    single<TransferHistoryItemRepository> { TransferHistoryItemRepositoryImpl(get()) }
+    single<PermissionsHelper> { PermissionsHelperImpl(get()) }
+    single<NetworkStatus> { NetworkStatusImpl(get()) }
+    single<AvatarHelper> { AvatarHelperImpl(get()) }
+}
+
+/*@Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
 
@@ -81,3 +95,4 @@ object AppModule {
         impl: AvatarHelperImpl
     ): AvatarHelper = impl
 }
+*/

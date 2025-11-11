@@ -18,8 +18,7 @@ import java.io.ByteArrayOutputStream
 import java.io.IOException
 import javax.inject.Inject
 
-class AvatarHelperImpl @Inject constructor(
-    @ApplicationContext
+class AvatarHelperImpl(
     private val context: Context,
 ) : AvatarHelper {
 

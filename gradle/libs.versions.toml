@@ -29,6 +29,7 @@ tripletPlay = "3.10.1"
 drop = "17348879247"
 devsrsouzaIcons = "1.1.0"
 coil = "2.5.0"
+koin = "3.2.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -83,7 +84,9 @@ tabler-icons = { module = "br.com.devsrsouza.compose.icons:tabler-icons", versio
 io-coil = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
 kotlinx-serialization = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinSerialization" }
 
-
+io-koin-core = { module = "io.insert-koin:koin-core", version.ref = "koin" }
+io-koin-android = { module = "io.insert-koin:koin-android", version.ref = "koin" }
+io-koin-test = { module = "io.insert-koin:koin-test", version.ref = "koin" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

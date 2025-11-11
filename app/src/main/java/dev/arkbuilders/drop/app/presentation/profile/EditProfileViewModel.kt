@@ -29,8 +29,7 @@ sealed class EditProfileScreenEffect {
     data object NavigateBack : EditProfileScreenEffect()
 }
 
-@HiltViewModel
-class EditProfileViewModel @Inject constructor(
+class EditProfileViewModel(
     private val profileRepo: ProfileRepo,
     private val avatarHelper: AvatarHelper,
 ) : ViewModel(), ContainerHost<EditProfileScreenState, EditProfileScreenEffect> {

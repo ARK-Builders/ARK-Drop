@@ -73,6 +73,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import compose.icons.TablerIcons
 import compose.icons.tablericons.AlertCircle
@@ -183,7 +184,7 @@ fun Send(
     val scope = rememberCoroutineScope()
     val haptic = LocalHapticFeedback.current
     val listState = rememberLazyListState()
-    val viewModel: SendViewModel = hiltViewModel()
+    val viewModel: SendViewModel = viewModel()
 
     val state by viewModel.collectAsState()
 

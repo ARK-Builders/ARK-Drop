@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
-class TransferHistoryItemLocalDataSource  @Inject constructor(
+class TransferHistoryItemLocalDataSource(
     private val dao: TransferHistoryItemDao
 ) {
     fun flow(): Flow<List<TransferHistoryItem>> =

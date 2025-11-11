@@ -33,8 +33,7 @@ sealed class ReceiveScreenEffect {
     data object RequestCameraPermission : ReceiveScreenEffect()
 }
 
-@HiltViewModel
-class ReceiveViewModel @Inject constructor(
+class ReceiveViewModel(
     private val transferManager: TransferManager,
     private val permissionsHelper: PermissionsHelper,
 ) : ViewModel(), ContainerHost<ReceiveScreenState, ReceiveScreenEffect> {

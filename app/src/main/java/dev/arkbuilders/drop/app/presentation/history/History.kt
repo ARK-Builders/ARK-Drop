@@ -37,6 +37,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import compose.icons.TablerIcons
 import compose.icons.tablericons.ClearAll
@@ -60,7 +61,8 @@ fun History(
     navController: NavController,
     transferHistoryItemRepository: TransferHistoryItemRepository
 ) {
-    val viewModel: HistoryViewModel = hiltViewModel()
+    val viewModel: HistoryViewModel = viewModel()
+
     val scope = rememberCoroutineScope()
     val state by viewModel.collectAsState()
 

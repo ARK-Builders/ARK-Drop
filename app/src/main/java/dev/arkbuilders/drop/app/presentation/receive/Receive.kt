@@ -69,6 +69,7 @@ import dev.arkbuilders.drop.app.presentation.receive.components.ReceiveReadyToSc
 import dev.arkbuilders.drop.app.presentation.receive.components.ReceiveScanningCard
 import dev.arkbuilders.drop.app.presentation.theme.DesignTokens
 import kotlinx.coroutines.delay
+import org.koin.compose.koinInject
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 
@@ -106,7 +107,7 @@ sealed class ReceiveError(val message: String, val isRecoverable: Boolean = true
 fun Receive(
     navController: NavController,
 ) {
-    val viewModel: ReceiveViewModel = viewModel()
+    val viewModel: ReceiveViewModel = koinInject()
     val clipboardManager = LocalClipboardManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
 

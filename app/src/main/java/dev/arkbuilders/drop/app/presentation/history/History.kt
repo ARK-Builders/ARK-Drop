@@ -48,6 +48,7 @@ import dev.arkbuilders.drop.app.domain.model.TransferStatus
 import dev.arkbuilders.drop.app.domain.model.TransferType
 import dev.arkbuilders.drop.app.domain.repository.TransferHistoryItemRepository
 import dev.arkbuilders.drop.app.presentation.components.AvatarImageWithFallback
+import org.koin.compose.koinInject
 import org.orbitmvi.orbit.compose.collectAsState
 import java.time.Duration
 import java.time.OffsetDateTime
@@ -60,7 +61,7 @@ fun History(
     navController: NavController,
     transferHistoryItemRepository: TransferHistoryItemRepository
 ) {
-    val viewModel: HistoryViewModel = viewModel()
+    val viewModel: HistoryViewModel = koinInject()
 
     val scope = rememberCoroutineScope()
     val state by viewModel.collectAsState()

@@ -1,4 +1,4 @@
-package dev.arkbuilders.drop.app.presentation.Home
+package dev.arkbuilders.drop.app.presentation.home
 
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -63,6 +63,7 @@ import dev.arkbuilders.drop.app.presentation.components.EmptyState
 import dev.arkbuilders.drop.app.presentation.navigation.DropDestination
 import dev.arkbuilders.drop.app.presentation.theme.DesignTokens
 import kotlinx.coroutines.delay
+import org.koin.compose.koinInject
 import org.orbitmvi.orbit.compose.collectAsState
 import java.time.Duration
 import java.time.OffsetDateTime
@@ -75,7 +76,7 @@ fun Home(
     profileRepo: ProfileRepo,
     transferHistoryItemRepository: TransferHistoryItemRepository,
 ) {
-    val viewModel: HomeViewModel = viewModel()
+    val viewModel: HomeViewModel = koinInject()
     val state by viewModel.collectAsState()
 
     var logoScale by remember { mutableStateOf(0f) }

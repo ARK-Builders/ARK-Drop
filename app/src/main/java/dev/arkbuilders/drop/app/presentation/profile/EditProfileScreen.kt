@@ -103,7 +103,7 @@ import org.orbitmvi.orbit.compose.collectSideEffect
 fun EditProfileEnhanced(
     navController: NavController,
 ) {
-    val viewModel: EditProfileViewModel = viewModel()
+    val viewModel: EditProfileViewModel = koinInject()
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
     val nameFocusRequester = remember { FocusRequester() }

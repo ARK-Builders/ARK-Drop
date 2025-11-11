@@ -1,5 +1,7 @@
 package dev.arkbuilders.drop.app.di
 
+import dev.arkbuilders.drop.app.data.datasource.ProfileLocalDataSource
+import dev.arkbuilders.drop.app.data.datasource.TransferHistoryItemLocalDataSource
 import dev.arkbuilders.drop.app.data.db.Database
 import dev.arkbuilders.drop.app.data.db.dao.TransferHistoryItemDao
 import dev.arkbuilders.drop.app.data.helper.AvatarHelperImpl
@@ -24,11 +26,16 @@ val appModule = module {
     single<TransferManager> { TransferManager(get(), get(), get()) }
     single<ResourcesHelper> { ResourcesHelperImpl(get()) }
     single<Database> { Database.build(get()) }
-    factory<TransferHistoryItemDao> { get() }
     single<TransferHistoryItemRepository> { TransferHistoryItemRepositoryImpl(get()) }
     single<PermissionsHelper> { PermissionsHelperImpl(get()) }
     single<NetworkStatus> { NetworkStatusImpl(get()) }
     single<AvatarHelper> { AvatarHelperImpl(get()) }
+    single{ ProfileLocalDataSource(get(), get()) }
+    single{ TransferHistoryItemLocalDataSource(get()) }
+    factory<TransferHistoryItemDao> {
+        val db: Database = get()
+        db.transferHistoryDao()
+    }
     factory<SendFilesUseCase> { SendFilesUseCase(get(), get(), get()) }
     factory<ReceiveFilesUseCase> { ReceiveFilesUseCase(get(), get(), get()) }
 }

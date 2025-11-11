@@ -84,6 +84,7 @@ import dev.arkbuilders.drop.app.presentation.send.components.phase.TransferringP
 import dev.arkbuilders.drop.app.presentation.send.components.phase.WaitingForReceiverPhase
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import org.koin.compose.koinInject
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 
@@ -171,11 +172,9 @@ fun Send(
     navController: NavController,
     transferManager: TransferManager
 ) {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     val haptic = LocalHapticFeedback.current
     val listState = rememberLazyListState()
-    val viewModel: SendViewModel = viewModel()
+    val viewModel: SendViewModel = koinInject()
 
     val state by viewModel.collectAsState()
 

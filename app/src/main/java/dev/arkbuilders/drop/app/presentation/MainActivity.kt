@@ -17,7 +17,7 @@ import androidx.navigation.navDeepLink
 import dev.arkbuilders.drop.app.data.repository.TransferManager
 import dev.arkbuilders.drop.app.domain.repository.ProfileRepo
 import dev.arkbuilders.drop.app.domain.repository.TransferHistoryItemRepository
-import dev.arkbuilders.drop.app.presentation.Home.Home
+import dev.arkbuilders.drop.app.presentation.home.Home
 import dev.arkbuilders.drop.app.presentation.history.History
 import dev.arkbuilders.drop.app.presentation.navigation.DropDestination
 import dev.arkbuilders.drop.app.presentation.profile.EditProfileEnhanced
@@ -25,7 +25,6 @@ import dev.arkbuilders.drop.app.presentation.receive.Receive
 import dev.arkbuilders.drop.app.presentation.send.Send
 import dev.arkbuilders.drop.app.presentation.theme.DropTheme
 import org.koin.android.ext.android.get
-import org.koin.android.ext.android.inject
 
 class MainActivity : ComponentActivity() {
 

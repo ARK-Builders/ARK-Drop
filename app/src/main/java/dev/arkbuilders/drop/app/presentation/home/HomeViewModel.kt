@@ -1,4 +1,4 @@
-package dev.arkbuilders.drop.app.presentation.Home
+package dev.arkbuilders.drop.app.presentation.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

@@ -2,7 +2,6 @@ package dev.arkbuilders.drop.app.presentation.history
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.arkbuilders.drop.app.domain.model.TransferHistoryItem
 import dev.arkbuilders.drop.app.domain.repository.TransferHistoryItemRepository
 import kotlinx.coroutines.flow.launchIn
@@ -10,7 +9,6 @@ import kotlinx.coroutines.flow.onEach
 import org.orbitmvi.orbit.Container
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.viewmodel.container
-import javax.inject.Inject
 
 data class HistoryScreenState(
     val historyItems: List<TransferHistoryItem>,
@@ -20,8 +18,7 @@ data class HistoryScreenState(
 
 sealed class HistoryScreenEffect
 
-@HiltViewModel
-class HistoryViewModel @Inject constructor(
+class HistoryViewModel(
     private val historyItemRepository: TransferHistoryItemRepository,
 ) : ViewModel(), ContainerHost<HistoryScreenState, HistoryScreenEffect> {
     override val container: Container<HistoryScreenState, HistoryScreenEffect> = container(

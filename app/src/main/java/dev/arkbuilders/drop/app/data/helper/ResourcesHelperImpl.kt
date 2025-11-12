@@ -3,13 +3,11 @@ package dev.arkbuilders.drop.app.data.helper
 import android.content.Context
 import android.provider.OpenableColumns
 import androidx.core.net.toUri
-import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.arkbuilders.drop.app.domain.ResourcesHelper
 import timber.log.Timber
-import javax.inject.Inject
 
-class ResourcesHelperImpl @Inject constructor(
-    @ApplicationContext private val context: Context,
+class ResourcesHelperImpl(
+    private val context: Context,
 ) : ResourcesHelper {
     override fun getFileName(uri: String): String? {
         return try {

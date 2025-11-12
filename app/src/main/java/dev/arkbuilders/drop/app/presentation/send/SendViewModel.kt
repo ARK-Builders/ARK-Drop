@@ -11,7 +11,6 @@ import com.google.zxing.BarcodeFormat
 import com.google.zxing.WriterException
 import com.google.zxing.common.BitMatrix
 import com.google.zxing.qrcode.QRCodeWriter
-import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.arkbuilders.drop.app.data.repository.TransferManager
 import dev.arkbuilders.drop.app.domain.ResourcesHelper
 import dev.arkbuilders.drop.app.domain.repository.NetworkStatus
@@ -23,7 +22,6 @@ import kotlinx.coroutines.launch
 import org.orbitmvi.orbit.Container
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.viewmodel.container
-import javax.inject.Inject
 
 sealed class SendScreenState {
     data class FileSelection(
@@ -66,8 +64,7 @@ sealed class SendScreenEffect {
     data object NavigateBack : SendScreenEffect()
 }
 
-@HiltViewModel
-class SendViewModel @Inject constructor(
+class SendViewModel(
     private val resourcesHelper: ResourcesHelper,
     private val networkStatus: NetworkStatus,
     private val transferManager: TransferManager,

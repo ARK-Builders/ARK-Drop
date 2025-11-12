@@ -1,7 +1,6 @@
 package dev.arkbuilders.drop.app.presentation.profile
 
 import androidx.lifecycle.ViewModel
-import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.arkbuilders.drop.app.domain.AvatarHelper
 import dev.arkbuilders.drop.app.domain.model.UserAvatar
 import dev.arkbuilders.drop.app.domain.model.UserProfile
@@ -9,7 +8,6 @@ import dev.arkbuilders.drop.app.domain.repository.ProfileRepo
 import org.orbitmvi.orbit.Container
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.viewmodel.container
-import javax.inject.Inject
 
 data class EditProfileScreenState(
     val currentProfile: UserProfile,
@@ -29,8 +27,7 @@ sealed class EditProfileScreenEffect {
     data object NavigateBack : EditProfileScreenEffect()
 }
 
-@HiltViewModel
-class EditProfileViewModel @Inject constructor(
+class EditProfileViewModel(
     private val profileRepo: ProfileRepo,
     private val avatarHelper: AvatarHelper,
 ) : ViewModel(), ContainerHost<EditProfileScreenState, EditProfileScreenEffect> {

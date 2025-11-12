@@ -36,7 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import compose.icons.TablerIcons
 import compose.icons.tablericons.ClearAll
@@ -48,6 +48,7 @@ import dev.arkbuilders.drop.app.domain.model.TransferStatus
 import dev.arkbuilders.drop.app.domain.model.TransferType
 import dev.arkbuilders.drop.app.domain.repository.TransferHistoryItemRepository
 import dev.arkbuilders.drop.app.presentation.components.AvatarImageWithFallback
+import org.koin.compose.koinInject
 import org.orbitmvi.orbit.compose.collectAsState
 import java.time.Duration
 import java.time.OffsetDateTime
@@ -60,7 +61,8 @@ fun History(
     navController: NavController,
     transferHistoryItemRepository: TransferHistoryItemRepository
 ) {
-    val viewModel: HistoryViewModel = hiltViewModel()
+    val viewModel: HistoryViewModel = koinInject()
+
     val scope = rememberCoroutineScope()
     val state by viewModel.collectAsState()
 

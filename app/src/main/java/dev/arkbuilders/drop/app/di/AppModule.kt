@@ -1,28 +1,46 @@
 package dev.arkbuilders.drop.app.di
 
-import android.content.Context
-import dagger.Module
-import dagger.Provides
-import dagger.hilt.InstallIn
-import dagger.hilt.android.qualifiers.ApplicationContext
-import dagger.hilt.components.SingletonComponent
-import dev.arkbuilders.drop.app.data.repository.TransferManager
-import dev.arkbuilders.drop.app.data.helper.ResourcesHelperImpl
+import dev.arkbuilders.drop.app.data.datasource.ProfileLocalDataSource
+import dev.arkbuilders.drop.app.data.datasource.TransferHistoryItemLocalDataSource
 import dev.arkbuilders.drop.app.data.db.Database
+import dev.arkbuilders.drop.app.data.db.dao.TransferHistoryItemDao
 import dev.arkbuilders.drop.app.data.helper.AvatarHelperImpl
 import dev.arkbuilders.drop.app.data.helper.PermissionsHelperImpl
+import dev.arkbuilders.drop.app.data.helper.ResourcesHelperImpl
 import dev.arkbuilders.drop.app.data.repository.NetworkStatusImpl
 import dev.arkbuilders.drop.app.data.repository.ProfileRepoImpl
 import dev.arkbuilders.drop.app.data.repository.TransferHistoryItemRepositoryImpl
+import dev.arkbuilders.drop.app.data.repository.TransferManager
 import dev.arkbuilders.drop.app.domain.AvatarHelper
 import dev.arkbuilders.drop.app.domain.PermissionsHelper
 import dev.arkbuilders.drop.app.domain.ResourcesHelper
 import dev.arkbuilders.drop.app.domain.repository.NetworkStatus
 import dev.arkbuilders.drop.app.domain.repository.ProfileRepo
 import dev.arkbuilders.drop.app.domain.repository.TransferHistoryItemRepository
-import javax.inject.Singleton
+import dev.arkbuilders.drop.app.domain.usecase.ReceiveFilesUseCase
+import dev.arkbuilders.drop.app.domain.usecase.SendFilesUseCase
+import org.koin.dsl.module
 
-@Module
+val appModule = module {
+    single<ProfileRepo> { ProfileRepoImpl(get(), get()) }
+    single<TransferManager> { TransferManager(get(), get(), get()) }
+    single<ResourcesHelper> { ResourcesHelperImpl(get()) }
+    single<Database> { Database.build(get()) }
+    single<TransferHistoryItemRepository> { TransferHistoryItemRepositoryImpl(get()) }
+    single<PermissionsHelper> { PermissionsHelperImpl(get()) }
+    single<NetworkStatus> { NetworkStatusImpl(get()) }
+    single<AvatarHelper> { AvatarHelperImpl(get()) }
+    single{ ProfileLocalDataSource(get(), get()) }
+    single{ TransferHistoryItemLocalDataSource(get()) }
+    factory<TransferHistoryItemDao> {
+        val db: Database = get()
+        db.transferHistoryDao()
+    }
+    factory<SendFilesUseCase> { SendFilesUseCase(get(), get(), get()) }
+    factory<ReceiveFilesUseCase> { ReceiveFilesUseCase(get(), get(), get()) }
+}
+
+/*@Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
 
@@ -81,3 +99,4 @@ object AppModule {
         impl: AvatarHelperImpl
     ): AvatarHelper = impl
 }
+*/

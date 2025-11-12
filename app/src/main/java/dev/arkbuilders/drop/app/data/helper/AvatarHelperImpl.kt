@@ -9,17 +9,14 @@ import android.net.Uri
 import android.util.Base64
 import androidx.core.graphics.scale
 import androidx.core.net.toUri
-import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.arkbuilders.drop.app.domain.AvatarHelper
 import dev.arkbuilders.drop.app.domain.AvatarHelper.Companion.JPEG_QUALITY
 import dev.arkbuilders.drop.app.domain.AvatarHelper.Companion.MAX_FILE_SIZE
 import dev.arkbuilders.drop.app.domain.AvatarHelper.Companion.MAX_IMAGE_SIZE
 import java.io.ByteArrayOutputStream
 import java.io.IOException
-import javax.inject.Inject
 
-class AvatarHelperImpl @Inject constructor(
-    @ApplicationContext
+class AvatarHelperImpl(
     private val context: Context,
 ) : AvatarHelper {
 

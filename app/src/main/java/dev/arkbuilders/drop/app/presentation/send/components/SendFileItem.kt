@@ -34,9 +34,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import compose.icons.TablerIcons
 import compose.icons.tablericons.FileText
-import dagger.hilt.android.EntryPointAccessors
-import dev.arkbuilders.drop.app.di.TmpEntryPoint
+import dev.arkbuilders.drop.app.domain.ResourcesHelper
 import dev.arkbuilders.drop.app.presentation.DisplayUtils.formatBytes
+import org.koin.java.KoinJavaComponent.inject
 
 @Composable
 fun SendFileItem(
@@ -49,10 +49,9 @@ fun SendFileItem(
 
     LaunchedEffect(uri) {
         try {
-            val resourcesHelper = EntryPointAccessors.fromApplication(
-                context.applicationContext,
-                TmpEntryPoint::class.java
-            ).resourcesHelper()
+            val resourcesHelper: ResourcesHelper = inject<ResourcesHelper>(
+                ResourcesHelper::class.java
+            ).value
 
             fileName = resourcesHelper.getFileName(uri) ?: "Unknown file"
             fileSize = resourcesHelper.getFileSize(uri)

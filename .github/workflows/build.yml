@@ -13,6 +13,7 @@ env:
 
 jobs:
     check:
+        needs: [lint, ktlint]
         if: ${{ startsWith(github.actor, 'dependabot') }}
         environment: Development
         runs-on: ubuntu-latest
@@ -33,6 +34,7 @@ jobs:
               run: ./gradlew assembleDebug
 
     build:
+        needs: [check, lint, ktlint]
         environment: Development
         runs-on: ubuntu-latest
         steps:
@@ -63,7 +65,6 @@ jobs:
                   path: ./app/build/outputs/apk/release/ark-drop-release.apk
 
     lint:
-        needs: build
         environment: Development
         runs-on: ubuntu-latest
         steps:

@@ -2,7 +2,6 @@ package dev.arkbuilders.drop.app.domain.usecase
 
 import android.content.Context
 import android.net.Uri
-import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.arkbuilders.drop.SendFilesBubble
 import dev.arkbuilders.drop.SendFilesRequest
 import dev.arkbuilders.drop.SenderConfig
@@ -15,10 +14,9 @@ import dev.arkbuilders.drop.sendFiles
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import timber.log.Timber
-import javax.inject.Inject
 
-class SendFilesUseCase @Inject constructor(
-    @ApplicationContext private val context: Context,
+class SendFilesUseCase(
+    private val context: Context,
     private val profileRepo: ProfileRepo,
     private val resourcesHelper: ResourcesHelper,
 ) {

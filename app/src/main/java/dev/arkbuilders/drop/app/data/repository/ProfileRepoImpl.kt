@@ -1,7 +1,6 @@
 package dev.arkbuilders.drop.app.data.repository
 
 import android.content.Context
-import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.arkbuilders.drop.app.data.datasource.ProfileLocalDataSource
 import dev.arkbuilders.drop.app.domain.model.UserAvatar
 import dev.arkbuilders.drop.app.domain.model.UserProfile
@@ -9,13 +8,10 @@ import dev.arkbuilders.drop.app.domain.repository.ProfileRepo
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import javax.inject.Inject
-import javax.inject.Singleton
 
-@Singleton
-class ProfileRepoImpl @Inject constructor(
+class ProfileRepoImpl(
     private val localDataSource: ProfileLocalDataSource,
-    @ApplicationContext private val context: Context,
+    private val context: Context,
 ) : ProfileRepo {
 
     private val _profile = MutableStateFlow(localDataSource.loadProfile())

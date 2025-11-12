@@ -7,11 +7,8 @@ import dev.arkbuilders.drop.app.domain.model.TransferType
 import dev.arkbuilders.drop.app.domain.repository.TransferHistoryItemRepository
 import kotlinx.coroutines.flow.Flow
 import java.time.OffsetDateTime
-import javax.inject.Inject
-import javax.inject.Singleton
 
-@Singleton
-class TransferHistoryItemRepositoryImpl @Inject constructor(
+class TransferHistoryItemRepositoryImpl(
     private val localSource: TransferHistoryItemLocalDataSource
 ): TransferHistoryItemRepository {
     override val historyItems: Flow<List<TransferHistoryItem>> = localSource.flow()

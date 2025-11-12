@@ -2,9 +2,8 @@ package dev.arkbuilders.drop.app.presentation.receive
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import dagger.hilt.android.lifecycle.HiltViewModel
-import dev.arkbuilders.drop.app.data.repository.TransferManager
 import dev.arkbuilders.drop.app.data.ReceivingProgress
+import dev.arkbuilders.drop.app.data.repository.TransferManager
 import dev.arkbuilders.drop.app.domain.PermissionsHelper
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.launchIn
@@ -12,7 +11,6 @@ import kotlinx.coroutines.flow.onEach
 import org.orbitmvi.orbit.Container
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.viewmodel.container
-import javax.inject.Inject
 
 sealed class ReceiveScreenState {
     data class Initial(val cameraPermissionGranted: Boolean) : ReceiveScreenState()
@@ -33,8 +31,7 @@ sealed class ReceiveScreenEffect {
     data object RequestCameraPermission : ReceiveScreenEffect()
 }
 
-@HiltViewModel
-class ReceiveViewModel @Inject constructor(
+class ReceiveViewModel(
     private val transferManager: TransferManager,
     private val permissionsHelper: PermissionsHelper,
 ) : ViewModel(), ContainerHost<ReceiveScreenState, ReceiveScreenEffect> {

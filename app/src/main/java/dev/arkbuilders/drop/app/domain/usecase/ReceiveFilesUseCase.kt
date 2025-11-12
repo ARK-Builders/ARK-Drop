@@ -1,7 +1,6 @@
 package dev.arkbuilders.drop.app.domain.usecase
 
 import android.content.Context
-import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.arkbuilders.drop.ReceiveFilesBubble
 import dev.arkbuilders.drop.ReceiveFilesRequest
 import dev.arkbuilders.drop.ReceiverConfig
@@ -12,10 +11,9 @@ import dev.arkbuilders.drop.receiveFiles
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import timber.log.Timber
-import javax.inject.Inject
 
-class ReceiveFilesUseCase @Inject constructor(
-    @ApplicationContext private val context: Context,
+class ReceiveFilesUseCase(
+    private val context: Context,
     private val profileRepo: ProfileRepo,
     private val resourcesHelper: ResourcesHelper,
 ) {

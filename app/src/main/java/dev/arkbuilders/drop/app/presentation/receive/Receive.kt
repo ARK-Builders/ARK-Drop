@@ -54,7 +54,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import dev.arkbuilders.drop.app.R
@@ -69,6 +69,7 @@ import dev.arkbuilders.drop.app.presentation.receive.components.ReceiveReadyToSc
 import dev.arkbuilders.drop.app.presentation.receive.components.ReceiveScanningCard
 import dev.arkbuilders.drop.app.presentation.theme.DesignTokens
 import kotlinx.coroutines.delay
+import org.koin.compose.koinInject
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 
@@ -106,7 +107,7 @@ sealed class ReceiveError(val message: String, val isRecoverable: Boolean = true
 fun Receive(
     navController: NavController,
 ) {
-    val viewModel: ReceiveViewModel = hiltViewModel()
+    val viewModel: ReceiveViewModel = koinInject()
     val clipboardManager = LocalClipboardManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
 

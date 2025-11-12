@@ -1,4 +1,4 @@
-package dev.arkbuilders.drop.app.presentation.Home
+package dev.arkbuilders.drop.app.presentation.home
 
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -35,7 +35,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import compose.icons.TablerIcons
 import compose.icons.tablericons.ArrowDownCircle
@@ -49,7 +49,6 @@ import dev.arkbuilders.drop.app.domain.model.TransferType
 import dev.arkbuilders.drop.app.domain.model.UserProfile
 import dev.arkbuilders.drop.app.domain.repository.ProfileRepo
 import dev.arkbuilders.drop.app.domain.repository.TransferHistoryItemRepository
-import dev.arkbuilders.drop.app.presentation.navigation.DropDestination
 import dev.arkbuilders.drop.app.presentation.components.AvatarImage
 import dev.arkbuilders.drop.app.presentation.components.AvatarImageWithFallback
 import dev.arkbuilders.drop.app.presentation.components.DropButton
@@ -61,8 +60,10 @@ import dev.arkbuilders.drop.app.presentation.components.DropCardSize
 import dev.arkbuilders.drop.app.presentation.components.DropCardVariant
 import dev.arkbuilders.drop.app.presentation.components.DropOutlinedButton
 import dev.arkbuilders.drop.app.presentation.components.EmptyState
+import dev.arkbuilders.drop.app.presentation.navigation.DropDestination
 import dev.arkbuilders.drop.app.presentation.theme.DesignTokens
 import kotlinx.coroutines.delay
+import org.koin.compose.koinInject
 import org.orbitmvi.orbit.compose.collectAsState
 import java.time.Duration
 import java.time.OffsetDateTime
@@ -75,7 +76,7 @@ fun Home(
     profileRepo: ProfileRepo,
     transferHistoryItemRepository: TransferHistoryItemRepository,
 ) {
-    val viewModel: HomeViewModel = hiltViewModel()
+    val viewModel: HomeViewModel = koinInject()
     val state by viewModel.collectAsState()
 
     var logoScale by remember { mutableStateOf(0f) }

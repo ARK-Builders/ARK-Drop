@@ -75,12 +75,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import compose.icons.TablerIcons
 import compose.icons.tablericons.Camera
-import dagger.hilt.android.EntryPointAccessors
-import dev.arkbuilders.drop.app.di.TmpEntryPoint
+import dev.arkbuilders.drop.app.domain.AvatarHelper
 import dev.arkbuilders.drop.app.domain.model.UserAvatar
 import dev.arkbuilders.drop.app.presentation.components.AvatarImage
 import dev.arkbuilders.drop.app.presentation.components.DropButton
@@ -95,6 +94,7 @@ import dev.arkbuilders.drop.app.presentation.components.ErrorStateDisplay
 import dev.arkbuilders.drop.app.presentation.components.ErrorType
 import dev.arkbuilders.drop.app.presentation.theme.DesignTokens
 import kotlinx.coroutines.delay
+import org.koin.compose.koinInject
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 
@@ -103,7 +103,7 @@ import org.orbitmvi.orbit.compose.collectSideEffect
 fun EditProfileEnhanced(
     navController: NavController,
 ) {
-    val viewModel: EditProfileViewModel = hiltViewModel()
+    val viewModel: EditProfileViewModel = koinInject()
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
     val nameFocusRequester = remember { FocusRequester() }
@@ -524,14 +524,8 @@ private fun EnhancedAvatarOption(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
-    val avatarHelper = remember {
-        EntryPointAccessors.fromApplication(
-            context.applicationContext,
-            TmpEntryPoint::class.java
-        ).avatarHelper()
-    }
+    val avatarHelper: AvatarHelper = koinInject()
 
     var scale by remember { mutableStateOf(1f) }
     val animatedScale by animateFloatAsState(

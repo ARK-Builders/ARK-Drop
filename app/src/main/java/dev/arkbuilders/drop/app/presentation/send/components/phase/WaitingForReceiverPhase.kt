@@ -26,48 +26,56 @@ import dev.arkbuilders.drop.app.presentation.send.components.SendLoadingIndicato
 
 @Composable
 fun WaitingForReceiverPhase(
-    fileCount: Int, onCancel: () -> Unit
+    fileCount: Int,
+    onCancel: () -> Unit,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(24.dp)
+        verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
         item {
             SendCard {
                 Column(
                     modifier = Modifier.padding(32.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(
-                        text = "Ready to Send", style = MaterialTheme.typography.headlineSmall.copy(
-                            fontWeight = FontWeight.Bold
-                        ), color = MaterialTheme.colorScheme.onSurface, textAlign = TextAlign.Center
+                        text = "Ready to Send",
+                        style =
+                            MaterialTheme.typography.headlineSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                            ),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        textAlign = TextAlign.Center,
                     )
 
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Text(
-                        text = "$fileCount file${if (fileCount != 1) "s" else ""} ready for transfer",
+                        text =
+                            "$fileCount file${if (fileCount != 1) "s" else ""}" +
+                                " ready for transfer",
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center
+                        textAlign = TextAlign.Center,
                     )
 
                     Spacer(modifier = Modifier.height(32.dp))
 
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         SendLoadingIndicator()
                         Text(
                             text = "Waiting for receiver to scan...",
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                fontWeight = FontWeight.Medium
-                            ),
-                            color = MaterialTheme.colorScheme.primary
+                            style =
+                                MaterialTheme.typography.bodyMedium.copy(
+                                    fontWeight = FontWeight.Medium,
+                                ),
+                            color = MaterialTheme.colorScheme.primary,
                         )
                     }
                 }
@@ -79,12 +87,14 @@ fun WaitingForReceiverPhase(
                 onClick = onCancel,
                 variant = ButtonVariant.Secondary,
                 size = ButtonSize.Large,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 Text(
-                    "Cancel Transfer", style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Medium
-                    )
+                    "Cancel Transfer",
+                    style =
+                        MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Medium,
+                        ),
                 )
             }
         }

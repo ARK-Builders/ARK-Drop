@@ -43,44 +43,47 @@ fun FileSelectionPhase(
     onRemoveFile: (String) -> Unit,
     onStartTransfer: () -> Unit,
     canStartTransfer: Boolean,
-    listState: LazyListState
+    listState: LazyListState,
 ) {
     LazyColumn(
         state = listState,
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(20.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp)
+        verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
         // File selection section
         item {
             SendCard {
                 Column(
-                    modifier = Modifier.padding(20.dp)
+                    modifier = Modifier.padding(20.dp),
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Column {
                             Text(
                                 text = "Selected Files",
-                                style = MaterialTheme.typography.titleLarge.copy(
-                                    fontWeight = FontWeight.SemiBold
-                                ),
-                                color = MaterialTheme.colorScheme.onSurface
+                                style =
+                                    MaterialTheme.typography.titleLarge.copy(
+                                        fontWeight = FontWeight.SemiBold,
+                                    ),
+                                color = MaterialTheme.colorScheme.onSurface,
                             )
 
                             if (selectedFiles.isNotEmpty()) {
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = "${selectedFiles.size} file${if (selectedFiles.size != 1) "s" else ""} • ${
+                                    text = "${selectedFiles.size} file${
+                                        if (selectedFiles.size != 1) "s" else ""
+                                    } • ${
                                         formatBytes(
-                                            totalFileSize
+                                            totalFileSize,
                                         )
                                     }",
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
                         }
@@ -88,18 +91,20 @@ fun FileSelectionPhase(
                         SendButton(
                             onClick = onAddFiles,
                             variant = ButtonVariant.Secondary,
-                            size = ButtonSize.Medium
+                            size = ButtonSize.Medium,
                         ) {
                             Icon(
                                 TablerIcons.Plus,
                                 contentDescription = null,
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(18.dp),
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                "Add Files", style = MaterialTheme.typography.labelLarge.copy(
-                                    fontWeight = FontWeight.Medium
-                                )
+                                "Add Files",
+                                style =
+                                    MaterialTheme.typography.labelLarge.copy(
+                                        fontWeight = FontWeight.Medium,
+                                    ),
                             )
                         }
                     }
@@ -110,16 +115,18 @@ fun FileSelectionPhase(
                         SendEmptyState(
                             title = "No Files Selected",
                             description = "Tap 'Add Files' to choose files you want to send.",
-                            icon = TablerIcons.FileText
+                            icon = TablerIcons.FileText,
                         )
                     } else {
                         LazyColumn(
                             modifier = Modifier.heightIn(max = 300.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
                             items(selectedFiles) { uri ->
                                 SendFileItem(
-                                    uri = uri, onRemove = { onRemoveFile(uri) })
+                                    uri = uri,
+                                    onRemove = { onRemoveFile(uri) },
+                                )
                             }
                         }
                     }
@@ -134,17 +141,24 @@ fun FileSelectionPhase(
                 variant = ButtonVariant.Primary,
                 size = ButtonSize.Large,
                 enabled = canStartTransfer,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp)
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
             ) {
                 Text(
-                    text = when {
-                        selectedFiles.isEmpty() -> "Select Files First"
-                        else -> "Send ${selectedFiles.size} File${if (selectedFiles.size != 1) "s" else ""}"
-                    }, style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.SemiBold
-                    )
+                    text =
+                        when {
+                            selectedFiles.isEmpty() -> "Select Files First"
+                            else ->
+                                "Send ${selectedFiles.size} File${
+                                    if (selectedFiles.size != 1) "s" else ""
+                                }"
+                        },
+                    style =
+                        MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.SemiBold,
+                        ),
                 )
             }
         }

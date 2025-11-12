@@ -11,14 +11,16 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun SendProgressBar(
-    progress: Float, modifier: Modifier = Modifier
+    progress: Float,
+    modifier: Modifier = Modifier,
 ) {
     LinearProgressIndicator(
         progress = { progress },
-        modifier = modifier
-            .height(6.dp)
-            .clip(RoundedCornerShape(3.dp)),
+        modifier =
+            modifier
+                .height(6.dp)
+                .clip(RoundedCornerShape(3.dp)),
         color = MaterialTheme.colorScheme.primary,
-        trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+        trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
     )
 }

@@ -16,22 +16,21 @@ data class ReceivingProgress(
     val senderName: String = "",
     val senderAvatar: String? = null,
     val files: List<ReceiveFileInfo> = emptyList(),
-    val fileProgress: Map<String, FileProgressInfo> = emptyMap()
+    val fileProgress: Map<String, FileProgressInfo> = emptyMap(),
 )
 
 data class ReceiveFileInfo(
-    val id: String, 
-    val name: String, 
-    val size: ULong
+    val id: String,
+    val name: String,
+    val size: ULong,
 )
 
 data class FileProgressInfo(
     val receivedBytes: Long = 0L,
-    val isComplete: Boolean = false
+    val isComplete: Boolean = false,
 )
 
 class ReceiveFilesSubscriberImpl : ReceiveFilesSubscriber {
-
     companion object {
         private const val TAG = "ReceiveFilesSubscriber"
     }
@@ -40,7 +39,7 @@ class ReceiveFilesSubscriberImpl : ReceiveFilesSubscriber {
 
     // Thread-safe storage for received data using ByteArrayOutputStream for efficient appending
     private val receivedDataStreams = ConcurrentHashMap<String, ByteArrayOutputStream>()
-    
+
     private val _progress = MutableStateFlow(ReceivingProgress())
     val progress: StateFlow<ReceivingProgress> = _progress.asStateFlow()
 
@@ -55,32 +54,34 @@ class ReceiveFilesSubscriberImpl : ReceiveFilesSubscriber {
 
         // Get or create ByteArrayOutputStream for this file
         val stream = receivedDataStreams.getOrPut(event.id) { ByteArrayOutputStream() }
-        
+
         // Efficiently append data to the stream
         synchronized(stream) {
             stream.write(event.data)
         }
-        
+
         // Find the file info to get expected size
         val currentProgress = _progress.value
         val fileInfo = currentProgress.files.find { it.id == event.id }
-        
+
         if (fileInfo != null) {
             val receivedBytes = stream.size().toLong()
             val isComplete = receivedBytes.toULong() >= fileInfo.size
-            
+
             // Update progress with new file progress info
             val updatedFileProgress = currentProgress.fileProgress.toMutableMap()
-            updatedFileProgress[event.id] = FileProgressInfo(
-                receivedBytes = receivedBytes,
-                isComplete = isComplete
-            )
-            
+            updatedFileProgress[event.id] =
+                FileProgressInfo(
+                    receivedBytes = receivedBytes,
+                    isComplete = isComplete,
+                )
+
             // Emit new state
-            _progress.value = currentProgress.copy(
-                fileProgress = updatedFileProgress.toMap()
-            )
-            
+            _progress.value =
+                currentProgress.copy(
+                    fileProgress = updatedFileProgress.toMap(),
+                )
+
             if (isComplete) {
                 Log.d(TAG, "File ${fileInfo.name} completed: $receivedBytes bytes")
             }
@@ -90,18 +91,22 @@ class ReceiveFilesSubscriberImpl : ReceiveFilesSubscriber {
     override fun notifyConnecting(event: ReceiveFilesConnectingEvent) {
         Log.d(TAG, "Connected to sender: ${event.sender.name}, files: ${event.files.size}")
 
-        val fileInfos = event.files.map { file ->
-            ReceiveFileInfo(
-                id = file.id, name = file.name, size = file.len
-            )
-        }
+        val fileInfos =
+            event.files.map { file ->
+                ReceiveFileInfo(
+                    id = file.id,
+                    name = file.name,
+                    size = file.len,
+                )
+            }
 
-        _progress.value = _progress.value.copy(
-            isConnected = true,
-            senderName = event.sender.name,
-            senderAvatar = event.sender.avatarB64,
-            files = fileInfos
-        )
+        _progress.value =
+            _progress.value.copy(
+                isConnected = true,
+                senderName = event.sender.name,
+                senderAvatar = event.sender.avatarB64,
+                files = fileInfos,
+            )
     }
 
     fun reset() {
@@ -132,7 +137,7 @@ class ReceiveFilesSubscriberImpl : ReceiveFilesSubscriber {
             }
         }
     }
-    
+
     /**
      * Get progress for a specific file (0.0 to 1.0)
      */
@@ -140,29 +145,29 @@ class ReceiveFilesSubscriberImpl : ReceiveFilesSubscriber {
         val currentProgress = _progress.value
         val fileInfo = currentProgress.files.find { it.id == fileId }
         val progressInfo = currentProgress.fileProgress[fileId]
-        
+
         return if (fileInfo != null && progressInfo != null && fileInfo.size > 0UL) {
             (progressInfo.receivedBytes.toFloat() / fileInfo.size.toFloat()).coerceIn(0f, 1f)
         } else {
             0f
         }
     }
-    
+
     /**
      * Get received bytes for a specific file
      */
     fun getReceivedBytes(fileId: String): Long {
         return _progress.value.fileProgress[fileId]?.receivedBytes ?: 0L
     }
-    
+
     /**
      * Check if all files are complete
      */
     public fun areAllFilesComplete(): Boolean {
         val currentProgress = _progress.value
-        return currentProgress.files.isNotEmpty() && 
-               currentProgress.files.all { file ->
-                   currentProgress.fileProgress[file.id]?.isComplete == true
-               }
+        return currentProgress.files.isNotEmpty() &&
+            currentProgress.files.all { file ->
+                currentProgress.fileProgress[file.id]?.isComplete == true
+            }
     }
 }

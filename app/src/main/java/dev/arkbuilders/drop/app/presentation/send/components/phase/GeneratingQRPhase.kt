@@ -18,25 +18,26 @@ import dev.arkbuilders.drop.app.presentation.send.components.SendCard
 import dev.arkbuilders.drop.app.presentation.send.components.SendLoadingIndicator
 
 @Composable
-fun GeneratingQRPhase(
-    onCancel: () -> Unit
-) {
+fun GeneratingQRPhase(onCancel: () -> Unit) {
     Box(
-        modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center,
     ) {
         SendCard {
             Column(
                 modifier = Modifier.padding(40.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 SendLoadingIndicator(
-                    message = "Generating QR Code..."
+                    message = "Generating QR Code...",
                 )
 
                 Spacer(modifier = Modifier.height(32.dp))
 
                 SendButton(
-                    onClick = onCancel, variant = ButtonVariant.Secondary, size = ButtonSize.Medium
+                    onClick = onCancel,
+                    variant = ButtonVariant.Secondary,
+                    size = ButtonSize.Medium,
                 ) {
                     Text("Cancel")
                 }

@@ -15,24 +15,26 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun SendLoadingIndicator(
-    message: String? = null
-) {
+fun SendLoadingIndicator(message: String? = null) {
     Column(
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         CircularProgressIndicator(
             modifier = Modifier.size(32.dp),
             color = MaterialTheme.colorScheme.primary,
-            strokeWidth = 3.dp
+            strokeWidth = 3.dp,
         )
 
         message?.let {
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = it, style = MaterialTheme.typography.bodyMedium.copy(
-                    fontWeight = FontWeight.Medium
-                ), color = MaterialTheme.colorScheme.onSurface, textAlign = TextAlign.Center
+                text = it,
+                style =
+                    MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = FontWeight.Medium,
+                    ),
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center,
             )
         }
     }

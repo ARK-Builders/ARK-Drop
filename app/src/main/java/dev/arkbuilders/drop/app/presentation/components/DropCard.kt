@@ -19,11 +19,15 @@ import androidx.compose.ui.semantics.semantics
 import dev.arkbuilders.drop.app.presentation.theme.DesignTokens
 
 enum class DropCardVariant {
-    Filled, Elevated, Outlined
+    Filled,
+    Elevated,
+    Outlined,
 }
 
 enum class DropCardSize {
-    Small, Medium, Large
+    Small,
+    Medium,
+    Large,
 }
 
 @Composable
@@ -33,47 +37,64 @@ fun DropCard(
     size: DropCardSize = DropCardSize.Medium,
     onClick: (() -> Unit)? = null,
     contentDescription: String? = null,
-    shape: Shape = RoundedCornerShape(
-        when (size) {
-            DropCardSize.Small -> DesignTokens.CornerRadius.sm
-            DropCardSize.Medium -> DesignTokens.CornerRadius.md
-            DropCardSize.Large -> DesignTokens.CornerRadius.lg
-        }
-    ),
-    colors: CardColors = when (variant) {
-        DropCardVariant.Filled -> CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-            contentColor = MaterialTheme.colorScheme.onSurface
-        )
-        DropCardVariant.Elevated -> CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-            contentColor = MaterialTheme.colorScheme.onSurface
-        )
-        DropCardVariant.Outlined -> CardDefaults.outlinedCardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-            contentColor = MaterialTheme.colorScheme.onSurface
-        )
-    },
-    content: @Composable ColumnScope.() -> Unit
+    shape: Shape =
+        RoundedCornerShape(
+            when (size) {
+                DropCardSize.Small -> DesignTokens.CornerRadius.sm
+                DropCardSize.Medium -> DesignTokens.CornerRadius.md
+                DropCardSize.Large -> DesignTokens.CornerRadius.lg
+            },
+        ),
+    colors: CardColors =
+        when (variant) {
+            DropCardVariant.Filled ->
+                CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                )
+            DropCardVariant.Elevated ->
+                CardDefaults.elevatedCardColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                )
+            DropCardVariant.Outlined ->
+                CardDefaults.outlinedCardColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                )
+        },
+    content: @Composable ColumnScope.() -> Unit,
 ) {
-    val cardModifier = modifier
-        .fillMaxWidth()
-        .semantics {
-            contentDescription?.let { this.contentDescription = it }
+    val cardModifier =
+        modifier
+            .fillMaxWidth()
+            .semantics {
+                contentDescription?.let { this.contentDescription = it }
+            }
+
+    val cardPadding =
+        when (size) {
+            DropCardSize.Small -> DesignTokens.Spacing.md
+            DropCardSize.Medium -> DesignTokens.Spacing.lg
+            DropCardSize.Large -> DesignTokens.Spacing.xl
         }
-    
-    val cardPadding = when (size) {
-        DropCardSize.Small -> DesignTokens.Spacing.md
-        DropCardSize.Medium -> DesignTokens.Spacing.lg
-        DropCardSize.Large -> DesignTokens.Spacing.xl
-    }
-    
-    val elevation = when (variant) {
-        DropCardVariant.Filled -> CardDefaults.cardElevation(defaultElevation = DesignTokens.Elevation.none)
-        DropCardVariant.Elevated -> CardDefaults.elevatedCardElevation(defaultElevation = DesignTokens.Elevation.md)
-        DropCardVariant.Outlined -> CardDefaults.outlinedCardElevation(defaultElevation = DesignTokens.Elevation.none)
-    }
-    
+
+    val elevation =
+        when (variant) {
+            DropCardVariant.Filled ->
+                CardDefaults.cardElevation(
+                    defaultElevation = DesignTokens.Elevation.none,
+                )
+            DropCardVariant.Elevated ->
+                CardDefaults.elevatedCardElevation(
+                    defaultElevation = DesignTokens.Elevation.md,
+                )
+            DropCardVariant.Outlined ->
+                CardDefaults.outlinedCardElevation(
+                    defaultElevation = DesignTokens.Elevation.none,
+                )
+        }
+
     when (variant) {
         DropCardVariant.Filled -> {
             Card(
@@ -81,7 +102,7 @@ fun DropCard(
                 onClick = onClick ?: { },
                 shape = shape,
                 colors = colors,
-                elevation = elevation
+                elevation = elevation,
             ) {
                 content()
             }
@@ -92,7 +113,7 @@ fun DropCard(
                 onClick = onClick ?: { },
                 shape = shape,
                 colors = colors,
-                elevation = elevation
+                elevation = elevation,
             ) {
                 content()
             }
@@ -103,7 +124,7 @@ fun DropCard(
                 onClick = onClick ?: { },
                 shape = shape,
                 colors = colors,
-                elevation = elevation
+                elevation = elevation,
             ) {
                 content()
             }
@@ -115,16 +136,17 @@ fun DropCard(
 fun DropCardContent(
     modifier: Modifier = Modifier,
     size: DropCardSize = DropCardSize.Medium,
-    content: @Composable ColumnScope.() -> Unit
+    content: @Composable ColumnScope.() -> Unit,
 ) {
-    val padding = when (size) {
-        DropCardSize.Small -> DesignTokens.Spacing.md
-        DropCardSize.Medium -> DesignTokens.Spacing.lg
-        DropCardSize.Large -> DesignTokens.Spacing.xl
-    }
+    val padding =
+        when (size) {
+            DropCardSize.Small -> DesignTokens.Spacing.md
+            DropCardSize.Medium -> DesignTokens.Spacing.lg
+            DropCardSize.Large -> DesignTokens.Spacing.xl
+        }
 
     Column(
-        modifier = modifier.padding(padding)
+        modifier = modifier.padding(padding),
     ) {
         content()
     }

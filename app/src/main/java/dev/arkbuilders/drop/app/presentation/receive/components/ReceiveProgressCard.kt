@@ -43,46 +43,50 @@ import dev.arkbuilders.drop.app.presentation.theme.DesignTokens
 @Composable
 fun ReceiveProgressCard(
     progress: ReceivingProgress,
-    onCancel: () -> Unit
+    onCancel: () -> Unit,
 ) {
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(DesignTokens.CornerRadius.lg),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-        ),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = DesignTokens.Elevation.lg)
+        colors =
+            CardDefaults.elevatedCardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            ),
+        elevation =
+            CardDefaults.elevatedCardElevation(
+                defaultElevation = DesignTokens.Elevation.lg,
+            ),
     ) {
         Column(
-            modifier = Modifier.Companion.padding(DesignTokens.Spacing.lg)
+            modifier = Modifier.Companion.padding(DesignTokens.Spacing.lg),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     text = if (progress.isConnected) "Receiving Files..." else "Connecting...",
                     style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
 
                 Surface(
                     onClick = onCancel,
                     shape = CircleShape,
                     color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
-                    modifier = Modifier.size(40.dp)
+                    modifier = Modifier.size(40.dp),
                 ) {
                     Box(
                         contentAlignment = Alignment.Center,
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier.fillMaxSize(),
                     ) {
                         Icon(
                             Icons.Default.Close,
                             contentDescription = "Cancel",
                             tint = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(20.dp),
                         )
                     }
                 }
@@ -93,25 +97,25 @@ fun ReceiveProgressCard(
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.md)
+                    horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.md),
                 ) {
                     AvatarImageWithFallback(
                         avatarB64 = progress.senderAvatar,
                         fallbackText = progress.senderName,
-                        size = 36.dp
+                        size = 36.dp,
                     )
 
                     Column {
                         Text(
                             text = "From:",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
                         )
                         Text(
                             text = progress.senderName,
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
                         )
                     }
                 }
@@ -121,24 +125,31 @@ fun ReceiveProgressCard(
                 Text(
                     text = "Files (${progress.files.size}):",
                     style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
 
                 Spacer(modifier = Modifier.Companion.height(DesignTokens.Spacing.md))
 
                 LazyColumn(
                     modifier = Modifier.heightIn(max = 280.dp),
-                    verticalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.sm)
+                    verticalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.sm),
                 ) {
                     items(progress.files) { file ->
                         val fileProgress = progress.fileProgress[file.id]
                         ReceivingFileItem(
                             file = file,
-                            progress = if (file.size > 0UL && fileProgress != null) {
-                                (fileProgress.receivedBytes.toFloat() / file.size.toFloat()).coerceIn(0f, 1f)
-                            } else 0f,
+                            progress =
+                                if (file.size > 0UL && fileProgress != null) {
+                                    (fileProgress.receivedBytes.toFloat() / file.size.toFloat())
+                                        .coerceIn(
+                                            0f,
+                                            1f,
+                                        )
+                                } else {
+                                    0f
+                                },
                             receivedBytes = fileProgress?.receivedBytes ?: 0L,
-                            isComplete = fileProgress?.isComplete ?: false
+                            isComplete = fileProgress?.isComplete ?: false,
                         )
                     }
                 }
@@ -146,12 +157,12 @@ fun ReceiveProgressCard(
                 Spacer(modifier = Modifier.Companion.height(DesignTokens.Spacing.lg))
                 Box(
                     modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.Center,
                 ) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(48.dp),
                         strokeWidth = 4.dp,
-                        color = MaterialTheme.colorScheme.primary
+                        color = MaterialTheme.colorScheme.primary,
                     )
                 }
             }
@@ -164,23 +175,27 @@ private fun ReceivingFileItem(
     file: ReceiveFileInfo,
     progress: Float,
     receivedBytes: Long,
-    isComplete: Boolean
+    isComplete: Boolean,
 ) {
-
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-            contentColor = MaterialTheme.colorScheme.onSurface
-        ),
+        colors =
+            CardDefaults.elevatedCardColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.onSurface,
+            ),
         shape = RoundedCornerShape(DesignTokens.CornerRadius.md),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = DesignTokens.Elevation.xs)
+        elevation =
+            CardDefaults.elevatedCardElevation(
+                defaultElevation = DesignTokens.Elevation.xs,
+            ),
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(DesignTokens.Spacing.lg),
-            verticalAlignment = Alignment.CenterVertically
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(DesignTokens.Spacing.lg),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -189,17 +204,18 @@ private fun ReceivingFileItem(
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
 
                 Spacer(modifier = Modifier.Companion.height(DesignTokens.Spacing.sm))
 
                 LinearProgressIndicator(
                     progress = { progress },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(6.dp)
-                        .clip(RoundedCornerShape(3.dp)),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(6.dp)
+                            .clip(RoundedCornerShape(3.dp)),
                     color = MaterialTheme.colorScheme.primary,
                     trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
                 )
@@ -209,26 +225,27 @@ private fun ReceivingFileItem(
                 Text(
                     text = "${formatBytes(receivedBytes)} / ${formatBytes(file.size.toLong())}",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 
             if (isComplete) {
                 Spacer(modifier = Modifier.Companion.width(DesignTokens.Spacing.md))
                 Box(
-                    modifier = Modifier
-                        .size(32.dp)
-                        .background(
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                            shape = CircleShape
-                        ),
-                    contentAlignment = Alignment.Center
+                    modifier =
+                        Modifier
+                            .size(32.dp)
+                            .background(
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                shape = CircleShape,
+                            ),
+                    contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         Icons.Default.CheckCircle,
                         contentDescription = "Complete",
                         tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(20.dp),
                     )
                 }
             }

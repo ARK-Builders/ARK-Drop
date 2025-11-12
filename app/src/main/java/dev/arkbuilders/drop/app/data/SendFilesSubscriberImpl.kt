@@ -15,20 +15,19 @@ data class SendingProgress(
     val remaining: ULong = 0UL,
     val isConnected: Boolean = false,
     val receiverName: String = "",
-    val receiverAvatar: String? = null
+    val receiverAvatar: String? = null,
 )
 
 class SendFilesSubscriberImpl : SendFilesSubscriber {
-    
     companion object {
         private const val TAG = "SendFilesSubscriber"
     }
-    
+
     private val id = UUID.randomUUID().toString()
-    
+
     private val _progress = MutableStateFlow(SendingProgress())
     val progress: StateFlow<SendingProgress> = _progress.asStateFlow()
-    
+
     override fun getId(): String = id
 
     override fun log(message: String) {
@@ -36,25 +35,30 @@ class SendFilesSubscriberImpl : SendFilesSubscriber {
     }
 
     override fun notifySending(event: SendFilesSendingEvent) {
-        Log.d(TAG, "Sending progress: ${event.name} - sent: ${event.sent}, remaining: ${event.remaining}")
-        
-        _progress.value = _progress.value.copy(
-            fileName = event.name,
-            sent = event.sent,
-            remaining = event.remaining
+        Log.d(
+            TAG,
+            "Sending progress: ${event.name} - sent: ${event.sent}, remaining: ${event.remaining}",
         )
+
+        _progress.value =
+            _progress.value.copy(
+                fileName = event.name,
+                sent = event.sent,
+                remaining = event.remaining,
+            )
     }
-    
+
     override fun notifyConnecting(event: SendFilesConnectingEvent) {
         Log.d(TAG, "Connected to receiver: ${event.receiver.name}")
-        
-        _progress.value = _progress.value.copy(
-            isConnected = true,
-            receiverName = event.receiver.name,
-            receiverAvatar = event.receiver.avatarB64
-        )
+
+        _progress.value =
+            _progress.value.copy(
+                isConnected = true,
+                receiverName = event.receiver.name,
+                receiverAvatar = event.receiver.avatarB64,
+            )
     }
-    
+
     fun reset() {
         _progress.value = SendingProgress()
     }

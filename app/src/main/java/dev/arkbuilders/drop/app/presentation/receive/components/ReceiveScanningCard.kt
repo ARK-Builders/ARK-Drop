@@ -55,19 +55,23 @@ fun ReceiveScanningCard(
     onQRCodeScanned: (String, UByte) -> Unit,
     onError: (ReceiveError) -> Unit,
     onStopScanning: () -> Unit,
-    onEnterManually: () -> Unit
+    onEnterManually: () -> Unit,
 ) {
     Column {
         ElevatedCard(
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(1f),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1f),
             shape = RoundedCornerShape(DesignTokens.CornerRadius.xl),
-            elevation = CardDefaults.elevatedCardElevation(defaultElevation = DesignTokens.Elevation.lg)
+            elevation =
+                CardDefaults.elevatedCardElevation(
+                    defaultElevation = DesignTokens.Elevation.lg,
+                ),
         ) {
             QRCodeScanner(
                 onQRCodeScanned = onQRCodeScanned,
-                onError = onError
+                onError = onError,
             )
         }
 
@@ -79,50 +83,52 @@ fun ReceiveScanningCard(
             fontWeight = FontWeight.Medium,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth(),
-            color = MaterialTheme.colorScheme.onSurface
+            color = MaterialTheme.colorScheme.onSurface,
         )
 
         Spacer(modifier = Modifier.Companion.height(DesignTokens.Spacing.lg))
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.md)
+            horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.md),
         ) {
             OutlinedButton(
                 onClick = onStopScanning,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(DesignTokens.TouchTarget.comfortable),
-                shape = RoundedCornerShape(DesignTokens.CornerRadius.lg)
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .height(DesignTokens.TouchTarget.comfortable),
+                shape = RoundedCornerShape(DesignTokens.CornerRadius.lg),
             ) {
                 Icon(
                     TablerIcons.CameraOff,
                     contentDescription = null,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(18.dp),
                 )
                 Spacer(modifier = Modifier.Companion.width(DesignTokens.Spacing.sm))
                 Text(
                     "Stop Scanning",
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
                 )
             }
 
             Button(
                 onClick = onEnterManually,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(DesignTokens.TouchTarget.comfortable),
-                shape = RoundedCornerShape(DesignTokens.CornerRadius.lg)
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .height(DesignTokens.TouchTarget.comfortable),
+                shape = RoundedCornerShape(DesignTokens.CornerRadius.lg),
             ) {
                 Icon(
                     TablerIcons.ArrowForward,
                     contentDescription = null,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(18.dp),
                 )
                 Spacer(modifier = Modifier.Companion.width(DesignTokens.Spacing.sm))
                 Text(
                     "Enter Code",
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
                 )
             }
         }
@@ -133,7 +139,7 @@ fun ReceiveScanningCard(
 @Composable
 private fun QRCodeScanner(
     onQRCodeScanned: (String, UByte) -> Unit,
-    onError: (ReceiveError) -> Unit
+    onError: (ReceiveError) -> Unit,
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -148,18 +154,20 @@ private fun QRCodeScanner(
                 try {
                     val cameraProvider = cameraProviderFuture.get()
 
-                    val preview = Preview.Builder().build().also {
-                        it.setSurfaceProvider(previewView.surfaceProvider)
-                    }
-
-                    val imageAnalyzer = ImageAnalysis.Builder()
-                        .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                        .build()
-                        .also {
-                            it.setAnalyzer(cameraExecutor) { imageProxy ->
-                                processImageProxy(imageProxy, onQRCodeScanned, onError)
-                            }
+                    val preview =
+                        Preview.Builder().build().also {
+                            it.setSurfaceProvider(previewView.surfaceProvider)
                         }
+
+                    val imageAnalyzer =
+                        ImageAnalysis.Builder()
+                            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                            .build()
+                            .also {
+                                it.setAnalyzer(cameraExecutor) { imageProxy ->
+                                    processImageProxy(imageProxy, onQRCodeScanned, onError)
+                                }
+                            }
 
                     val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
@@ -168,7 +176,7 @@ private fun QRCodeScanner(
                         lifecycleOwner,
                         cameraSelector,
                         preview,
-                        imageAnalyzer
+                        imageAnalyzer,
                     )
                 } catch (exc: Exception) {
                     onError(ReceiveError.CameraInitializationFailed)
@@ -177,7 +185,7 @@ private fun QRCodeScanner(
 
             previewView
         },
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize(),
     )
 
     DisposableEffect(Unit) {
@@ -191,7 +199,7 @@ private fun QRCodeScanner(
 private fun processImageProxy(
     imageProxy: ImageProxy,
     onQRCodeScanned: (String, UByte) -> Unit,
-    onError: (ReceiveError) -> Unit
+    onError: (ReceiveError) -> Unit,
 ) {
     val mediaImage = imageProxy.image
     if (mediaImage != null) {
@@ -234,11 +242,11 @@ private fun processImageProxy(
                     when {
                         exception.message?.contains(
                             "camera",
-                            ignoreCase = true
+                            ignoreCase = true,
                         ) == true -> ReceiveError.CameraInitializationFailed
 
                         else -> ReceiveError.UnknownError
-                    }
+                    },
                 )
             }
             .addOnCompleteListener {

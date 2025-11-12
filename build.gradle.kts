@@ -6,4 +6,5 @@ plugins {
     alias(libs.plugins.ksp)
   //  alias(libs.plugins.dagger.hilt) apply false
     alias(libs.plugins.triplet.play) apply false
+    alias(libs.plugins.ktlint.gradle) apply false
 }

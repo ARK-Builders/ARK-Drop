@@ -38,38 +38,36 @@ import dev.arkbuilders.drop.app.presentation.theme.DesignTokens
 @Composable
 fun LoadingIndicator(
     modifier: Modifier = Modifier,
-    message: String? = null
+    message: String? = null,
 ) {
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Center,
     ) {
         CircularProgressIndicator(
             modifier = Modifier.size(48.dp),
             color = MaterialTheme.colorScheme.primary,
-            strokeWidth = 4.dp
+            strokeWidth = 4.dp,
         )
-        
+
         message?.let {
             Spacer(modifier = Modifier.height(DesignTokens.Spacing.lg))
             Text(
                 text = it,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
             )
         }
     }
 }
 
 @Composable
-fun SkeletonLoader(
-    modifier: Modifier = Modifier
-) {
+fun SkeletonLoader(modifier: Modifier = Modifier) {
     Column(
         modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.md)
+        verticalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.md),
     ) {
         repeat(3) {
             SkeletonCard()
@@ -81,41 +79,44 @@ fun SkeletonLoader(
 private fun SkeletonCard() {
     DropCard(
         variant = DropCardVariant.Elevated,
-        size = DropCardSize.Medium
+        size = DropCardSize.Medium,
     ) {
         DropCardContent(size = DropCardSize.Medium) {
             Row(
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 // Avatar skeleton
                 Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(CircleShape)
-                        .shimmerEffect()
+                    modifier =
+                        Modifier
+                            .size(48.dp)
+                            .clip(CircleShape)
+                            .shimmerEffect(),
                 )
-                
+
                 Spacer(modifier = Modifier.width(DesignTokens.Spacing.lg))
-                
+
                 Column(modifier = Modifier.weight(1f)) {
                     // Title skeleton
                     Box(
-                        modifier = Modifier
-                            .fillMaxWidth(0.7f)
-                            .height(16.dp)
-                            .clip(RoundedCornerShape(DesignTokens.CornerRadius.xs))
-                            .shimmerEffect()
+                        modifier =
+                            Modifier
+                                .fillMaxWidth(0.7f)
+                                .height(16.dp)
+                                .clip(RoundedCornerShape(DesignTokens.CornerRadius.xs))
+                                .shimmerEffect(),
                     )
-                    
+
                     Spacer(modifier = Modifier.height(DesignTokens.Spacing.xs))
-                    
+
                     // Subtitle skeleton
                     Box(
-                        modifier = Modifier
-                            .fillMaxWidth(0.5f)
-                            .height(12.dp)
-                            .clip(RoundedCornerShape(DesignTokens.CornerRadius.xs))
-                            .shimmerEffect()
+                        modifier =
+                            Modifier
+                                .fillMaxWidth(0.5f)
+                                .height(12.dp)
+                                .clip(RoundedCornerShape(DesignTokens.CornerRadius.xs))
+                                .shimmerEffect(),
                     )
                 }
             }
@@ -123,59 +124,63 @@ private fun SkeletonCard() {
     }
 }
 
-fun Modifier.shimmerEffect(): Modifier = composed {
-    val transition = rememberInfiniteTransition(label = "shimmer")
-    val alpha by transition.animateFloat(
-        initialValue = 0.2f,
-        targetValue = 0.9f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1000, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "shimmerAlpha"
-    )
-    
-    background(
-        brush = Brush.linearGradient(
-            colors = listOf(
-                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = alpha),
-                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = alpha * 0.5f)
-            ),
-            start = Offset.Zero,
-            end = Offset.Infinite
+fun Modifier.shimmerEffect(): Modifier =
+    composed {
+        val transition = rememberInfiniteTransition(label = "shimmer")
+        val alpha by transition.animateFloat(
+            initialValue = 0.2f,
+            targetValue = 0.9f,
+            animationSpec =
+                infiniteRepeatable(
+                    animation = tween(durationMillis = 1000, easing = LinearEasing),
+                    repeatMode = RepeatMode.Reverse,
+                ),
+            label = "shimmerAlpha",
         )
-    )
-}
+
+        background(
+            brush =
+                Brush.linearGradient(
+                    colors =
+                        listOf(
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = alpha),
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = alpha * 0.5f),
+                        ),
+                    start = Offset.Zero,
+                    end = Offset.Infinite,
+                ),
+        )
+    }
 
 @Composable
 fun EmptyState(
     title: String,
     description: String,
     modifier: Modifier = Modifier,
-    action: (@Composable () -> Unit)? = null
+    action: (@Composable () -> Unit)? = null,
 ) {
     Column(
         modifier = modifier.padding(DesignTokens.Spacing.xl),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Center,
     ) {
         Text(
             text = title,
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
-        
+
         Spacer(modifier = Modifier.height(DesignTokens.Spacing.sm))
-        
+
         Text(
             text = description,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
-        
+
         action?.let {
             Spacer(modifier = Modifier.height(DesignTokens.Spacing.xl))
             it()

@@ -40,7 +40,8 @@ import dev.arkbuilders.drop.app.presentation.DisplayUtils.formatBytes
 
 @Composable
 fun SendFileItem(
-    uri: String, onRemove: () -> Unit
+    uri: String,
+    onRemove: () -> Unit,
 ) {
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
@@ -49,10 +50,11 @@ fun SendFileItem(
 
     LaunchedEffect(uri) {
         try {
-            val resourcesHelper = EntryPointAccessors.fromApplication(
-                context.applicationContext,
-                TmpEntryPoint::class.java
-            ).resourcesHelper()
+            val resourcesHelper =
+                EntryPointAccessors.fromApplication(
+                    context.applicationContext,
+                    TmpEntryPoint::class.java,
+                ).resourcesHelper()
 
             fileName = resourcesHelper.getFileName(uri) ?: "Unknown file"
             fileSize = resourcesHelper.getFileSize(uri)
@@ -66,19 +68,20 @@ fun SendFileItem(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
-        tonalElevation = 1.dp
+        tonalElevation = 1.dp,
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
                 TablerIcons.FileText,
                 contentDescription = null,
                 modifier = Modifier.size(24.dp),
-                tint = MaterialTheme.colorScheme.primary
+                tint = MaterialTheme.colorScheme.primary,
             )
 
             Spacer(modifier = Modifier.width(12.dp))
@@ -86,12 +89,13 @@ fun SendFileItem(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = fileName,
-                    style = MaterialTheme.typography.bodyLarge.copy(
-                        fontWeight = FontWeight.Medium
-                    ),
+                    style =
+                        MaterialTheme.typography.bodyLarge.copy(
+                            fontWeight = FontWeight.Medium,
+                        ),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
 
                 if (fileSize > 0) {
@@ -99,7 +103,7 @@ fun SendFileItem(
                     Text(
                         text = formatBytes(fileSize),
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                     )
                 }
             }
@@ -108,15 +112,17 @@ fun SendFileItem(
                 onClick = {
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     onRemove()
-                }, modifier = Modifier
-                    .size(36.dp)
-                    .clip(CircleShape)
+                },
+                modifier =
+                    Modifier
+                        .size(36.dp)
+                        .clip(CircleShape),
             ) {
                 Icon(
                     Icons.Default.Delete,
                     contentDescription = "Remove file",
                     modifier = Modifier.size(18.dp),
-                    tint = MaterialTheme.colorScheme.error
+                    tint = MaterialTheme.colorScheme.error,
                 )
             }
         }

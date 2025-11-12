@@ -18,9 +18,9 @@ import dagger.hilt.android.AndroidEntryPoint
 import dev.arkbuilders.drop.app.data.repository.TransferManager
 import dev.arkbuilders.drop.app.domain.repository.ProfileRepo
 import dev.arkbuilders.drop.app.domain.repository.TransferHistoryItemRepository
-import dev.arkbuilders.drop.app.presentation.navigation.DropDestination
 import dev.arkbuilders.drop.app.presentation.history.History
-import dev.arkbuilders.drop.app.presentation.Home.Home
+import dev.arkbuilders.drop.app.presentation.home.Home
+import dev.arkbuilders.drop.app.presentation.navigation.DropDestination
 import dev.arkbuilders.drop.app.presentation.profile.EditProfileEnhanced
 import dev.arkbuilders.drop.app.presentation.receive.Receive
 import dev.arkbuilders.drop.app.presentation.send.Send
@@ -29,7 +29,6 @@ import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-
     @Inject
     lateinit var transferManager: TransferManager
 
@@ -45,15 +44,17 @@ class MainActivity : ComponentActivity() {
         setContent {
             DropTheme {
                 Scaffold(
-                    modifier = Modifier
-                        .fillMaxSize()
+                    modifier =
+                        Modifier
+                            .fillMaxSize(),
                 ) { innerPadding ->
                     DropNavigation(
-                        modifier = Modifier
-                            .padding(innerPadding),
+                        modifier =
+                            Modifier
+                                .padding(innerPadding),
                         transferManager = transferManager,
                         profileRepo = profileRepo,
-                        transferHistoryItemRepository = transferHistoryItemRepository
+                        transferHistoryItemRepository = transferHistoryItemRepository,
                     )
                 }
             }
@@ -72,37 +73,38 @@ fun DropNavigation(
     NavHost(
         navController = navController,
         startDestination = DropDestination.Home.route,
-        modifier = modifier
+        modifier = modifier,
     ) {
         composable(DropDestination.Home.route) {
             Home(
                 navController = navController,
                 profileRepo = profileRepo,
-                transferHistoryItemRepository = transferHistoryItemRepository
+                transferHistoryItemRepository = transferHistoryItemRepository,
             )
         }
         composable(DropDestination.Send.route) {
             Send(
                 navController = navController,
-                transferManager = transferManager
+                transferManager = transferManager,
             )
         }
         composable(
             DropDestination.Receive.route,
-            deepLinks = listOf(
-                navDeepLink {
-                    uriPattern = DropDestination.Receive.DEEP_LINK_PATTERN
-                }
-            )
+            deepLinks =
+                listOf(
+                    navDeepLink {
+                        uriPattern = DropDestination.Receive.DEEP_LINK_PATTERN
+                    },
+                ),
         ) {
             Receive(
-                navController = navController
+                navController = navController,
             )
         }
         composable(DropDestination.History.route) {
             History(
                 navController = navController,
-                transferHistoryItemRepository = transferHistoryItemRepository
+                transferHistoryItemRepository = transferHistoryItemRepository,
             )
         }
         composable(DropDestination.EditProfile.route) {

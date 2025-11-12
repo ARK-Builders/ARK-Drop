@@ -25,7 +25,11 @@ import compose.icons.tablericons.WifiOff
 import dev.arkbuilders.drop.app.presentation.theme.DesignTokens
 
 enum class ErrorType {
-    Network, FileTransfer, Permission, Generic, Offline
+    Network,
+    FileTransfer,
+    Permission,
+    Generic,
+    Offline,
 }
 
 data class ErrorState(
@@ -33,77 +37,80 @@ data class ErrorState(
     val title: String,
     val message: String,
     val actionLabel: String? = null,
-    val onAction: (() -> Unit)? = null
+    val onAction: (() -> Unit)? = null,
 )
 
 @Composable
 fun ErrorStateDisplay(
     errorState: ErrorState,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
-    val icon = when (errorState.type) {
-        ErrorType.Network -> TablerIcons.WifiOff
-        ErrorType.FileTransfer -> TablerIcons.FileX
-        ErrorType.Permission -> TablerIcons.AlertCircle
-        ErrorType.Offline -> TablerIcons.CloudOff
-        ErrorType.Generic -> Icons.Default.Warning
-    }
-    
-    val iconColor = when (errorState.type) {
-        ErrorType.Network, ErrorType.Offline -> MaterialTheme.colorScheme.error
-        ErrorType.FileTransfer -> MaterialTheme.colorScheme.error
-        ErrorType.Permission -> MaterialTheme.colorScheme.error
-        ErrorType.Generic -> MaterialTheme.colorScheme.error
-    }
-    
+    val icon =
+        when (errorState.type) {
+            ErrorType.Network -> TablerIcons.WifiOff
+            ErrorType.FileTransfer -> TablerIcons.FileX
+            ErrorType.Permission -> TablerIcons.AlertCircle
+            ErrorType.Offline -> TablerIcons.CloudOff
+            ErrorType.Generic -> Icons.Default.Warning
+        }
+
+    val iconColor =
+        when (errorState.type) {
+            ErrorType.Network, ErrorType.Offline -> MaterialTheme.colorScheme.error
+            ErrorType.FileTransfer -> MaterialTheme.colorScheme.error
+            ErrorType.Permission -> MaterialTheme.colorScheme.error
+            ErrorType.Generic -> MaterialTheme.colorScheme.error
+        }
+
     DropCard(
         modifier = modifier,
         variant = DropCardVariant.Outlined,
         size = DropCardSize.Large,
-        colors = CardDefaults.outlinedCardColors(
-            containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.1f),
-            contentColor = MaterialTheme.colorScheme.onErrorContainer
-        )
+        colors =
+            CardDefaults.outlinedCardColors(
+                containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.1f),
+                contentColor = MaterialTheme.colorScheme.onErrorContainer,
+            ),
     ) {
         DropCardContent(size = DropCardSize.Large) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                verticalArrangement = Arrangement.Center,
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
                     modifier = Modifier.size(48.dp),
-                    tint = iconColor
+                    tint = iconColor,
                 )
-                
+
                 Spacer(modifier = Modifier.height(DesignTokens.Spacing.lg))
-                
+
                 Text(
                     text = errorState.title,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
                 )
-                
+
                 Spacer(modifier = Modifier.height(DesignTokens.Spacing.sm))
-                
+
                 Text(
                     text = errorState.message,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
                 )
-                
+
                 errorState.actionLabel?.let { label ->
                     Spacer(modifier = Modifier.height(DesignTokens.Spacing.xl))
-                    
+
                     DropButton(
                         onClick = { errorState.onAction?.invoke() },
                         variant = DropButtonVariant.Primary,
                         size = DropButtonSize.Medium,
-                        contentDescription = "Retry action"
+                        contentDescription = "Retry action",
                     ) {
                         Text(text = label)
                     }
@@ -115,43 +122,58 @@ fun ErrorStateDisplay(
 
 // Predefined error states for common scenarios
 object CommonErrors {
-    fun networkError(onRetry: () -> Unit) = ErrorState(
-        type = ErrorType.Network,
-        title = "Connection Problem",
-        message = "Unable to connect to the network. Please check your internet connection and try again.",
-        actionLabel = "Retry",
-        onAction = onRetry
-    )
-    
-    fun fileTransferError(onRetry: () -> Unit) = ErrorState(
-        type = ErrorType.FileTransfer,
-        title = "Transfer Failed",
-        message = "The file transfer was interrupted. This might be due to network issues or insufficient storage space.",
-        actionLabel = "Try Again",
-        onAction = onRetry
-    )
-    
-    fun permissionError(onRequestPermission: () -> Unit) = ErrorState(
-        type = ErrorType.Permission,
-        title = "Permission Required",
-        message = "This feature requires additional permissions to work properly. Please grant the necessary permissions.",
-        actionLabel = "Grant Permission",
-        onAction = onRequestPermission
-    )
-    
-    fun offlineError() = ErrorState(
-        type = ErrorType.Offline,
-        title = "You're Offline",
-        message = "This feature requires an internet connection. Please check your network settings and try again.",
-        actionLabel = null,
-        onAction = null
-    )
-    
-    fun genericError(onRetry: () -> Unit) = ErrorState(
-        type = ErrorType.Generic,
-        title = "Something Went Wrong",
-        message = "An unexpected error occurred. Please try again or contact support if the problem persists.",
-        actionLabel = "Retry",
-        onAction = onRetry
-    )
+    fun networkError(onRetry: () -> Unit) =
+        ErrorState(
+            type = ErrorType.Network,
+            title = "Connection Problem",
+            message =
+                "Unable to connect to the network." +
+                    " Please check your internet connection and try again.",
+            actionLabel = "Retry",
+            onAction = onRetry,
+        )
+
+    fun fileTransferError(onRetry: () -> Unit) =
+        ErrorState(
+            type = ErrorType.FileTransfer,
+            title = "Transfer Failed",
+            message =
+                "The file transfer was interrupted." +
+                    " This might be due to network issues or insufficient storage space.",
+            actionLabel = "Try Again",
+            onAction = onRetry,
+        )
+
+    fun permissionError(onRequestPermission: () -> Unit) =
+        ErrorState(
+            type = ErrorType.Permission,
+            title = "Permission Required",
+            message =
+                "This feature requires additional permissions to work properly." +
+                    " Please grant the necessary permissions.",
+            actionLabel = "Grant Permission",
+            onAction = onRequestPermission,
+        )
+
+    fun offlineError() =
+        ErrorState(
+            type = ErrorType.Offline,
+            title = "You're Offline",
+            message =
+                "This feature requires an internet connection." +
+                    " Please check your network settings and try again.",
+            actionLabel = null,
+            onAction = null,
+        )
+
+    fun genericError(onRetry: () -> Unit) =
+        ErrorState(
+            type = ErrorType.Generic,
+            title = "Something Went Wrong",
+            message =
+                "An unexpected error occurred." +
+                    " Please try again or contact support if the problem persists.",
+            actionLabel = "Retry",
+            onAction = onRetry,
+        )
 }

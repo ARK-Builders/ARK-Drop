@@ -28,399 +28,437 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class TransferManager @Inject constructor(
-    @ApplicationContext private val context: Context,
-    private val profileRepo: ProfileRepo,
-    private val transferHistoryRepository: TransferHistoryItemRepository,
-) {
-    companion object {
-        private const val TAG = "TransferManager"
-    }
-
-    private var currentSendBubble: SendFilesBubble? = null
-    private var currentReceiveBubble: ReceiveFilesBubble? = null
-    private var sendSubscriber: SendFilesSubscriberImpl? = null
-    private var receiveSubscriber: ReceiveFilesSubscriberImpl? = null
-
-    val sendProgress: StateFlow<SendingProgress>?
-        get() = sendSubscriber?.progress
-
-    val receiveProgress: StateFlow<ReceivingProgress>?
-        get() = receiveSubscriber?.progress
-
-    suspend fun sendFiles(fileUris: List<Uri>): SendFilesBubble? = withContext(Dispatchers.IO) {
-        val entryPoint = EntryPointAccessors.fromApplication(
-            context.applicationContext,
-            TmpEntryPoint::class.java
-        )
-        val sendUseCase = entryPoint.sendFilesUseCase()
-        sendUseCase.invoke(fileUris).fold(
-            onSuccess = { bubble ->
-                currentSendBubble = bubble
-                sendSubscriber = SendFilesSubscriberImpl().also { subscriber ->
-                    bubble.subscribe(subscriber)
-                }
-                return@withContext bubble
-            },
-            onFailure = {
-                return@withContext null
-            },
-        )
-    }
-
-    suspend fun receiveFiles(ticket: String, confirmation: UByte): ReceiveFilesBubble? =
-        withContext(Dispatchers.IO) {
-            val entryPoint = EntryPointAccessors.fromApplication(
-                context.applicationContext,
-                TmpEntryPoint::class.java
-            )
-            val receiveFilesUseCase = entryPoint.receiveFilesUseCase()
-
-            receiveFilesUseCase.invoke(ticket, confirmation).fold(
-                onSuccess = { bubble ->
-                    currentReceiveBubble = bubble
-                    receiveSubscriber = ReceiveFilesSubscriberImpl().also { subscriber ->
-                        bubble.subscribe(subscriber)
-                    }
-                    bubble.start()
-                    return@withContext bubble
-                },
-                onFailure = {
-                    return@withContext null
-                },
-            )
+class TransferManager
+    @Inject
+    constructor(
+        @ApplicationContext private val context: Context,
+        private val profileRepo: ProfileRepo,
+        private val transferHistoryRepository: TransferHistoryItemRepository,
+    ) {
+        companion object {
+            private const val TAG = "TransferManager"
         }
 
-    suspend fun saveReceivedFiles(): List<File> = withContext(Dispatchers.IO) {
-        val subscriber = receiveSubscriber ?: return@withContext emptyList()
-        val completeFiles = subscriber.getCompleteFiles()
-        val savedFiles = mutableListOf<File>()
+        private var currentSendBubble: SendFilesBubble? = null
+        private var currentReceiveBubble: ReceiveFilesBubble? = null
+        private var sendSubscriber: SendFilesSubscriberImpl? = null
+        private var receiveSubscriber: ReceiveFilesSubscriberImpl? = null
 
-        try {
-            completeFiles.forEach { (fileInfo, data) ->
-                val savedFile = saveFileToDownloads(fileInfo.name, data)
-                if (savedFile != null) {
-                    savedFiles.add(savedFile)
-                    Log.d(TAG, "Saved file: ${savedFile.absolutePath}")
-                } else {
-                    Log.e(TAG, "Failed to save file: ${fileInfo.name}")
-                }
-            }
+        val sendProgress: StateFlow<SendingProgress>?
+            get() = sendSubscriber?.progress
 
-            // Add to history if files were saved successfully
-            if (savedFiles.isNotEmpty()) {
-                val progress = receiveSubscriber?.progress?.value
-                val senderName = progress?.senderName ?: "Unknown"
-                val senderAvatar = progress?.senderAvatar
+        val receiveProgress: StateFlow<ReceivingProgress>?
+            get() = receiveSubscriber?.progress
 
-                val totalSize = completeFiles.sumOf { it.second.size.toLong() }
-                val firstFileName = savedFiles.firstOrNull()?.name ?: "Unknown"
-
-                transferHistoryRepository.addReceivedTransfer(
-                    fileName = firstFileName,
-                    fileSize = totalSize,
-                    peerName = senderName,
-                    peerAvatar = senderAvatar,
-                    fileCount = savedFiles.size,
-                    status = TransferStatus.COMPLETED
+        suspend fun sendFiles(fileUris: List<Uri>): SendFilesBubble? =
+            withContext(Dispatchers.IO) {
+                val entryPoint =
+                    EntryPointAccessors.fromApplication(
+                        context.applicationContext,
+                        TmpEntryPoint::class.java,
+                    )
+                val sendUseCase = entryPoint.sendFilesUseCase()
+                sendUseCase.invoke(fileUris).fold(
+                    onSuccess = { bubble ->
+                        currentSendBubble = bubble
+                        sendSubscriber =
+                            SendFilesSubscriberImpl().also { subscriber ->
+                                bubble.subscribe(subscriber)
+                            }
+                        return@withContext bubble
+                    },
+                    onFailure = {
+                        return@withContext null
+                    },
                 )
             }
 
-        } catch (e: Exception) {
-            Log.e(TAG, "Error saving received files", e)
+        suspend fun receiveFiles(
+            ticket: String,
+            confirmation: UByte,
+        ): ReceiveFilesBubble? =
+            withContext(Dispatchers.IO) {
+                val entryPoint =
+                    EntryPointAccessors.fromApplication(
+                        context.applicationContext,
+                        TmpEntryPoint::class.java,
+                    )
+                val receiveFilesUseCase = entryPoint.receiveFilesUseCase()
 
-            // Add failed transfer to history
-            val progress = receiveSubscriber?.progress?.value
-            val senderName = progress?.senderName ?: "Unknown"
-            val senderAvatar = progress?.senderAvatar
+                receiveFilesUseCase.invoke(ticket, confirmation).fold(
+                    onSuccess = { bubble ->
+                        currentReceiveBubble = bubble
+                        receiveSubscriber =
+                            ReceiveFilesSubscriberImpl().also { subscriber ->
+                                bubble.subscribe(subscriber)
+                            }
+                        bubble.start()
+                        return@withContext bubble
+                    },
+                    onFailure = {
+                        return@withContext null
+                    },
+                )
+            }
 
-            transferHistoryRepository.addReceivedTransfer(
-                fileName = "Transfer failed",
-                fileSize = 0L,
-                peerName = senderName,
-                peerAvatar = senderAvatar,
-                fileCount = completeFiles.size,
-                status = TransferStatus.FAILED
-            )
+        suspend fun saveReceivedFiles(): List<File> =
+            withContext(Dispatchers.IO) {
+                val subscriber = receiveSubscriber ?: return@withContext emptyList()
+                val completeFiles = subscriber.getCompleteFiles()
+                val savedFiles = mutableListOf<File>()
+
+                try {
+                    completeFiles.forEach { (fileInfo, data) ->
+                        val savedFile = saveFileToDownloads(fileInfo.name, data)
+                        if (savedFile != null) {
+                            savedFiles.add(savedFile)
+                            Log.d(TAG, "Saved file: ${savedFile.absolutePath}")
+                        } else {
+                            Log.e(TAG, "Failed to save file: ${fileInfo.name}")
+                        }
+                    }
+
+                    // Add to history if files were saved successfully
+                    if (savedFiles.isNotEmpty()) {
+                        val progress = receiveSubscriber?.progress?.value
+                        val senderName = progress?.senderName ?: "Unknown"
+                        val senderAvatar = progress?.senderAvatar
+
+                        val totalSize = completeFiles.sumOf { it.second.size.toLong() }
+                        val firstFileName = savedFiles.firstOrNull()?.name ?: "Unknown"
+
+                        transferHistoryRepository.addReceivedTransfer(
+                            fileName = firstFileName,
+                            fileSize = totalSize,
+                            peerName = senderName,
+                            peerAvatar = senderAvatar,
+                            fileCount = savedFiles.size,
+                            status = TransferStatus.COMPLETED,
+                        )
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error saving received files", e)
+
+                    // Add failed transfer to history
+                    val progress = receiveSubscriber?.progress?.value
+                    val senderName = progress?.senderName ?: "Unknown"
+                    val senderAvatar = progress?.senderAvatar
+
+                    transferHistoryRepository.addReceivedTransfer(
+                        fileName = "Transfer failed",
+                        fileSize = 0L,
+                        peerName = senderName,
+                        peerAvatar = senderAvatar,
+                        fileCount = completeFiles.size,
+                        status = TransferStatus.FAILED,
+                    )
+                }
+
+                savedFiles
+            }
+
+        suspend fun recordSendCompletion(fileUris: List<Uri>) {
+            try {
+                val progress = sendSubscriber?.progress?.value
+                val receiverName = progress?.receiverName ?: "Unknown"
+                val receiverAvatar = progress?.receiverAvatar
+
+                val totalSize =
+                    fileUris.sumOf { uri ->
+                        try {
+                            context.contentResolver.query(uri, null, null, null, null)?.use {
+                                    cursor ->
+                                if (cursor.moveToFirst()) {
+                                    val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
+                                    if (sizeIndex >= 0) cursor.getLong(sizeIndex) else 0L
+                                } else {
+                                    0L
+                                }
+                            } ?: 0L
+                        } catch (_: Exception) {
+                            0L
+                        }
+                    }
+
+                val firstFileName = getFileName(fileUris.firstOrNull()) ?: "Unknown"
+
+                transferHistoryRepository.addSentTransfer(
+                    fileName = firstFileName,
+                    fileSize = totalSize,
+                    peerName = receiverName,
+                    peerAvatar = receiverAvatar,
+                    fileCount = fileUris.size,
+                    status = TransferStatus.COMPLETED,
+                )
+            } catch (e: Exception) {
+                Log.e(TAG, "Error recording send completion", e)
+            }
         }
 
-        savedFiles
-    }
-
-    suspend fun recordSendCompletion(fileUris: List<Uri>) {
-        try {
-            val progress = sendSubscriber?.progress?.value
-            val receiverName = progress?.receiverName ?: "Unknown"
-            val receiverAvatar = progress?.receiverAvatar
-
-            val totalSize = fileUris.sumOf { uri ->
+        private suspend fun saveFileToDownloads(
+            fileName: String,
+            data: ByteArray,
+        ): File? =
+            withContext(Dispatchers.IO) {
                 try {
-                    context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-                        if (cursor.moveToFirst()) {
-                            val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
-                            if (sizeIndex >= 0) cursor.getLong(sizeIndex) else 0L
-                        } else 0L
-                    } ?: 0L
-                } catch (_: Exception) {
-                    0L
+                    // Use MediaStore for Android 10+ (Scoped Storage)
+                    return@withContext saveFileUsingMediaStore(fileName, data)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error saving file: $fileName", e)
+                    return@withContext null
                 }
             }
 
-            val firstFileName = getFileName(fileUris.firstOrNull()) ?: "Unknown"
-
-            transferHistoryRepository.addSentTransfer(
-                fileName = firstFileName,
-                fileSize = totalSize,
-                peerName = receiverName,
-                peerAvatar = receiverAvatar,
-                fileCount = fileUris.size,
-                status = TransferStatus.COMPLETED
-            )
-        } catch (e: Exception) {
-            Log.e(TAG, "Error recording send completion", e)
-        }
-    }
-
-    private suspend fun saveFileToDownloads(fileName: String, data: ByteArray): File? =
-        withContext(Dispatchers.IO) {
+        private fun saveFileUsingMediaStore(
+            fileName: String,
+            data: ByteArray,
+        ): File? {
             try {
-                // Use MediaStore for Android 10+ (Scoped Storage)
-                return@withContext saveFileUsingMediaStore(fileName, data)
+                val resolver = context.contentResolver
+
+                // Generate unique filename to avoid conflicts
+                val uniqueFileName = generateUniqueFileName(fileName)
+
+                // Create content values for the file
+                val contentValues =
+                    ContentValues().apply {
+                        put(MediaStore.MediaColumns.DISPLAY_NAME, uniqueFileName)
+                        put(MediaStore.MediaColumns.MIME_TYPE, getMimeType(uniqueFileName))
+                        put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+                    }
+
+                // Insert the file into MediaStore
+                val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
+
+                if (uri != null) {
+                    // Write the file data
+                    resolver.openOutputStream(uri)?.use { outputStream ->
+                        outputStream.write(data)
+                        outputStream.flush()
+                    }
+
+                    // Get the actual file path for return
+                    val actualFile = getFileFromMediaStoreUri(uri, uniqueFileName)
+                    Log.d(TAG, "File saved using MediaStore: $uniqueFileName")
+                    return actualFile
+                } else {
+                    Log.e(TAG, "Failed to create MediaStore entry for: $uniqueFileName")
+                    return null
+                }
             } catch (e: Exception) {
-                Log.e(TAG, "Error saving file: $fileName", e)
-                return@withContext null
+                Log.e(TAG, "Error saving file using MediaStore: $fileName", e)
+                return null
             }
         }
 
-    private fun saveFileUsingMediaStore(fileName: String, data: ByteArray): File? {
-        try {
-            val resolver = context.contentResolver
+        private fun saveFileUsingLegacyStorage(
+            fileName: String,
+            data: ByteArray,
+        ): File? {
+            try {
+                val downloadsDir =
+                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                if (!downloadsDir.exists()) {
+                    downloadsDir.mkdirs()
+                }
 
-            // Generate unique filename to avoid conflicts
-            val uniqueFileName = generateUniqueFileName(fileName)
+                // Generate unique filename to avoid conflicts
+                val uniqueFileName = generateUniqueFileNameForDirectory(downloadsDir, fileName)
+                val file = File(downloadsDir, uniqueFileName)
 
-            // Create content values for the file
-            val contentValues = ContentValues().apply {
-                put(MediaStore.MediaColumns.DISPLAY_NAME, uniqueFileName)
-                put(MediaStore.MediaColumns.MIME_TYPE, getMimeType(uniqueFileName))
-                put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
-            }
-
-            // Insert the file into MediaStore
-            val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
-
-            if (uri != null) {
-                // Write the file data
-                resolver.openOutputStream(uri)?.use { outputStream ->
+                FileOutputStream(file).use { outputStream ->
                     outputStream.write(data)
                     outputStream.flush()
                 }
 
-                // Get the actual file path for return
-                val actualFile = getFileFromMediaStoreUri(uri, uniqueFileName)
-                Log.d(TAG, "File saved using MediaStore: $uniqueFileName")
-                return actualFile
-            } else {
-                Log.e(TAG, "Failed to create MediaStore entry for: $uniqueFileName")
+                Log.d(TAG, "File saved using legacy storage: ${file.absolutePath}")
+                return file
+            } catch (e: Exception) {
+                Log.e(TAG, "Error saving file using legacy storage: $fileName", e)
                 return null
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error saving file using MediaStore: $fileName", e)
-            return null
         }
-    }
 
-    private fun saveFileUsingLegacyStorage(fileName: String, data: ByteArray): File? {
-        try {
+        private fun generateUniqueFileName(originalFileName: String): String {
             val downloadsDir =
                 Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-            if (!downloadsDir.exists()) {
-                downloadsDir.mkdirs()
-            }
-
-            // Generate unique filename to avoid conflicts
-            val uniqueFileName = generateUniqueFileNameForDirectory(downloadsDir, fileName)
-            val file = File(downloadsDir, uniqueFileName)
-
-            FileOutputStream(file).use { outputStream ->
-                outputStream.write(data)
-                outputStream.flush()
-            }
-
-            Log.d(TAG, "File saved using legacy storage: ${file.absolutePath}")
-            return file
-        } catch (e: Exception) {
-            Log.e(TAG, "Error saving file using legacy storage: $fileName", e)
-            return null
+            return generateUniqueFileNameForDirectory(downloadsDir, originalFileName)
         }
-    }
 
-    private fun generateUniqueFileName(originalFileName: String): String {
-        val downloadsDir =
-            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-        return generateUniqueFileNameForDirectory(downloadsDir, originalFileName)
-    }
+        private fun generateUniqueFileNameForDirectory(
+            directory: File,
+            originalFileName: String,
+        ): String {
+            val nameWithoutExt = originalFileName.substringBeforeLast(".", originalFileName)
+            val extension = originalFileName.substringAfterLast(".", "")
 
-    private fun generateUniqueFileNameForDirectory(
-        directory: File,
-        originalFileName: String
-    ): String {
-        val nameWithoutExt = originalFileName.substringBeforeLast(".", originalFileName)
-        val extension = originalFileName.substringAfterLast(".", "")
+            var counter = 1
+            var candidateFileName = originalFileName
+            var candidateFile = File(directory, candidateFileName)
 
-        var counter = 1
-        var candidateFileName = originalFileName
-        var candidateFile = File(directory, candidateFileName)
+            // Keep incrementing counter until we find a unique filename
+            while (candidateFile.exists() || isFileNameInMediaStore(candidateFileName)) {
+                candidateFileName =
+                    if (extension.isNotEmpty()) {
+                        "$nameWithoutExt($counter).$extension"
+                    } else {
+                        "$nameWithoutExt($counter)"
+                    }
+                candidateFile = File(directory, candidateFileName)
+                counter++
 
-        // Keep incrementing counter until we find a unique filename
-        while (candidateFile.exists() || isFileNameInMediaStore(candidateFileName)) {
-            candidateFileName = if (extension.isNotEmpty()) {
-                "${nameWithoutExt}($counter).$extension"
-            } else {
-                "${nameWithoutExt}($counter)"
-            }
-            candidateFile = File(directory, candidateFileName)
-            counter++
-
-            // Safety check to prevent infinite loop
-            if (counter > 1000) {
-                Log.w(TAG, "Too many duplicate files, using timestamp suffix")
-                val timestamp = System.currentTimeMillis()
-                candidateFileName = if (extension.isNotEmpty()) {
-                    "${nameWithoutExt}_$timestamp.$extension"
-                } else {
-                    "${nameWithoutExt}_$timestamp"
+                // Safety check to prevent infinite loop
+                if (counter > 1000) {
+                    Log.w(TAG, "Too many duplicate files, using timestamp suffix")
+                    val timestamp = System.currentTimeMillis()
+                    candidateFileName =
+                        if (extension.isNotEmpty()) {
+                            "${nameWithoutExt}_$timestamp.$extension"
+                        } else {
+                            "${nameWithoutExt}_$timestamp"
+                        }
+                    break
                 }
-                break
+            }
+
+            Log.d(
+                TAG,
+                "Generated unique filename: $candidateFileName (original: $originalFileName)",
+            )
+            return candidateFileName
+        }
+
+        private fun isFileNameInMediaStore(fileName: String): Boolean {
+            return try {
+                val resolver = context.contentResolver
+                val projection = arrayOf(MediaStore.MediaColumns.DISPLAY_NAME)
+                val selection =
+                    "${MediaStore.MediaColumns.DISPLAY_NAME} = ? AND ${
+                        MediaStore.MediaColumns.RELATIVE_PATH
+                    } = ?"
+                val selectionArgs = arrayOf(fileName, "${Environment.DIRECTORY_DOWNLOADS}/")
+
+                resolver.query(
+                    MediaStore.Downloads.EXTERNAL_CONTENT_URI,
+                    projection,
+                    selection,
+                    selectionArgs,
+                    null,
+                )?.use { cursor ->
+                    cursor.count > 0
+                } ?: false
+            } catch (e: Exception) {
+                Log.w(TAG, "Error checking MediaStore for filename: $fileName", e)
+                false
             }
         }
 
-        Log.d(TAG, "Generated unique filename: $candidateFileName (original: $originalFileName)")
-        return candidateFileName
-    }
+        private fun getFileFromMediaStoreUri(
+            uri: Uri,
+            fileName: String,
+        ): File {
+            // For MediaStore files, we create a reference file object
+            // The actual file is managed by the system
+            val downloadsDir =
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+            return File(downloadsDir, fileName)
+        }
 
-    private fun isFileNameInMediaStore(fileName: String): Boolean {
-        return try {
-            val resolver = context.contentResolver
-            val projection = arrayOf(MediaStore.MediaColumns.DISPLAY_NAME)
-            val selection =
-                "${MediaStore.MediaColumns.DISPLAY_NAME} = ? AND ${MediaStore.MediaColumns.RELATIVE_PATH} = ?"
-            val selectionArgs = arrayOf(fileName, "${Environment.DIRECTORY_DOWNLOADS}/")
+        private fun getMimeType(fileName: String): String {
+            val extension = fileName.substringAfterLast(".", "").lowercase()
+            return when (extension) {
+                "jpg", "jpeg" -> "image/jpeg"
+                "png" -> "image/png"
+                "gif" -> "image/gif"
+                "webp" -> "image/webp"
+                "pdf" -> "application/pdf"
+                "txt" -> "text/plain"
+                "doc" -> "application/msword"
+                "docx" -> "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                "xls" -> "application/vnd.ms-excel"
+                "xlsx" -> "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                "ppt" -> "application/vnd.ms-powerpoint"
+                "pptx" ->
+                    "application/vnd.openxmlformats-officedocument.presentationml" +
+                        ".presentation"
+                "zip" -> "application/zip"
+                "rar" -> "application/x-rar-compressed"
+                "7z" -> "application/x-7z-compressed"
+                "mp3" -> "audio/mpeg"
+                "wav" -> "audio/wav"
+                "flac" -> "audio/flac"
+                "mp4" -> "video/mp4"
+                "avi" -> "video/x-msvideo"
+                "mkv" -> "video/x-matroska"
+                "mov" -> "video/quicktime"
+                else -> "application/octet-stream"
+            }
+        }
 
-            resolver.query(
-                MediaStore.Downloads.EXTERNAL_CONTENT_URI,
-                projection,
-                selection,
-                selectionArgs,
+        fun cancelSend() {
+            try {
+                currentSendBubble?.let { bubble ->
+                    sendSubscriber?.let { subscriber ->
+                        bubble.unsubscribe(subscriber)
+                    }
+                    // Note: cancel() is async in the UDL, but we'll call it anyway
+                    // bubble.cancel() // Commented out as it's async and we can't await here
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error cancelling send", e)
+            } finally {
+                cleanup()
+            }
+        }
+
+        fun cancelReceive() {
+            try {
+                currentReceiveBubble?.let { bubble ->
+                    receiveSubscriber?.let { subscriber ->
+                        bubble.unsubscribe(subscriber)
+                    }
+                    bubble.cancel()
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error cancelling receive", e)
+            } finally {
+                cleanup()
+            }
+        }
+
+        fun getCurrentSendTicket(): String? = currentSendBubble?.getTicket()
+
+        fun getCurrentSendConfirmation(): UByte? = currentSendBubble?.getConfirmation()
+
+        fun isSendFinished(): Boolean = currentSendBubble?.isFinished() ?: true
+
+        fun isReceiveFinished(): Boolean = currentReceiveBubble?.isFinished() ?: true
+
+        fun isSendConnected(): Boolean = currentSendBubble?.isConnected() ?: false
+
+        private fun cleanup() {
+            sendSubscriber?.reset()
+            receiveSubscriber?.reset()
+            sendSubscriber = null
+            receiveSubscriber = null
+            currentSendBubble = null
+            currentReceiveBubble = null
+        }
+
+        private fun getFileName(uri: Uri?): String? {
+            if (uri == null) return null
+            return try {
+                context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                        if (nameIndex >= 0) cursor.getString(nameIndex) else null
+                    } else {
+                        null
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error getting filename for URI: $uri", e)
                 null
-            )?.use { cursor ->
-                cursor.count > 0
-            } ?: false
-        } catch (e: Exception) {
-            Log.w(TAG, "Error checking MediaStore for filename: $fileName", e)
-            false
-        }
-    }
-
-    private fun getFileFromMediaStoreUri(uri: Uri, fileName: String): File {
-        // For MediaStore files, we create a reference file object
-        // The actual file is managed by the system
-        val downloadsDir =
-            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-        return File(downloadsDir, fileName)
-    }
-
-    private fun getMimeType(fileName: String): String {
-        val extension = fileName.substringAfterLast(".", "").lowercase()
-        return when (extension) {
-            "jpg", "jpeg" -> "image/jpeg"
-            "png" -> "image/png"
-            "gif" -> "image/gif"
-            "webp" -> "image/webp"
-            "pdf" -> "application/pdf"
-            "txt" -> "text/plain"
-            "doc" -> "application/msword"
-            "docx" -> "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-            "xls" -> "application/vnd.ms-excel"
-            "xlsx" -> "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            "ppt" -> "application/vnd.ms-powerpoint"
-            "pptx" -> "application/vnd.openxmlformats-officedocument.presentationml.presentation"
-            "zip" -> "application/zip"
-            "rar" -> "application/x-rar-compressed"
-            "7z" -> "application/x-7z-compressed"
-            "mp3" -> "audio/mpeg"
-            "wav" -> "audio/wav"
-            "flac" -> "audio/flac"
-            "mp4" -> "video/mp4"
-            "avi" -> "video/x-msvideo"
-            "mkv" -> "video/x-matroska"
-            "mov" -> "video/quicktime"
-            else -> "application/octet-stream"
-        }
-    }
-
-    fun cancelSend() {
-        try {
-            currentSendBubble?.let { bubble ->
-                sendSubscriber?.let { subscriber ->
-                    bubble.unsubscribe(subscriber)
-                }
-                // Note: cancel() is async in the UDL, but we'll call it anyway
-                // bubble.cancel() // Commented out as it's async and we can't await here
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error cancelling send", e)
-        } finally {
-            cleanup()
         }
     }
-
-    fun cancelReceive() {
-        try {
-            currentReceiveBubble?.let { bubble ->
-                receiveSubscriber?.let { subscriber ->
-                    bubble.unsubscribe(subscriber)
-                }
-                bubble.cancel()
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error cancelling receive", e)
-        } finally {
-            cleanup()
-        }
-    }
-
-    fun getCurrentSendTicket(): String? = currentSendBubble?.getTicket()
-
-    fun getCurrentSendConfirmation(): UByte? = currentSendBubble?.getConfirmation()
-
-    fun isSendFinished(): Boolean = currentSendBubble?.isFinished() ?: true
-
-    fun isReceiveFinished(): Boolean = currentReceiveBubble?.isFinished() ?: true
-
-    fun isSendConnected(): Boolean = currentSendBubble?.isConnected() ?: false
-
-    private fun cleanup() {
-        sendSubscriber?.reset()
-        receiveSubscriber?.reset()
-        sendSubscriber = null
-        receiveSubscriber = null
-        currentSendBubble = null
-        currentReceiveBubble = null
-    }
-
-    private fun getFileName(uri: Uri?): String? {
-        if (uri == null) return null
-        return try {
-            context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-                if (cursor.moveToFirst()) {
-                    val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                    if (nameIndex >= 0) cursor.getString(nameIndex) else null
-                } else null
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error getting filename for URI: $uri", e)
-            null
-        }
-    }
-}

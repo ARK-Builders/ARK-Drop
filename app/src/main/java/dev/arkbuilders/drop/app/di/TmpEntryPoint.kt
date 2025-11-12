@@ -12,7 +12,10 @@ import dev.arkbuilders.drop.app.domain.usecase.SendFilesUseCase
 @InstallIn(SingletonComponent::class)
 interface TmpEntryPoint {
     fun avatarHelper(): AvatarHelper
+
     fun resourcesHelper(): ResourcesHelper
+
     fun sendFilesUseCase(): SendFilesUseCase
+
     fun receiveFilesUseCase(): ReceiveFilesUseCase
 }

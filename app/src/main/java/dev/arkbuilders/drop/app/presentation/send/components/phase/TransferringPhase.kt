@@ -34,45 +34,48 @@ import dev.arkbuilders.drop.app.presentation.send.components.SendProgressBar
 
 @Composable
 fun TransferringPhase(
-    progress: SendScreenState.Transfer?, onCancel: () -> Unit
+    progress: SendScreenState.Transfer?,
+    onCancel: () -> Unit,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(20.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp)
+        verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
         item {
             progress?.let { p ->
                 SendCard(
-                    backgroundColor = MaterialTheme.colorScheme.primaryContainer
+                    backgroundColor = MaterialTheme.colorScheme.primaryContainer,
                 ) {
                     Column(
-                        modifier = Modifier.padding(24.dp)
+                        modifier = Modifier.padding(24.dp),
                     ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text(
                                 text = "Sending Files",
-                                style = MaterialTheme.typography.titleLarge.copy(
-                                    fontWeight = FontWeight.Bold
-                                ),
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                                style =
+                                    MaterialTheme.typography.titleLarge.copy(
+                                        fontWeight = FontWeight.Bold,
+                                    ),
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
                             )
 
                             IconButton(
                                 onClick = onCancel,
-                                modifier = Modifier
-                                    .size(32.dp)
-                                    .clip(CircleShape)
+                                modifier =
+                                    Modifier
+                                        .size(32.dp)
+                                        .clip(CircleShape),
                             ) {
                                 Icon(
                                     Icons.Default.Close,
                                     contentDescription = "Cancel transfer",
                                     modifier = Modifier.size(20.dp),
-                                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
                                 )
                             }
                         }
@@ -82,18 +85,21 @@ fun TransferringPhase(
 
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
                             ) {
                                 AvatarImageWithFallback(
                                     avatarB64 = p.receiverAvatar,
                                     fallbackText = p.receiverName,
-                                    size = 32.dp
+                                    size = 32.dp,
                                 )
 
                                 Text(
                                     text = "Connected to: ${p.receiverName}",
                                     style = MaterialTheme.typography.bodyLarge,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                                    color =
+                                        MaterialTheme.colorScheme.onPrimaryContainer.copy(
+                                            alpha = 0.8f,
+                                        ),
                                 )
                             }
                         }
@@ -103,45 +109,58 @@ fun TransferringPhase(
 
                             Text(
                                 text = "Sending: ${p.currentFileName}",
-                                style = MaterialTheme.typography.bodyLarge.copy(
-                                    fontWeight = FontWeight.Medium
-                                ),
+                                style =
+                                    MaterialTheme.typography.bodyLarge.copy(
+                                        fontWeight = FontWeight.Medium,
+                                    ),
                                 color = MaterialTheme.colorScheme.onPrimaryContainer,
                                 maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
+                                overflow = TextOverflow.Ellipsis,
                             )
 
-                            val progressValue = if (p.totalBytes > 0) {
-                                (p.bytesTransferred.toFloat() / p.totalBytes.toFloat()).coerceIn(
-                                    0f, 1f
-                                )
-                            } else 0f
+                            val progressValue =
+                                if (p.totalBytes > 0) {
+                                    (p.bytesTransferred.toFloat() / p.totalBytes.toFloat())
+                                        .coerceIn(
+                                            0f,
+                                            1f,
+                                        )
+                                } else {
+                                    0f
+                                }
 
                             Spacer(modifier = Modifier.height(16.dp))
 
                             SendProgressBar(
-                                progress = progressValue, modifier = Modifier.fillMaxWidth()
+                                progress = progressValue,
+                                modifier = Modifier.fillMaxWidth(),
                             )
 
                             Spacer(modifier = Modifier.height(12.dp))
 
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
+                                horizontalArrangement = Arrangement.SpaceBetween,
                             ) {
                                 Text(
-                                    text = "${formatBytes(p.bytesTransferred)} / ${formatBytes(p.totalBytes)}",
+                                    text = "${formatBytes(
+                                        p.bytesTransferred,
+                                    )} / ${formatBytes(p.totalBytes)}",
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                                    color =
+                                        MaterialTheme.colorScheme.onPrimaryContainer.copy(
+                                            alpha = 0.7f,
+                                        ),
                                 )
 
                                 if (p.transferSpeedBps > 0) {
                                     Text(
                                         text = "${formatBytes(p.transferSpeedBps)}/s",
                                         style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(
-                                            alpha = 0.7f
-                                        )
+                                        color =
+                                            MaterialTheme.colorScheme.onPrimaryContainer.copy(
+                                                alpha = 0.7f,
+                                            ),
                                     )
                                 }
                             }
@@ -149,9 +168,14 @@ fun TransferringPhase(
                             if (p.estimatedTimeRemaining > 0) {
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
-                                    text = "Time remaining: ${formatDuration(p.estimatedTimeRemaining)}",
+                                    text = "Time remaining: ${formatDuration(
+                                        p.estimatedTimeRemaining,
+                                    )}",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f)
+                                    color =
+                                        MaterialTheme.colorScheme.onPrimaryContainer.copy(
+                                            alpha = 0.6f,
+                                        ),
                                 )
                             }
                         }

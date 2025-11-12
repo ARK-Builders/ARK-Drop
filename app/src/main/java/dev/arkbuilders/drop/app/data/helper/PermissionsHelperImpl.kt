@@ -8,13 +8,15 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.arkbuilders.drop.app.domain.PermissionsHelper
 import javax.inject.Inject
 
-class PermissionsHelperImpl @Inject constructor(
-    @ApplicationContext private val ctx: Context,
-): PermissionsHelper {
-    override fun isCameraGranted(): Boolean {
-        return ContextCompat.checkSelfPermission(
-            ctx,
-            Manifest.permission.CAMERA
-        ) == PackageManager.PERMISSION_GRANTED
+class PermissionsHelperImpl
+    @Inject
+    constructor(
+        @ApplicationContext private val ctx: Context,
+    ) : PermissionsHelper {
+        override fun isCameraGranted(): Boolean {
+            return ContextCompat.checkSelfPermission(
+                ctx,
+                Manifest.permission.CAMERA,
+            ) == PackageManager.PERMISSION_GRANTED
+        }
     }
-}

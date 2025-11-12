@@ -18,85 +18,88 @@ import java.io.ByteArrayOutputStream
 import java.io.IOException
 import javax.inject.Inject
 
-class AvatarHelperImpl @Inject constructor(
-    @ApplicationContext
-    private val context: Context,
-) : AvatarHelper {
-
-    override fun uriToBase64(uri: String): String? {
-        return try {
-            val bitmap = loadBitmapFromUri(uri.toUri()) ?: return null
-            val optimizedBitmap = optimizeBitmap(bitmap)
-            bitmapToBase64(optimizedBitmap)
-        } catch (e: Exception) {
-            null
-        }
-    }
-
-
-    private fun loadBitmapFromUri(uri: Uri): Bitmap? {
-        return try {
-            val source = ImageDecoder.createSource(context.contentResolver, uri)
-            ImageDecoder.decodeBitmap(source)
-        } catch (e: IOException) {
-            null
-        } catch (e: SecurityException) {
-            null
-        }
-    }
-
-    private fun optimizeBitmap(bitmap: Bitmap): Bitmap {
-        val width = bitmap.width
-        val height = bitmap.height
-
-        // Calculate scaling factor
-        val scaleFactor = if (width > height) {
-            MAX_IMAGE_SIZE.toFloat() / width
-        } else {
-            MAX_IMAGE_SIZE.toFloat() / height
-        }
-
-        return if (scaleFactor < 1f) {
-            val newWidth = (width * scaleFactor).toInt()
-            val newHeight = (height * scaleFactor).toInt()
-            bitmap.scale(newWidth, newHeight)
-        } else {
-            bitmap
-        }
-    }
-
-    private fun bitmapToBase64(bitmap: Bitmap): String? {
-        return try {
-            val outputStream = ByteArrayOutputStream()
-            bitmap.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, outputStream)
-            val byteArray = outputStream.toByteArray()
-
-            // Check file size
-            if (byteArray.size > MAX_FILE_SIZE) {
-                return null
+class AvatarHelperImpl
+    @Inject
+    constructor(
+        @ApplicationContext
+        private val context: Context,
+    ) : AvatarHelper {
+        override fun uriToBase64(uri: String): String? {
+            return try {
+                val bitmap = loadBitmapFromUri(uri.toUri()) ?: return null
+                val optimizedBitmap = optimizeBitmap(bitmap)
+                bitmapToBase64(optimizedBitmap)
+            } catch (e: Exception) {
+                null
             }
-
-            Base64.encodeToString(byteArray, Base64.DEFAULT)
-        } catch (e: Exception) {
-            null
         }
-    }
 
+        private fun loadBitmapFromUri(uri: Uri): Bitmap? {
+            return try {
+                val source = ImageDecoder.createSource(context.contentResolver, uri)
+                ImageDecoder.decodeBitmap(source)
+            } catch (e: IOException) {
+                null
+            } catch (e: SecurityException) {
+                null
+            }
+        }
 
-    @SuppressLint("DiscouragedApi")
-    override fun getDefaultAvatarBase64(avatarId: String): String {
-        return try {
-            val resourceId = context.resources.getIdentifier(
-                avatarId, "drawable", context.packageName
-            )
-            if (resourceId != 0) {
-                val bitmap = BitmapFactory.decodeResource(context.resources, resourceId)
-                bitmapToBase64(bitmap) ?: ""
+        private fun optimizeBitmap(bitmap: Bitmap): Bitmap {
+            val width = bitmap.width
+            val height = bitmap.height
+
+            // Calculate scaling factor
+            val scaleFactor =
+                if (width > height) {
+                    MAX_IMAGE_SIZE.toFloat() / width
+                } else {
+                    MAX_IMAGE_SIZE.toFloat() / height
+                }
+
+            return if (scaleFactor < 1f) {
+                val newWidth = (width * scaleFactor).toInt()
+                val newHeight = (height * scaleFactor).toInt()
+                bitmap.scale(newWidth, newHeight)
             } else {
+                bitmap
+            }
+        }
+
+        private fun bitmapToBase64(bitmap: Bitmap): String? {
+            return try {
+                val outputStream = ByteArrayOutputStream()
+                bitmap.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, outputStream)
+                val byteArray = outputStream.toByteArray()
+
+                // Check file size
+                if (byteArray.size > MAX_FILE_SIZE) {
+                    return null
+                }
+
+                Base64.encodeToString(byteArray, Base64.DEFAULT)
+            } catch (e: Exception) {
+                null
+            }
+        }
+
+        @SuppressLint("DiscouragedApi")
+        override fun getDefaultAvatarBase64(avatarId: String): String {
+            return try {
+                val resourceId =
+                    context.resources.getIdentifier(
+                        avatarId,
+                        "drawable",
+                        context.packageName,
+                    )
+                if (resourceId != 0) {
+                    val bitmap = BitmapFactory.decodeResource(context.resources, resourceId)
+                    bitmapToBase64(bitmap) ?: ""
+                } else {
+                    ""
+                }
+            } catch (e: Exception) {
                 ""
             }
-        } catch (e: Exception) {
-            ""
         }
     }
-}

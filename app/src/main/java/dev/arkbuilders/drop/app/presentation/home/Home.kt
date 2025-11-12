@@ -1,4 +1,4 @@
-package dev.arkbuilders.drop.app.presentation.Home
+package dev.arkbuilders.drop.app.presentation.home
 
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -49,7 +49,6 @@ import dev.arkbuilders.drop.app.domain.model.TransferType
 import dev.arkbuilders.drop.app.domain.model.UserProfile
 import dev.arkbuilders.drop.app.domain.repository.ProfileRepo
 import dev.arkbuilders.drop.app.domain.repository.TransferHistoryItemRepository
-import dev.arkbuilders.drop.app.presentation.navigation.DropDestination
 import dev.arkbuilders.drop.app.presentation.components.AvatarImage
 import dev.arkbuilders.drop.app.presentation.components.AvatarImageWithFallback
 import dev.arkbuilders.drop.app.presentation.components.DropButton
@@ -61,6 +60,7 @@ import dev.arkbuilders.drop.app.presentation.components.DropCardSize
 import dev.arkbuilders.drop.app.presentation.components.DropCardVariant
 import dev.arkbuilders.drop.app.presentation.components.DropOutlinedButton
 import dev.arkbuilders.drop.app.presentation.components.EmptyState
+import dev.arkbuilders.drop.app.presentation.navigation.DropDestination
 import dev.arkbuilders.drop.app.presentation.theme.DesignTokens
 import kotlinx.coroutines.delay
 import org.orbitmvi.orbit.compose.collectAsState
@@ -88,25 +88,27 @@ fun Home(
 
     val animatedLogoScale by animateFloatAsState(
         targetValue = logoScale,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        ),
-        label = "logoScale"
+        animationSpec =
+            spring(
+                dampingRatio = Spring.DampingRatioMediumBouncy,
+                stiffness = Spring.StiffnessLow,
+            ),
+        label = "logoScale",
     )
 
     LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(DesignTokens.Spacing.lg),
-        verticalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.xl)
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(DesignTokens.Spacing.lg),
+        verticalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.xl),
     ) {
         // Header Section
         item {
             HeaderSection(
                 logoScale = animatedLogoScale,
                 onProfileClick = { navController.navigate(DropDestination.EditProfile.route) },
-                profile = state.profile
+                profile = state.profile,
             )
         }
 
@@ -114,7 +116,7 @@ fun Home(
         item {
             QuickActionsSection(
                 onSendClick = { navController.navigate(DropDestination.Send.route) },
-                onReceiveClick = { navController.navigate(DropDestination.Receive.route) }
+                onReceiveClick = { navController.navigate(DropDestination.Receive.route) },
             )
         }
 
@@ -124,7 +126,7 @@ fun Home(
                 RecentTransfersSection(
                     historyItems = state.historyItems.take(5),
                     onViewAllClick = { navController.navigate(DropDestination.History.route) },
-                    showViewAll = state.historyItems.isNotEmpty()
+                    showViewAll = state.historyItems.isNotEmpty(),
                 )
             } else {
                 EmptyTransfersSection()
@@ -137,22 +139,23 @@ fun Home(
 private fun HeaderSection(
     logoScale: Float,
     onProfileClick: () -> Unit,
-    profile: UserProfile
+    profile: UserProfile,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .semantics { contentDescription = "App header with logo and profile access" },
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .semantics { contentDescription = "App header with logo and profile access" },
         horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         // App branding
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.lg)
+            horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.lg),
         ) {
             Box(
-                modifier = Modifier.scale(logoScale)
+                modifier = Modifier.scale(logoScale),
             ) {
                 Icon(
                     modifier = Modifier.size(56.dp),
@@ -167,21 +170,22 @@ private fun HeaderSection(
                     text = "Drop",
                     style = MaterialTheme.typography.headlineLarge,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.primary,
                 )
                 Text(
                     text = "Share files instantly",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
 
         IconButton(
             onClick = onProfileClick,
-            modifier = Modifier.semantics {
-                contentDescription = "Open profile settings"
-            }
+            modifier =
+                Modifier.semantics {
+                    contentDescription = "Open profile settings"
+                },
         ) {
             AvatarImage(avatarB64 = profile.avatar.base64)
         }
@@ -191,12 +195,12 @@ private fun HeaderSection(
 @Composable
 private fun QuickActionsSection(
     onSendClick: () -> Unit,
-    onReceiveClick: () -> Unit
+    onReceiveClick: () -> Unit,
 ) {
     DropCard(
         variant = DropCardVariant.Elevated,
         size = DropCardSize.Large,
-        contentDescription = "Quick actions for sending and receiving files"
+        contentDescription = "Quick actions for sending and receiving files",
     ) {
         DropCardContent(size = DropCardSize.Large) {
             Text(
@@ -205,7 +209,7 @@ private fun QuickActionsSection(
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             )
 
             Spacer(modifier = Modifier.Companion.height(DesignTokens.Spacing.xl))
@@ -216,18 +220,18 @@ private fun QuickActionsSection(
                 variant = DropButtonVariant.Primary,
                 size = DropButtonSize.Large,
                 modifier = Modifier.fillMaxWidth(),
-                contentDescription = "Send files to another device"
+                contentDescription = "Send files to another device",
             ) {
                 Icon(
                     TablerIcons.ArrowUpCircle,
                     contentDescription = null,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(24.dp),
                 )
                 Spacer(modifier = Modifier.Companion.width(DesignTokens.Spacing.md))
                 Text(
                     "Send Files",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
                 )
             }
 
@@ -238,18 +242,18 @@ private fun QuickActionsSection(
                 onClick = onReceiveClick,
                 size = DropButtonSize.Large,
                 modifier = Modifier.fillMaxWidth(),
-                contentDescription = "Receive files from another device"
+                contentDescription = "Receive files from another device",
             ) {
                 Icon(
                     TablerIcons.ArrowDownCircle,
                     contentDescription = null,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(24.dp),
                 )
                 Spacer(modifier = Modifier.Companion.width(DesignTokens.Spacing.md))
                 Text(
                     "Receive Files",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
                 )
             }
         }
@@ -260,31 +264,31 @@ private fun QuickActionsSection(
 private fun RecentTransfersSection(
     historyItems: List<TransferHistoryItem>,
     onViewAllClick: () -> Unit,
-    showViewAll: Boolean
+    showViewAll: Boolean,
 ) {
     Column {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = "Recent Transfers",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface,
             )
 
             if (showViewAll) {
                 DropOutlinedButton(
                     onClick = onViewAllClick,
                     size = DropButtonSize.Small,
-                    contentDescription = "View all transfer history"
+                    contentDescription = "View all transfer history",
                 ) {
                     Icon(
                         TablerIcons.History,
                         contentDescription = null,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(16.dp),
                     )
                     Spacer(modifier = Modifier.Companion.width(DesignTokens.Spacing.xs))
                     Text("View All")
@@ -295,7 +299,7 @@ private fun RecentTransfersSection(
         Spacer(modifier = Modifier.Companion.height(DesignTokens.Spacing.lg))
 
         Column(
-            verticalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.md)
+            verticalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.md),
         ) {
             historyItems.forEach { item ->
                 EnhancedTransferHistoryCard(item = item)
@@ -309,11 +313,13 @@ private fun EmptyTransfersSection() {
     DropCard(
         variant = DropCardVariant.Outlined,
         size = DropCardSize.Large,
-        contentDescription = "No transfers yet - empty state"
+        contentDescription = "No transfers yet - empty state",
     ) {
         EmptyState(
             title = "No transfers yet",
-            description = "Start by sending or receiving files to see your transfer history here. Your recent activity will appear in this section."
+            description =
+                "Start by sending or receiving files to see your transfer history here." +
+                    " Your recent activity will appear in this section.",
         )
     }
 }
@@ -323,41 +329,55 @@ private fun EnhancedTransferHistoryCard(item: TransferHistoryItem) {
     DropCard(
         variant = DropCardVariant.Elevated,
         size = DropCardSize.Medium,
-        contentDescription = "Transfer: ${if (item.type == TransferType.SENT) "Sent to" else "Received from"} ${item.peerName}"
+        contentDescription = "Transfer: ${
+            if (item.type == TransferType.SENT) "Sent to" else "Received from"
+        } ${item.peerName}",
     ) {
         DropCardContent(size = DropCardSize.Medium) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 // Transfer type icon with semantic color
                 Icon(
-                    imageVector = if (item.type == TransferType.SENT) TablerIcons.CloudUpload else TablerIcons.CloudDownload,
+                    imageVector =
+                        if (item.type == TransferType.SENT)
+                            TablerIcons.CloudUpload
+                        else
+                            TablerIcons.CloudDownload,
                     contentDescription = if (item.type == TransferType.SENT) "Sent" else "Received",
                     modifier = Modifier.size(24.dp),
-                    tint = if (item.type == TransferType.SENT)
-                        MaterialTheme.colorScheme.primary
-                    else
-                        MaterialTheme.colorScheme.secondary
+                    tint =
+                        if (item.type == TransferType.SENT) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.secondary
+                        },
                 )
 
                 Spacer(modifier = Modifier.Companion.width(DesignTokens.Spacing.lg))
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = if (item.type == TransferType.SENT)
-                            "Sent to ${item.peerName}"
-                        else
-                            "Received from ${item.peerName}",
+                        text =
+                            if (item.type == TransferType.SENT) {
+                                "Sent to ${item.peerName}"
+                            } else {
+                                "Received from ${item.peerName}"
+                            },
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
                     Spacer(modifier = Modifier.Companion.height(DesignTokens.Spacing.xs))
                     Text(
-                        text = "${item.fileCount} file${if (item.fileCount != 1) "s" else ""} • ${formatTimestamp(item.timestamp)}",
+                        text = "${item.fileCount} file${
+                            if (item.fileCount != 1) "s" else ""
+                        } • ${formatTimestamp(
+                            item.timestamp,
+                        )}",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
 
@@ -381,8 +401,9 @@ private fun formatTimestamp(timestamp: OffsetDateTime): String {
         diff.toHours() < 1 -> "${diff.toMinutes()}m ago"
         diff.toDays() < 1 -> "${diff.toHours()}h ago"
         diff.toDays() < 7 -> "${diff.toDays()}d ago"
-        else -> timestamp.format(
-            DateTimeFormatter.ofPattern("MMM dd", Locale.getDefault())
-        )
+        else ->
+            timestamp.format(
+                DateTimeFormatter.ofPattern("MMM dd", Locale.getDefault()),
+            )
     }
 }

@@ -100,9 +100,7 @@ import org.orbitmvi.orbit.compose.collectSideEffect
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EditProfileEnhanced(
-    navController: NavController,
-) {
+fun EditProfileEnhanced(navController: NavController) {
     val viewModel: EditProfileViewModel = hiltViewModel()
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -110,14 +108,14 @@ fun EditProfileEnhanced(
 
     val state by viewModel.collectAsState()
 
-
-    val imagePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        if (uri != null) {
-            viewModel.onImagePicked(uri.toString())
+    val imagePickerLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.GetContent(),
+        ) { uri: Uri? ->
+            if (uri != null) {
+                viewModel.onImagePicked(uri.toString())
+            }
         }
-    }
 
     viewModel.collectSideEffect { effect ->
         when (effect) {
@@ -132,10 +130,11 @@ fun EditProfileEnhanced(
     }
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .windowInsetsPadding(WindowInsets.ime)
-            .verticalScroll(rememberScrollState())
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .windowInsetsPadding(WindowInsets.ime)
+                .verticalScroll(rememberScrollState()),
     ) {
         // Enhanced Top App Bar
         TopAppBar(
@@ -143,7 +142,7 @@ fun EditProfileEnhanced(
                 Text(
                     text = "Edit Profile",
                     style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
                 )
             },
             navigationIcon = {
@@ -151,14 +150,15 @@ fun EditProfileEnhanced(
                     onClick = {
                         navController.navigateUp()
                     },
-                    modifier = Modifier.semantics {
-                        contentDescription = "Go back to previous screen"
-                    }
+                    modifier =
+                        Modifier.semantics {
+                            contentDescription = "Go back to previous screen"
+                        },
                 ) {
                     Icon(
                         Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = null,
-                        tint = colorScheme.onSurface
+                        tint = colorScheme.onSurface,
                     )
                 }
             },
@@ -166,58 +166,65 @@ fun EditProfileEnhanced(
                 AnimatedVisibility(
                     visible = state.hasChanges,
                     enter = scaleIn(spring(stiffness = Spring.StiffnessHigh)) + fadeIn(),
-                    exit = scaleOut(spring(stiffness = Spring.StiffnessHigh)) + fadeOut()
+                    exit = scaleOut(spring(stiffness = Spring.StiffnessHigh)) + fadeOut(),
                 ) {
                     DropButton(
                         onClick = { viewModel.onSave() },
                         variant = DropButtonVariant.Primary,
                         size = DropButtonSize.Medium,
-                        contentDescription = "Save profile changes"
+                        contentDescription = "Save profile changes",
                     ) {
                         Text(
                             text = "Save",
                             style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.SemiBold
+                            fontWeight = FontWeight.SemiBold,
                         )
                     }
                 }
             },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = colorScheme.surface,
-                titleContentColor = colorScheme.onSurface
-            )
+            colors =
+                TopAppBarDefaults.topAppBarColors(
+                    containerColor = colorScheme.surface,
+                    titleContentColor = colorScheme.onSurface,
+                ),
         )
 
         AnimatedVisibility(
             visible = state.avatarImageLoadingFailed,
-            enter = slideInVertically(
-                initialOffsetY = { -it },
-                animationSpec = spring(stiffness = Spring.StiffnessMedium)
-            ) + fadeIn(),
-            exit = slideOutVertically(
-                targetOffsetY = { -it },
-                animationSpec = spring(stiffness = Spring.StiffnessMedium)
-            ) + fadeOut()
+            enter =
+                slideInVertically(
+                    initialOffsetY = { -it },
+                    animationSpec = spring(stiffness = Spring.StiffnessMedium),
+                ) + fadeIn(),
+            exit =
+                slideOutVertically(
+                    targetOffsetY = { -it },
+                    animationSpec = spring(stiffness = Spring.StiffnessMedium),
+                ) + fadeOut(),
         ) {
             ErrorStateDisplay(
-                errorState = ErrorState(
-                    type = ErrorType.Generic,
-                    title = "Profile Update Failed",
-                    message = "Failed to load image. Please check your storage permissions and try again.",
-                    actionLabel = "Dismiss",
-                    onAction = {
-                        viewModel.clearAvatarLoadingError()
-                    }
-                ),
-                modifier = Modifier.Companion.padding(DesignTokens.Spacing.lg)
+                errorState =
+                    ErrorState(
+                        type = ErrorType.Generic,
+                        title = "Profile Update Failed",
+                        message =
+                            "Failed to load image." +
+                                " Please check your storage permissions and try again.",
+                        actionLabel = "Dismiss",
+                        onAction = {
+                            viewModel.clearAvatarLoadingError()
+                        },
+                    ),
+                modifier = Modifier.Companion.padding(DesignTokens.Spacing.lg),
             )
         }
 
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(DesignTokens.Spacing.lg),
-            verticalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.xl)
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(DesignTokens.Spacing.lg),
+            verticalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.xl),
         ) {
             ProfilePreviewSection(
                 name = state.name,
@@ -233,7 +240,7 @@ fun EditProfileEnhanced(
                 onUploadClick = {
                     viewModel.onPickImage()
                 },
-                hasError = state.avatarImageLoadingFailed
+                hasError = state.avatarImageLoadingFailed,
             )
 
             AvatarSelectionSection(
@@ -241,7 +248,7 @@ fun EditProfileEnhanced(
                 avatar = state.avatar,
                 onAvatarSelected = { avatarId ->
                     viewModel.onAvatarSelected(avatarId)
-                }
+                },
             )
 
             PrivacyNoticeSection()
@@ -262,20 +269,21 @@ private fun ProfilePreviewSection(
     DropCard(
         variant = DropCardVariant.Elevated,
         size = DropCardSize.Large,
-        contentDescription = "Profile preview and name editing"
+        contentDescription = "Profile preview and name editing",
     ) {
         DropCardContent(size = DropCardSize.Large) {
             Column(
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 var avatarScale by remember { mutableStateOf(0.8f) }
                 val animatedAvatarScale by animateFloatAsState(
                     targetValue = avatarScale,
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioMediumBouncy,
-                        stiffness = Spring.StiffnessMedium
-                    ),
-                    label = "avatarScale"
+                    animationSpec =
+                        spring(
+                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                            stiffness = Spring.StiffnessMedium,
+                        ),
+                    label = "avatarScale",
                 )
 
                 LaunchedEffect(avatar) {
@@ -285,36 +293,39 @@ private fun ProfilePreviewSection(
                 }
 
                 Box(
-                    modifier = Modifier
-                        .size(120.dp)
-                        .scale(animatedAvatarScale),
-                    contentAlignment = Alignment.Center
+                    modifier =
+                        Modifier
+                            .size(120.dp)
+                            .scale(animatedAvatarScale),
+                    contentAlignment = Alignment.Center,
                 ) {
                     AvatarImage(
-                        modifier = Modifier
-                            .size(120.dp)
-                            .semantics {
-                                contentDescription = "Current profile avatar"
-                            },
+                        modifier =
+                            Modifier
+                                .size(120.dp)
+                                .semantics {
+                                    contentDescription = "Current profile avatar"
+                                },
                         avatarB64 = avatar.base64,
                     )
 
                     Surface(
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .size(32.dp),
+                        modifier =
+                            Modifier
+                                .align(Alignment.BottomEnd)
+                                .size(32.dp),
                         shape = CircleShape,
                         color = colorScheme.primary,
-                        shadowElevation = DesignTokens.Elevation.sm
+                        shadowElevation = DesignTokens.Elevation.sm,
                     ) {
                         Box(
-                            contentAlignment = Alignment.Center
+                            contentAlignment = Alignment.Center,
                         ) {
                             Icon(
                                 Icons.Default.Edit,
                                 contentDescription = "Edit avatar",
                                 modifier = Modifier.size(16.dp),
-                                tint = colorScheme.onPrimary
+                                tint = colorScheme.onPrimary,
                             )
                         }
                     }
@@ -329,28 +340,29 @@ private fun ProfilePreviewSection(
                     label = {
                         Text(
                             "Display Name",
-                            style = MaterialTheme.typography.bodyMedium
+                            style = MaterialTheme.typography.bodyMedium,
                         )
                     },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .focusRequester(nameFocusRequester)
-                        .semantics {
-                            contentDescription = "Enter your display name"
-                        },
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .focusRequester(nameFocusRequester)
+                            .semantics {
+                                contentDescription = "Enter your display name"
+                            },
                     singleLine = true,
                     isError = nameError != null,
                     supportingText = {
                         AnimatedVisibility(
                             visible = nameError != null,
                             enter = slideInVertically() + fadeIn(),
-                            exit = slideOutVertically() + fadeOut()
+                            exit = slideOutVertically() + fadeOut(),
                         ) {
                             nameError?.let {
                                 Text(
                                     text = it.toString(),
                                     color = colorScheme.error,
-                                    style = MaterialTheme.typography.bodySmall
+                                    style = MaterialTheme.typography.bodySmall,
                                 )
                             }
                         }
@@ -359,46 +371,51 @@ private fun ProfilePreviewSection(
                         if (name.isNotEmpty()) {
                             IconButton(
                                 onClick = { onNameChange("") },
-                                modifier = Modifier.semantics {
-                                    contentDescription = "Clear name field"
-                                }
+                                modifier =
+                                    Modifier.semantics {
+                                        contentDescription = "Clear name field"
+                                    },
                             ) {
                                 Icon(
                                     Icons.Default.Clear,
                                     contentDescription = null,
                                     modifier = Modifier.size(20.dp),
-                                    tint = colorScheme.onSurfaceVariant
+                                    tint = colorScheme.onSurfaceVariant,
                                 )
                             }
                         }
                     },
-                    keyboardOptions = KeyboardOptions(
-                        capitalization = KeyboardCapitalization.Words,
-                        imeAction = ImeAction.Done
-                    ),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = colorScheme.primary,
-                        unfocusedBorderColor = colorScheme.outline,
-                        errorBorderColor = colorScheme.error
-                    ),
-                    shape = RoundedCornerShape(DesignTokens.CornerRadius.md)
+                    keyboardOptions =
+                        KeyboardOptions(
+                            capitalization = KeyboardCapitalization.Words,
+                            imeAction = ImeAction.Done,
+                        ),
+                    colors =
+                        OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = colorScheme.primary,
+                            unfocusedBorderColor = colorScheme.outline,
+                            errorBorderColor = colorScheme.error,
+                        ),
+                    shape = RoundedCornerShape(DesignTokens.CornerRadius.md),
                 )
 
                 // Character count
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = DesignTokens.Spacing.xs),
-                    horizontalArrangement = Arrangement.End
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(top = DesignTokens.Spacing.xs),
+                    horizontalArrangement = Arrangement.End,
                 ) {
                     Text(
                         text = "${name.length}/50",
                         style = MaterialTheme.typography.bodySmall,
-                        color = if (name.length > 45) {
-                            colorScheme.error
-                        } else {
-                            colorScheme.onSurfaceVariant
-                        }
+                        color =
+                            if (name.length > 45) {
+                                colorScheme.error
+                            } else {
+                                colorScheme.onSurfaceVariant
+                            },
                     )
                 }
             }
@@ -409,31 +426,31 @@ private fun ProfilePreviewSection(
 @Composable
 private fun CustomAvatarSection(
     onUploadClick: () -> Unit,
-    hasError: Boolean
+    hasError: Boolean,
 ) {
     DropCard(
         variant = DropCardVariant.Outlined,
         size = DropCardSize.Medium,
-        contentDescription = "Upload custom avatar option"
+        contentDescription = "Upload custom avatar option",
     ) {
         DropCardContent(size = DropCardSize.Medium) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = "Custom Avatar",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
-                        color = colorScheme.onSurface
+                        color = colorScheme.onSurface,
                     )
                     Spacer(modifier = Modifier.Companion.height(DesignTokens.Spacing.xs))
                     Text(
                         text = "Upload your own profile picture",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = colorScheme.onSurfaceVariant
+                        color = colorScheme.onSurfaceVariant,
                     )
                 }
 
@@ -441,20 +458,24 @@ private fun CustomAvatarSection(
 
                 DropButton(
                     onClick = onUploadClick,
-                    variant = if (hasError) DropButtonVariant.Destructive else DropButtonVariant.Secondary,
+                    variant =
+                        if (hasError)
+                            DropButtonVariant.Destructive
+                        else
+                            DropButtonVariant.Secondary,
                     size = DropButtonSize.Medium,
-                    contentDescription = "Upload custom avatar image"
+                    contentDescription = "Upload custom avatar image",
                 ) {
                     Icon(
                         TablerIcons.Camera,
                         contentDescription = null,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(20.dp),
                     )
                     Spacer(modifier = Modifier.Companion.width(DesignTokens.Spacing.sm))
                     Text(
                         "Upload",
                         style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Medium,
                     )
                 }
             }
@@ -466,7 +487,7 @@ private fun CustomAvatarSection(
 private fun AvatarSelectionSection(
     availableAvatars: List<String>,
     avatar: UserAvatar,
-    onAvatarSelected: (String) -> Unit
+    onAvatarSelected: (String) -> Unit,
 ) {
     val columns = 3
 
@@ -476,15 +497,16 @@ private fun AvatarSelectionSection(
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
             color = colorScheme.onSurface,
-            modifier = Modifier.semantics {
-                contentDescription = "Avatar selection section"
-            }
+            modifier =
+                Modifier.semantics {
+                    contentDescription = "Avatar selection section"
+                },
         )
 
         Spacer(modifier = Modifier.Companion.height(DesignTokens.Spacing.lg))
 
         Column(
-            verticalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.lg)
+            verticalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.lg),
         ) {
             availableAvatars.chunked(columns).forEach { rowAvatars ->
                 Row(
@@ -493,21 +515,23 @@ private fun AvatarSelectionSection(
                 ) {
                     rowAvatars.forEach { avatarId ->
                         EnhancedAvatarOption(
-                            modifier = Modifier
-                                .aspectRatio(1f)
-                                .weight(1f),
+                            modifier =
+                                Modifier
+                                    .aspectRatio(1f)
+                                    .weight(1f),
                             avatarId = avatarId,
                             isSelected = avatar.predefinedId == avatarId,
-                            onClick = { onAvatarSelected(avatarId) }
+                            onClick = { onAvatarSelected(avatarId) },
                         )
                     }
 
                     if (rowAvatars.size < columns) {
                         repeat(columns - rowAvatars.size) {
                             Spacer(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .aspectRatio(1f)
+                                modifier =
+                                    Modifier
+                                        .weight(1f)
+                                        .aspectRatio(1f),
                             )
                         }
                     }
@@ -522,63 +546,73 @@ private fun EnhancedAvatarOption(
     modifier: Modifier,
     avatarId: String,
     isSelected: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
-    val avatarHelper = remember {
-        EntryPointAccessors.fromApplication(
-            context.applicationContext,
-            TmpEntryPoint::class.java
-        ).avatarHelper()
-    }
+    val avatarHelper =
+        remember {
+            EntryPointAccessors.fromApplication(
+                context.applicationContext,
+                TmpEntryPoint::class.java,
+            ).avatarHelper()
+        }
 
     var scale by remember { mutableStateOf(1f) }
     val animatedScale by animateFloatAsState(
         targetValue = scale,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessHigh
-        ),
-        label = "avatarScale"
+        animationSpec =
+            spring(
+                dampingRatio = Spring.DampingRatioMediumBouncy,
+                stiffness = Spring.StiffnessHigh,
+            ),
+        label = "avatarScale",
     )
 
     Card(
-        modifier = modifier
-            .scale(animatedScale),
+        modifier =
+            modifier
+                .scale(animatedScale),
         onClick = {
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             scale = 0.95f
             onClick()
         },
-        colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) {
-                colorScheme.primaryContainer
+        colors =
+            CardDefaults.cardColors(
+                containerColor =
+                    if (isSelected) {
+                        colorScheme.primaryContainer
+                    } else {
+                        colorScheme.surface
+                    },
+            ),
+        border =
+            if (isSelected) {
+                CardDefaults.outlinedCardBorder().copy(
+                    width = 3.dp,
+                    brush = SolidColor(colorScheme.primary),
+                )
             } else {
-                colorScheme.surface
-            }
-        ),
-        border = if (isSelected) {
-            CardDefaults.outlinedCardBorder().copy(
-                width = 3.dp,
-                brush = SolidColor(colorScheme.primary)
-            )
-        } else {
-            CardDefaults.outlinedCardBorder().copy(
-                width = 1.dp,
-                brush = SolidColor(colorScheme.outline)
-            )
-        },
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = if (isSelected) DesignTokens.Elevation.md else DesignTokens.Elevation.xs
-        ),
-        shape = RoundedCornerShape(DesignTokens.CornerRadius.lg)
+                CardDefaults.outlinedCardBorder().copy(
+                    width = 1.dp,
+                    brush = SolidColor(colorScheme.outline),
+                )
+            },
+        elevation =
+            CardDefaults.cardElevation(
+                defaultElevation =
+                    if (isSelected)
+                        DesignTokens.Elevation.md
+                    else
+                        DesignTokens.Elevation.xs,
+            ),
+        shape = RoundedCornerShape(DesignTokens.CornerRadius.lg),
     ) {
-
         Box {
             Box(
                 modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 AvatarImage(
                     avatarB64 = avatarHelper.getDefaultAvatarBase64(avatarId),
@@ -589,23 +623,25 @@ private fun EnhancedAvatarOption(
                 visible = isSelected,
                 enter = scaleIn(spring(stiffness = Spring.StiffnessHigh)) + fadeIn(),
                 exit = scaleOut(spring(stiffness = Spring.StiffnessHigh)) + fadeOut(),
-                modifier = Modifier.align(Alignment.TopEnd)
+                modifier = Modifier.align(Alignment.TopEnd),
             ) {
                 Surface(
-                    modifier = Modifier.Companion
-                        .padding(DesignTokens.Spacing.sm)
-                        .size(20.dp),
+                    modifier =
+                        Modifier.Companion
+                            .padding(DesignTokens.Spacing.sm)
+                            .size(20.dp),
                     shape = CircleShape,
                     color = colorScheme.primary,
-                    shadowElevation = DesignTokens.Elevation.sm
+                    shadowElevation = DesignTokens.Elevation.sm,
                 ) {
                     Icon(
                         Icons.Default.Check,
                         contentDescription = "Selected",
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(DesignTokens.Spacing.xs),
-                        tint = colorScheme.onPrimary
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .padding(DesignTokens.Spacing.xs),
+                        tint = colorScheme.onPrimary,
                     )
                 }
             }
@@ -626,23 +662,25 @@ private fun PrivacyNoticeSection() {
     DropCard(
         variant = DropCardVariant.Filled,
         size = DropCardSize.Medium,
-        colors = CardDefaults.cardColors(
-            containerColor = colorScheme.surfaceVariant.copy(alpha = 0.5f),
-            contentColor = colorScheme.onSurfaceVariant
-        ),
-        contentDescription = "Privacy information about profile data"
+        colors =
+            CardDefaults.cardColors(
+                containerColor = colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                contentColor = colorScheme.onSurfaceVariant,
+            ),
+        contentDescription = "Privacy information about profile data",
     ) {
         DropCardContent(size = DropCardSize.Medium) {
             Row(
-                verticalAlignment = Alignment.Top
+                verticalAlignment = Alignment.Top,
             ) {
                 Icon(
                     Icons.Default.Person,
                     contentDescription = null,
-                    modifier = Modifier
-                        .size(20.dp)
-                        .padding(top = 2.dp),
-                    tint = colorScheme.primary
+                    modifier =
+                        Modifier
+                            .size(20.dp)
+                            .padding(top = 2.dp),
+                    tint = colorScheme.primary,
                 )
 
                 Spacer(modifier = Modifier.Companion.width(DesignTokens.Spacing.md))
@@ -652,16 +690,20 @@ private fun PrivacyNoticeSection() {
                         text = "Privacy & Security",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold,
-                        color = colorScheme.onSurface
+                        color = colorScheme.onSurface,
                     )
 
                     Spacer(modifier = Modifier.Companion.height(DesignTokens.Spacing.xs))
 
                     Text(
-                        text = "Your profile information is only shared during file transfers and is stored locally on your device. Custom avatars are processed and stored securely without being uploaded to any server.",
+                        text =
+                            "Your profile information is only shared during file transfers and" +
+                                " is stored locally on your device." +
+                                " Custom avatars are processed and stored securely without being" +
+                                " uploaded to any server.",
                         style = MaterialTheme.typography.bodySmall,
                         color = colorScheme.onSurfaceVariant,
-                        lineHeight = MaterialTheme.typography.bodySmall.lineHeight * 1.2
+                        lineHeight = MaterialTheme.typography.bodySmall.lineHeight * 1.2,
                     )
                 }
             }

@@ -92,6 +92,7 @@ sealed class ReceiveError(val message: String, val isRecoverable: Boolean = true
         ReceiveError("File transfer was interrupted. Please try again.", true)
 
     object NoFilesReceived : ReceiveError("No files were received from the sender.", true)
+
     object StorageError :
         ReceiveError("Unable to save files. Please check your storage permissions.", true)
 
@@ -103,18 +104,17 @@ sealed class ReceiveError(val message: String, val isRecoverable: Boolean = true
 
 @OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun Receive(
-    navController: NavController,
-) {
+fun Receive(navController: NavController) {
     val viewModel: ReceiveViewModel = hiltViewModel()
     val clipboardManager = LocalClipboardManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
 
-    val requestPermissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        viewModel.onCameraPermissionGranted(isGranted)
-    }
+    val requestPermissionLauncher =
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.RequestPermission(),
+        ) { isGranted ->
+            viewModel.onCameraPermissionGranted(isGranted)
+        }
 
     val state by viewModel.collectAsState()
     viewModel.collectSideEffect { effect ->
@@ -132,7 +132,6 @@ fun Receive(
             }
 
             ReceiveScreenEffect.ShowSuccessAnimation -> {
-
             }
         }
     }
@@ -148,37 +147,39 @@ fun Receive(
 
     val successScale by animateFloatAsState(
         targetValue = if (showSuccessAnimation) 1f else 0f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        ),
-        label = "successScale"
+        animationSpec =
+            spring(
+                dampingRatio = Spring.DampingRatioMediumBouncy,
+                stiffness = Spring.StiffnessLow,
+            ),
+        label = "successScale",
     )
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(DesignTokens.Spacing.lg)
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(DesignTokens.Spacing.lg),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Surface(
                 onClick = { navController.navigateUp() },
                 shape = CircleShape,
                 color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
-                modifier = Modifier.Companion.size(DesignTokens.TouchTarget.minimum)
+                modifier = Modifier.Companion.size(DesignTokens.TouchTarget.minimum),
             ) {
                 Box(
                     contentAlignment = Alignment.Center,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
                 ) {
                     Icon(
                         Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(20.dp),
                     )
                 }
             }
@@ -199,7 +200,7 @@ fun Receive(
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.weight(1f),
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface,
             )
         }
 
@@ -207,55 +208,68 @@ fun Receive(
 
         AnimatedVisibility(
             visible = showSuccessAnimation,
-            enter = scaleIn(
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                    stiffness = Spring.StiffnessLow
-                )
-            ) + fadeIn(),
-            exit = scaleOut(
-                animationSpec = tween(DesignTokens.Animation.normal)
-            ) + fadeOut()
+            enter =
+                scaleIn(
+                    animationSpec =
+                        spring(
+                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                            stiffness = Spring.StiffnessLow,
+                        ),
+                ) + fadeIn(),
+            exit =
+                scaleOut(
+                    animationSpec = tween(DesignTokens.Animation.NORMAL),
+                ) + fadeOut(),
         ) {
             Box(
                 modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 ElevatedCard(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .scale(successScale),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .scale(successScale),
                     shape = RoundedCornerShape(DesignTokens.CornerRadius.xl),
-                    colors = CardDefaults.elevatedCardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                    ),
-                    elevation = CardDefaults.elevatedCardElevation(defaultElevation = DesignTokens.Elevation.xl)
+                    colors =
+                        CardDefaults.elevatedCardColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        ),
+                    elevation =
+                        CardDefaults.elevatedCardElevation(
+                            defaultElevation = DesignTokens.Elevation.xl,
+                        ),
                 ) {
                     Column(
                         modifier = Modifier.Companion.padding(DesignTokens.Spacing.xxl),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                        horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         Box(
-                            modifier = Modifier
-                                .size(80.dp)
-                                .background(
-                                    brush = Brush.radialGradient(
-                                        colors = listOf(
-                                            MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
-                                            Color.Transparent
-                                        )
-                                    ),
-                                    shape = CircleShape
-                                )
-                                .clip(CircleShape),
-                            contentAlignment = Alignment.Center
+                            modifier =
+                                Modifier
+                                    .size(80.dp)
+                                    .background(
+                                        brush =
+                                            Brush.radialGradient(
+                                                colors =
+                                                    listOf(
+                                                        MaterialTheme.colorScheme.primary.copy(
+                                                            alpha = 0.2f,
+                                                        ),
+                                                        Color.Transparent,
+                                                    ),
+                                            ),
+                                        shape = CircleShape,
+                                    )
+                                    .clip(CircleShape),
+                            contentAlignment = Alignment.Center,
                         ) {
                             Icon(
                                 Icons.Default.CheckCircle,
                                 contentDescription = "Success",
                                 modifier = Modifier.size(48.dp),
-                                tint = MaterialTheme.colorScheme.primary
+                                tint = MaterialTheme.colorScheme.primary,
                             )
                         }
 
@@ -265,30 +279,32 @@ fun Receive(
                             text = "Files Received!",
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold,
-                            textAlign = TextAlign.Center
+                            textAlign = TextAlign.Center,
                         )
 
                         Spacer(modifier = Modifier.Companion.height(DesignTokens.Spacing.sm))
 
                         Text(
-                            text = "All files have been successfully saved to your Downloads folder.",
+                            text =
+                                "All files have been successfully" +
+                                    " saved to your Downloads folder.",
                             style = MaterialTheme.typography.bodyLarge,
                             textAlign = TextAlign.Center,
                             color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
-                            lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.2
+                            lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.2,
                         )
                     }
                 }
             }
         }
 
-        val _state = state
-        when (_state) {
+        val receiveScreenState = state
+        when (receiveScreenState) {
             is ReceiveScreenState.Initial -> {
-                if (_state.cameraPermissionGranted) {
+                if (receiveScreenState.cameraPermissionGranted) {
                     ReceiveReadyToScanCard(
                         onStartScanning = { viewModel.onStartScanning() },
-                        onEnterManually = { viewModel.onEnterManually() }
+                        onEnterManually = { viewModel.onEnterManually() },
                     )
                 } else {
                     ReceivePermissionRequestCard(
@@ -297,7 +313,7 @@ fun Receive(
                         },
                         onEnterManually = {
                             viewModel.onEnterManually()
-                        }
+                        },
                     )
                 }
             }
@@ -315,22 +331,26 @@ fun Receive(
                         viewModel.onError(error)
                     },
                     onStopScanning = { viewModel.onStopScanning() },
-                    onEnterManually = { viewModel.onEnterManually() }
+                    onEnterManually = { viewModel.onEnterManually() },
                 )
             }
 
             is ReceiveScreenState.ManualInput -> {
                 ReceiveManualInputCard(
-                    inputText = _state.inputText,
+                    inputText = receiveScreenState.inputText,
                     onInputChange = {
                         viewModel.onManualInputChanged(it)
                     },
-                    inputError = _state.inputError,
-                    onPasteFromClipboard = { viewModel.onPasteFromClipboard(clipboardManager.getText()?.text) },
+                    inputError = receiveScreenState.inputError,
+                    onPasteFromClipboard = {
+                        viewModel.onPasteFromClipboard(
+                            clipboardManager.getText()?.text,
+                        )
+                    },
                     onSubmit = { viewModel.handleManualInputSubmit() },
                     onCancel = {
                         viewModel.onCancelManualInput()
-                    }
+                    },
                 )
             }
 
@@ -341,7 +361,7 @@ fun Receive(
                     },
                     onScanAgain = {
                         viewModel.onScanAgain()
-                    }
+                    },
                 )
             }
 
@@ -351,86 +371,90 @@ fun Receive(
 
             is ReceiveScreenState.Receiving -> {
                 ReceiveProgressCard(
-                    progress = _state.progress,
+                    progress = receiveScreenState.progress,
                     onCancel = {
                         viewModel.onCancelReceiving()
-                    }
+                    },
                 )
             }
 
             is ReceiveScreenState.Success -> {
                 if (!showSuccessAnimation) {
                     ReceiveCompleteCard(
-                        receivedFiles = _state.receivedFiles,
+                        receivedFiles = receiveScreenState.receivedFiles,
                         onReceiveMore = {
                             viewModel.onReceiveMore()
                         },
                         onDone = {
                             viewModel.onDone()
-                        }
+                        },
                     )
                 }
             }
 
             is ReceiveScreenState.Error -> {
                 ReceiveErrorCard(
-                    error = _state.error,
+                    error = receiveScreenState.error,
                     onRetry = {
                         viewModel.onErrorRetry()
                     },
                     onDismiss = {
                         viewModel.onErrorDismiss()
-                    }
+                    },
                 )
             }
         }
 
-        if (state !is ReceiveScreenState.Success
-            && state !is ReceiveScreenState.Error
+        if (state !is ReceiveScreenState.Success &&
+            state !is ReceiveScreenState.Error
         ) {
-
             Spacer(modifier = Modifier.weight(1f))
 
             Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                ),
-                shape = RoundedCornerShape(DesignTokens.CornerRadius.lg)
+                colors =
+                    CardDefaults.cardColors(
+                        containerColor =
+                            MaterialTheme.colorScheme.surfaceVariant.copy(
+                                alpha = 0.5f,
+                            ),
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    ),
+                shape = RoundedCornerShape(DesignTokens.CornerRadius.lg),
             ) {
                 Column(
-                    modifier = Modifier.Companion.padding(DesignTokens.Spacing.lg)
+                    modifier = Modifier.Companion.padding(DesignTokens.Spacing.lg),
                 ) {
                     Text(
                         text = "How to receive files:",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
                     )
                     Spacer(modifier = Modifier.Companion.height(DesignTokens.Spacing.md))
 
-                    val steps = listOf(
-                        "Ask the sender to start a transfer",
-                        "Scan QR code OR enter transfer code manually",
-                        "Accept the transfer",
-                        "Files will be saved to your Downloads folder"
-                    )
+                    val steps =
+                        listOf(
+                            "Ask the sender to start a transfer",
+                            "Scan QR code OR enter transfer code manually",
+                            "Accept the transfer",
+                            "Files will be saved to your Downloads folder",
+                        )
 
                     steps.forEachIndexed { index, step ->
                         Row(
                             verticalAlignment = Alignment.Top,
-                            modifier = Modifier.padding(vertical = 2.dp)
+                            modifier = Modifier.padding(vertical = 2.dp),
                         ) {
                             Text(
                                 text = "${index + 1}.",
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.primary
+                                color = MaterialTheme.colorScheme.primary,
                             )
                             Spacer(modifier = Modifier.Companion.width(DesignTokens.Spacing.sm))
                             Text(
                                 text = step,
                                 style = MaterialTheme.typography.bodyMedium,
-                                lineHeight = MaterialTheme.typography.bodyMedium.lineHeight * 1.2
+                                lineHeight = MaterialTheme.typography.bodyMedium.lineHeight * 1.2,
                             )
                         }
                     }

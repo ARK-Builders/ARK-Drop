@@ -21,62 +21,71 @@ data class HistoryScreenState(
 sealed class HistoryScreenEffect
 
 @HiltViewModel
-class HistoryViewModel @Inject constructor(
-    private val historyItemRepository: TransferHistoryItemRepository,
-) : ViewModel(), ContainerHost<HistoryScreenState, HistoryScreenEffect> {
-    override val container: Container<HistoryScreenState, HistoryScreenEffect> = container(
-        HistoryScreenState(
-            historyItems = emptyList(),
-            showClearDialog = false,
-            showDeleteDialog = false
-        )
-    )
+class HistoryViewModel
+    @Inject
+    constructor(
+        private val historyItemRepository: TransferHistoryItemRepository,
+    ) : ViewModel(), ContainerHost<HistoryScreenState, HistoryScreenEffect> {
+        override val container: Container<HistoryScreenState, HistoryScreenEffect> =
+            container(
+                HistoryScreenState(
+                    historyItems = emptyList(),
+                    showClearDialog = false,
+                    showDeleteDialog = false,
+                ),
+            )
 
-    init {
-        historyItemRepository.historyItems.onEach { items ->
+        init {
+            historyItemRepository.historyItems.onEach { items ->
+                intent {
+                    reduce {
+                        state.copy(historyItems = items)
+                    }
+                }
+            }.launchIn(viewModelScope)
+        }
+
+        fun onShowClearDialog() =
             intent {
                 reduce {
-                    state.copy(historyItems = items)
+                    state.copy(showClearDialog = true)
                 }
             }
-        }.launchIn(viewModelScope)
-    }
 
-    fun onShowClearDialog() = intent {
-        reduce {
-            state.copy(showClearDialog = true)
-        }
-    }
+        fun onClear() =
+            intent {
+                historyItemRepository.clearHistory()
+                reduce {
+                    state.copy(showClearDialog = false)
+                }
+            }
 
-    fun onClear() = intent {
-        historyItemRepository.clearHistory()
-        reduce {
-            state.copy(showClearDialog = false)
-        }
-    }
+        fun onDismissClearDialog() =
+            intent {
+                reduce {
+                    state.copy(showClearDialog = false)
+                }
+            }
 
-    fun onDismissClearDialog() = intent {
-        reduce {
-            state.copy(showClearDialog = false)
-        }
-    }
+        fun onShowDeleteDialog() =
+            intent {
+                reduce {
+                    state.copy(showDeleteDialog = true)
+                }
+            }
 
-    fun onShowDeleteDialog() = intent {
-        reduce {
-            state.copy(showDeleteDialog = true)
-        }
-    }
+        fun onDelete(id: Long) =
+            intent {
+                historyItemRepository.deleteHistoryItem(id)
+                reduce {
+                    state.copy(showDeleteDialog = false)
+                }
+            }
 
-    fun onDelete(id: Long) = intent {
-        historyItemRepository.deleteHistoryItem(id)
-        reduce {
-            state.copy(showDeleteDialog = false)
-        }
+        fun onDismissDeleteDialog() =
+            intent {
+                reduce {
+                    state.copy(showDeleteDialog = false)
+                }
+            }
     }
-
-    fun onDismissDeleteDialog() = intent {
-        reduce {
-            state.copy(showDeleteDialog = false)
-        }
-    }
-}

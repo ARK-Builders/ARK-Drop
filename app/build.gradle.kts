@@ -1,3 +1,5 @@
+import com.android.build.gradle.internal.tasks.factory.dependsOn
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -5,6 +7,7 @@ plugins {
     alias(libs.plugins.dagger.hilt)
     alias(libs.plugins.triplet.play)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.ktlint.gradle)
 }
 
 kotlin {
@@ -56,7 +59,7 @@ android {
             signingConfig = signingConfigs.getByName("testRelease")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
 
             // Enable R8 full mode
@@ -79,17 +82,19 @@ android {
     packaging {
         jniLibs.excludes.add("META-INF/AL2.0")
         jniLibs.excludes.add("META-INF/LGPL2.1")
-        resources.excludes.addAll(listOf(
-            "META-INF/DEPENDENCIES",
-            "META-INF/LICENSE",
-            "META-INF/LICENSE.txt",
-            "META-INF/license.txt",
-            "META-INF/NOTICE",
-            "META-INF/NOTICE.txt",
-            "META-INF/notice.txt",
-            "META-INF/ASL2.0",
-            "META-INF/*.kotlin_module"
-        ))
+        resources.excludes.addAll(
+            listOf(
+                "META-INF/DEPENDENCIES",
+                "META-INF/LICENSE",
+                "META-INF/LICENSE.txt",
+                "META-INF/license.txt",
+                "META-INF/NOTICE",
+                "META-INF/NOTICE.txt",
+                "META-INF/notice.txt",
+                "META-INF/ASL2.0",
+                "META-INF/*.kotlin_module",
+            ),
+        )
     }
 
     bundle {
@@ -179,7 +184,9 @@ dependencies {
     implementation(libs.kotlinx.serialization)
 }
 
+tasks.preBuild.dependsOn(tasks.ktlintCheck)
+tasks.ktlintCheck.dependsOn(tasks.ktlintFormat)
+
 tasks.named<Delete>("clean") {
     delete(fileTree("$projectDir/src/main/jniLibs"))
 }
-

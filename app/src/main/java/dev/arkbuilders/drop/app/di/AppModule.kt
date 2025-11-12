@@ -6,14 +6,14 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import dev.arkbuilders.drop.app.data.repository.TransferManager
-import dev.arkbuilders.drop.app.data.helper.ResourcesHelperImpl
 import dev.arkbuilders.drop.app.data.db.Database
 import dev.arkbuilders.drop.app.data.helper.AvatarHelperImpl
 import dev.arkbuilders.drop.app.data.helper.PermissionsHelperImpl
+import dev.arkbuilders.drop.app.data.helper.ResourcesHelperImpl
 import dev.arkbuilders.drop.app.data.repository.NetworkStatusImpl
 import dev.arkbuilders.drop.app.data.repository.ProfileRepoImpl
 import dev.arkbuilders.drop.app.data.repository.TransferHistoryItemRepositoryImpl
+import dev.arkbuilders.drop.app.data.repository.TransferManager
 import dev.arkbuilders.drop.app.domain.AvatarHelper
 import dev.arkbuilders.drop.app.domain.PermissionsHelper
 import dev.arkbuilders.drop.app.domain.ResourcesHelper
@@ -25,7 +25,6 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
-
     @Provides
     @Singleton
     fun provideProfileRepo(impl: ProfileRepoImpl): ProfileRepo = impl
@@ -35,16 +34,14 @@ object AppModule {
     fun provideTransferManager(
         @ApplicationContext context: Context,
         profileRepo: ProfileRepo,
-        transferHistoryItemRepository: TransferHistoryItemRepository
+        transferHistoryItemRepository: TransferHistoryItemRepository,
     ): TransferManager {
         return TransferManager(context, profileRepo, transferHistoryItemRepository)
     }
 
     @Provides
     @Singleton
-    fun provideResourcesHelper(
-        impl: ResourcesHelperImpl
-    ): ResourcesHelper = impl
+    fun provideResourcesHelper(impl: ResourcesHelperImpl): ResourcesHelper = impl
 
     @Provides
     @Singleton
@@ -53,31 +50,23 @@ object AppModule {
     ) = Database.build(context)
 
     @Provides
-    fun provideTransferHistoryItemDao(
-        db: Database,
-    ) = db.transferHistoryDao()
+    fun provideTransferHistoryItemDao(db: Database) = db.transferHistoryDao()
 
     @Provides
     @Singleton
     fun provideTransferHistoryItemRepository(
-        impl: TransferHistoryItemRepositoryImpl
+        impl: TransferHistoryItemRepositoryImpl,
     ): TransferHistoryItemRepository = impl
 
     @Provides
     @Singleton
-    fun providePermissionHelper(
-        impl: PermissionsHelperImpl
-    ): PermissionsHelper = impl
+    fun providePermissionHelper(impl: PermissionsHelperImpl): PermissionsHelper = impl
 
     @Provides
     @Singleton
-    fun provideNetworkStatus(
-        impl: NetworkStatusImpl
-    ): NetworkStatus = impl
+    fun provideNetworkStatus(impl: NetworkStatusImpl): NetworkStatus = impl
 
     @Provides
     @Singleton
-    fun provideAvatarHelper(
-        impl: AvatarHelperImpl
-    ): AvatarHelper = impl
+    fun provideAvatarHelper(impl: AvatarHelperImpl): AvatarHelper = impl
 }

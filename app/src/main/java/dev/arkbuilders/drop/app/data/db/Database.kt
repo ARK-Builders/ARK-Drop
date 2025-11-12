@@ -13,13 +13,12 @@ import dev.arkbuilders.drop.app.data.db.typeconverters.OffsetDateTimeTypeConvert
         TransferHistoryItemEntity::class,
     ],
     version = 1,
-    exportSchema = true
+    exportSchema = true,
 )
 @TypeConverters(
     OffsetDateTimeTypeConverter::class,
 )
 abstract class Database : RoomDatabase() {
-
     abstract fun transferHistoryDao(): TransferHistoryItemDao
 
     companion object {

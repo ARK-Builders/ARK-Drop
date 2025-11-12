@@ -40,12 +40,16 @@ fun TopBar(modifier: Modifier = Modifier) {
                 )
             }
             IconButton(
-                modifier = innerModifier, onClick = {}, enabled = false, colors = IconButtonColors(
-                    containerColor = Color.LightGray,
-                    disabledContainerColor = Color.LightGray,
-                    contentColor = Color.Gray,
-                    disabledContentColor = Color.Gray,
-                )
+                modifier = innerModifier,
+                onClick = {},
+                enabled = false,
+                colors =
+                    IconButtonColors(
+                        containerColor = Color.LightGray,
+                        disabledContainerColor = Color.LightGray,
+                        contentColor = Color.Gray,
+                        disabledContentColor = Color.Gray,
+                    ),
             ) {
                 Icon(imageVector = Icons.Rounded.Person, contentDescription = null)
             }

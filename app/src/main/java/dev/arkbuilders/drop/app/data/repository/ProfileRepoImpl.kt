@@ -13,24 +13,25 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class ProfileRepoImpl @Inject constructor(
-    private val localDataSource: ProfileLocalDataSource,
-    @ApplicationContext private val context: Context,
-) : ProfileRepo {
+class ProfileRepoImpl
+    @Inject
+    constructor(
+        private val localDataSource: ProfileLocalDataSource,
+        @ApplicationContext private val context: Context,
+    ) : ProfileRepo {
+        private val _profile = MutableStateFlow(localDataSource.loadProfile())
+        override val profile: StateFlow<UserProfile> = _profile.asStateFlow()
 
-    private val _profile = MutableStateFlow(localDataSource.loadProfile())
-    override val profile: StateFlow<UserProfile> = _profile.asStateFlow()
+        override fun updateProfile(profile: UserProfile) {
+            _profile.value = profile
+            localDataSource.saveProfile(profile)
+        }
 
-    override fun updateProfile(profile: UserProfile) {
-        _profile.value = profile
-        localDataSource.saveProfile(profile)
+        override fun updateName(name: String) {
+            updateProfile(_profile.value.copy(name = name))
+        }
+
+        override fun updateAvatar(avatar: UserAvatar) {
+            updateProfile(_profile.value.copy(avatar = avatar))
+        }
     }
-
-    override fun updateName(name: String) {
-        updateProfile(_profile.value.copy(name = name))
-    }
-
-    override fun updateAvatar(avatar: UserAvatar) {
-        updateProfile(_profile.value.copy(avatar = avatar))
-    }
-}

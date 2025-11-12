@@ -17,57 +17,65 @@ import kotlinx.coroutines.withContext
 import timber.log.Timber
 import javax.inject.Inject
 
-class SendFilesUseCase @Inject constructor(
-    @ApplicationContext private val context: Context,
-    private val profileRepo: ProfileRepo,
-    private val resourcesHelper: ResourcesHelper,
-) {
-    suspend operator fun invoke(
-        fileUris: List<Uri>,
-    ): Result<SendFilesBubble> = withContext(Dispatchers.IO) {
-        runCatching {
-            Timber.d("Starting file send for ${fileUris.size} files")
+class SendFilesUseCase
+    @Inject
+    constructor(
+        @ApplicationContext private val context: Context,
+        private val profileRepo: ProfileRepo,
+        private val resourcesHelper: ResourcesHelper,
+    ) {
+        suspend operator fun invoke(fileUris: List<Uri>): Result<SendFilesBubble> =
+            withContext(Dispatchers.IO) {
+                runCatching {
+                    Timber.d("Starting file send for ${fileUris.size} files")
 
-            val profile = profileRepo.getCurrentProfile()
-            val senderProfile = SenderProfile(
-                name = profile.name.ifEmpty { "Anonymous" },
-                avatarB64 = profile.avatar.base64.takeIf { it.isNotEmpty() }
-            )
+                    val profile = profileRepo.getCurrentProfile()
+                    val senderProfile =
+                        SenderProfile(
+                            name = profile.name.ifEmpty { "Anonymous" },
+                            avatarB64 = profile.avatar.base64.takeIf { it.isNotEmpty() },
+                        )
 
-            val senderFiles = fileUris.mapNotNull { uri ->
-                val fileName = resourcesHelper.getFileName(uri.toString())
-                if (fileName != null) {
-                    val fileData = SenderFileDataImpl(context, uri)
-                    SenderFile(
-                        name = fileName,
-                        data = fileData
+                    val senderFiles =
+                        fileUris.mapNotNull { uri ->
+                            val fileName = resourcesHelper.getFileName(uri.toString())
+                            if (fileName != null) {
+                                val fileData = SenderFileDataImpl(context, uri)
+                                SenderFile(
+                                    name = fileName,
+                                    data = fileData,
+                                )
+                            } else {
+                                Timber.w("Could not get filename for URI: $uri")
+                                null
+                            }
+                        }
+
+                    if (senderFiles.isEmpty()) {
+                        Timber.e("No valid files to send")
+                        error("No valid files to send")
+                    }
+
+                    val request =
+                        SendFilesRequest(
+                            profile = senderProfile,
+                            files = senderFiles,
+                            config =
+                                SenderConfig(
+                                    chunkSize = 1024u * 512u,
+                                    parallelStreams = 4u,
+                                ),
+                        )
+
+                    val bubble = sendFiles(request)
+
+                    Timber.d(
+                        "Send bubble created with ticket and confirmation:" +
+                            " ${bubble.getTicket()} ${bubble.getConfirmation()}",
                     )
-                } else {
-                    Timber.w("Could not get filename for URI: $uri")
-                    null
+                    bubble
+                }.onFailure {
+                    Timber.e("Error starting file send ${it.message}")
                 }
             }
-
-            if (senderFiles.isEmpty()) {
-                Timber.e("No valid files to send")
-                error("No valid files to send")
-            }
-
-            val request = SendFilesRequest(
-                profile = senderProfile,
-                files = senderFiles,
-                config = SenderConfig(
-                    chunkSize = 1024u * 512u,
-                    parallelStreams = 4u,
-                ),
-            )
-
-            val bubble = sendFiles(request)
-
-            Timber.d("Send bubble created with ticket and confirmation: ${bubble.getTicket()} ${bubble.getConfirmation()}")
-            bubble
-        }.onFailure {
-            Timber.e("Error starting file send ${it.message}")
-        }
     }
-}

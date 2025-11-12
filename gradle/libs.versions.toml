@@ -29,6 +29,7 @@ tripletPlay = "3.10.1"
 drop = "17348879247"
 devsrsouzaIcons = "1.1.0"
 coil = "2.5.0"
+ktlintGradlePlugin = "12.2.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -93,3 +94,4 @@ ksp = { id = "com.google.devtools.ksp", version.ref = "ksp"}
 dagger-hilt = { id = "com.google.dagger.hilt.android", version.ref="hilt" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 triplet-play = { id = "com.github.triplet.play", version.ref = "tripletPlay" }
+ktlint-gradle = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlintGradlePlugin" }

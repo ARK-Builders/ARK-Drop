@@ -13,14 +13,20 @@ import androidx.compose.ui.unit.dp
 fun SendCard(
     modifier: Modifier = Modifier,
     backgroundColor: Color = MaterialTheme.colorScheme.surface,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     Card(
-        modifier = modifier, shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(
-            containerColor = backgroundColor
-        ), elevation = CardDefaults.cardElevation(
-            defaultElevation = 1.dp, pressedElevation = 2.dp
-        )
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = backgroundColor,
+            ),
+        elevation =
+            CardDefaults.cardElevation(
+                defaultElevation = 1.dp,
+                pressedElevation = 2.dp,
+            ),
     ) {
         content()
     }

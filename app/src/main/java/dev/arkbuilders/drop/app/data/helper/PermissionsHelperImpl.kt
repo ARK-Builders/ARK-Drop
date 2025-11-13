@@ -8,11 +8,11 @@ import dev.arkbuilders.drop.app.domain.PermissionsHelper
 
 class PermissionsHelperImpl(
     private val ctx: Context,
-): PermissionsHelper {
+) : PermissionsHelper {
     override fun isCameraGranted(): Boolean {
         return ContextCompat.checkSelfPermission(
             ctx,
-            Manifest.permission.CAMERA
+            Manifest.permission.CAMERA,
         ) == PackageManager.PERMISSION_GRANTED
     }
 }

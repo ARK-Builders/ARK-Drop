@@ -28,11 +28,16 @@ import androidx.compose.ui.unit.dp
 import dev.arkbuilders.drop.app.presentation.theme.DesignTokens
 
 enum class DropButtonSize {
-    Small, Medium, Large
+    Small,
+    Medium,
+    Large,
 }
 
 enum class DropButtonVariant {
-    Primary, Secondary, Tertiary, Destructive
+    Primary,
+    Secondary,
+    Tertiary,
+    Destructive,
 }
 
 @Composable
@@ -45,55 +50,80 @@ fun DropButton(
     loading: Boolean = false,
     contentDescription: String? = null,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
-    content: @Composable RowScope.() -> Unit
+    content: @Composable RowScope.() -> Unit,
 ) {
     val haptic = LocalHapticFeedback.current
     val isPressed by interactionSource.collectIsPressedAsState()
-    
+
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.95f else 1f,
-        label = "buttonScale"
+        label = "buttonScale",
     )
-    
-    val buttonHeight = when (size) {
-        DropButtonSize.Small -> 40.dp
-        DropButtonSize.Medium -> DesignTokens.TouchTarget.minimum
-        DropButtonSize.Large -> DesignTokens.TouchTarget.large
-    }
-    
-    val contentPadding = when (size) {
-        DropButtonSize.Small -> PaddingValues(horizontal = DesignTokens.Spacing.md, vertical = DesignTokens.Spacing.xs)
-        DropButtonSize.Medium -> PaddingValues(horizontal = DesignTokens.Spacing.lg, vertical = DesignTokens.Spacing.sm)
-        DropButtonSize.Large -> PaddingValues(horizontal = DesignTokens.Spacing.xl, vertical = DesignTokens.Spacing.md)
-    }
-    
-    val colors = when (variant) {
-        DropButtonVariant.Primary -> ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary,
-            disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-            disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-        )
-        DropButtonVariant.Secondary -> ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.secondary,
-            contentColor = MaterialTheme.colorScheme.onSecondary,
-            disabledContainerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.12f),
-            disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-        )
-        DropButtonVariant.Tertiary -> ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.tertiary,
-            contentColor = MaterialTheme.colorScheme.onTertiary,
-            disabledContainerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.12f),
-            disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-        )
-        DropButtonVariant.Destructive -> ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.error,
-            contentColor = MaterialTheme.colorScheme.onError,
-            disabledContainerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.12f),
-            disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-        )
-    }
-    
+
+    val buttonHeight =
+        when (size) {
+            DropButtonSize.Small -> 40.dp
+            DropButtonSize.Medium -> DesignTokens.TouchTarget.minimum
+            DropButtonSize.Large -> DesignTokens.TouchTarget.large
+        }
+
+    val contentPadding =
+        when (size) {
+            DropButtonSize.Small ->
+                PaddingValues(
+                    horizontal = DesignTokens.Spacing.md,
+                    vertical = DesignTokens.Spacing.xs,
+                )
+            DropButtonSize.Medium ->
+                PaddingValues(
+                    horizontal = DesignTokens.Spacing.lg,
+                    vertical = DesignTokens.Spacing.sm,
+                )
+            DropButtonSize.Large ->
+                PaddingValues(
+                    horizontal = DesignTokens.Spacing.xl,
+                    vertical = DesignTokens.Spacing.md,
+                )
+        }
+
+    val colors =
+        when (variant) {
+            DropButtonVariant.Primary ->
+                ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                    disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+                )
+            DropButtonVariant.Secondary ->
+                ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.secondary,
+                    contentColor = MaterialTheme.colorScheme.onSecondary,
+                    disabledContainerColor =
+                        MaterialTheme.colorScheme.secondary.copy(
+                            alpha = 0.12f,
+                        ),
+                    disabledContentColor =
+                        MaterialTheme.colorScheme.onSurface.copy(
+                            alpha = 0.38f,
+                        ),
+                )
+            DropButtonVariant.Tertiary ->
+                ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.tertiary,
+                    contentColor = MaterialTheme.colorScheme.onTertiary,
+                    disabledContainerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.12f),
+                    disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+                )
+            DropButtonVariant.Destructive ->
+                ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error,
+                    contentColor = MaterialTheme.colorScheme.onError,
+                    disabledContainerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.12f),
+                    disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+                )
+        }
+
     Button(
         onClick = {
             if (!loading) {
@@ -101,24 +131,25 @@ fun DropButton(
                 onClick()
             }
         },
-        modifier = modifier
-            .scale(scale)
-            .defaultMinSize(minHeight = buttonHeight)
-            .semantics {
-                role = Role.Button
-                contentDescription?.let { this.contentDescription = it }
-            },
+        modifier =
+            modifier
+                .scale(scale)
+                .defaultMinSize(minHeight = buttonHeight)
+                .semantics {
+                    role = Role.Button
+                    contentDescription?.let { this.contentDescription = it }
+                },
         enabled = enabled && !loading,
         colors = colors,
         contentPadding = contentPadding,
         interactionSource = interactionSource,
-        shape = RoundedCornerShape(DesignTokens.CornerRadius.md)
+        shape = RoundedCornerShape(DesignTokens.CornerRadius.md),
     ) {
         if (loading) {
             CircularProgressIndicator(
                 modifier = Modifier.size(16.dp),
                 color = MaterialTheme.colorScheme.onPrimary,
-                strokeWidth = 2.dp
+                strokeWidth = 2.dp,
             )
         } else {
             content()
@@ -135,28 +166,42 @@ fun DropOutlinedButton(
     loading: Boolean = false,
     contentDescription: String? = null,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
-    content: @Composable RowScope.() -> Unit
+    content: @Composable RowScope.() -> Unit,
 ) {
     val haptic = LocalHapticFeedback.current
     val isPressed by interactionSource.collectIsPressedAsState()
-    
+
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.95f else 1f,
-        label = "buttonScale"
+        label = "buttonScale",
     )
-    
-    val buttonHeight = when (size) {
-        DropButtonSize.Small -> 40.dp
-        DropButtonSize.Medium -> DesignTokens.TouchTarget.minimum
-        DropButtonSize.Large -> DesignTokens.TouchTarget.large
-    }
-    
-    val contentPadding = when (size) {
-        DropButtonSize.Small -> PaddingValues(horizontal = DesignTokens.Spacing.md, vertical = DesignTokens.Spacing.xs)
-        DropButtonSize.Medium -> PaddingValues(horizontal = DesignTokens.Spacing.lg, vertical = DesignTokens.Spacing.sm)
-        DropButtonSize.Large -> PaddingValues(horizontal = DesignTokens.Spacing.xl, vertical = DesignTokens.Spacing.md)
-    }
-    
+
+    val buttonHeight =
+        when (size) {
+            DropButtonSize.Small -> 40.dp
+            DropButtonSize.Medium -> DesignTokens.TouchTarget.minimum
+            DropButtonSize.Large -> DesignTokens.TouchTarget.large
+        }
+
+    val contentPadding =
+        when (size) {
+            DropButtonSize.Small ->
+                PaddingValues(
+                    horizontal = DesignTokens.Spacing.md,
+                    vertical = DesignTokens.Spacing.xs,
+                )
+            DropButtonSize.Medium ->
+                PaddingValues(
+                    horizontal = DesignTokens.Spacing.lg,
+                    vertical = DesignTokens.Spacing.sm,
+                )
+            DropButtonSize.Large ->
+                PaddingValues(
+                    horizontal = DesignTokens.Spacing.xl,
+                    vertical = DesignTokens.Spacing.md,
+                )
+        }
+
     OutlinedButton(
         onClick = {
             if (!loading) {
@@ -164,23 +209,24 @@ fun DropOutlinedButton(
                 onClick()
             }
         },
-        modifier = modifier
-            .scale(scale)
-            .defaultMinSize(minHeight = buttonHeight)
-            .semantics {
-                role = Role.Button
-                contentDescription?.let { this.contentDescription = it }
-            },
+        modifier =
+            modifier
+                .scale(scale)
+                .defaultMinSize(minHeight = buttonHeight)
+                .semantics {
+                    role = Role.Button
+                    contentDescription?.let { this.contentDescription = it }
+                },
         enabled = enabled && !loading,
         contentPadding = contentPadding,
         interactionSource = interactionSource,
-        shape = RoundedCornerShape(DesignTokens.CornerRadius.md)
+        shape = RoundedCornerShape(DesignTokens.CornerRadius.md),
     ) {
         if (loading) {
             CircularProgressIndicator(
                 modifier = Modifier.size(16.dp),
                 color = MaterialTheme.colorScheme.primary,
-                strokeWidth = 2.dp
+                strokeWidth = 2.dp,
             )
         } else {
             content()

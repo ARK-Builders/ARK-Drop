@@ -37,35 +37,40 @@ import dev.arkbuilders.drop.app.presentation.theme.DesignTokens
 fun ReceiveErrorCard(
     error: ReceiveError,
     onRetry: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(DesignTokens.CornerRadius.lg),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.errorContainer,
-            contentColor = MaterialTheme.colorScheme.onErrorContainer
-        ),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = DesignTokens.Elevation.lg)
+        colors =
+            CardDefaults.elevatedCardColors(
+                containerColor = MaterialTheme.colorScheme.errorContainer,
+                contentColor = MaterialTheme.colorScheme.onErrorContainer,
+            ),
+        elevation =
+            CardDefaults.elevatedCardElevation(
+                defaultElevation = DesignTokens.Elevation.lg,
+            ),
     ) {
         Column(
             modifier = Modifier.Companion.padding(DesignTokens.Spacing.xl),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Box(
-                modifier = Modifier
-                    .size(80.dp)
-                    .background(
-                        color = MaterialTheme.colorScheme.error.copy(alpha = 0.1f),
-                        shape = CircleShape
-                    ),
-                contentAlignment = Alignment.Center
+                modifier =
+                    Modifier
+                        .size(80.dp)
+                        .background(
+                            color = MaterialTheme.colorScheme.error.copy(alpha = 0.1f),
+                            shape = CircleShape,
+                        ),
+                contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     if (error.isRecoverable) Icons.Default.Warning else TablerIcons.AlertCircle,
                     contentDescription = null,
                     modifier = Modifier.size(40.dp),
-                    tint = MaterialTheme.colorScheme.error
+                    tint = MaterialTheme.colorScheme.error,
                 )
             }
 
@@ -75,7 +80,7 @@ fun ReceiveErrorCard(
                 text = if (error.isRecoverable) "Something went wrong" else "Error occurred",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
             )
 
             Spacer(modifier = Modifier.Companion.height(DesignTokens.Spacing.sm))
@@ -85,21 +90,22 @@ fun ReceiveErrorCard(
                 style = MaterialTheme.typography.bodyLarge,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f),
-                lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.2
+                lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.2,
             )
 
             Spacer(modifier = Modifier.Companion.height(DesignTokens.Spacing.xl))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.md)
+                horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.md),
             ) {
                 OutlinedButton(
                     onClick = onDismiss,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(DesignTokens.TouchTarget.comfortable),
-                    shape = RoundedCornerShape(DesignTokens.CornerRadius.md)
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .height(DesignTokens.TouchTarget.comfortable),
+                    shape = RoundedCornerShape(DesignTokens.CornerRadius.md),
                 ) {
                     Text("Cancel", fontWeight = FontWeight.Medium)
                 }
@@ -107,13 +113,15 @@ fun ReceiveErrorCard(
                 if (error.isRecoverable) {
                     Button(
                         onClick = onRetry,
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(DesignTokens.TouchTarget.comfortable),
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .height(DesignTokens.TouchTarget.comfortable),
                         shape = RoundedCornerShape(DesignTokens.CornerRadius.md),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary
-                        )
+                        colors =
+                            ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                            ),
                     ) {
                         Text("Try Again", fontWeight = FontWeight.SemiBold)
                     }

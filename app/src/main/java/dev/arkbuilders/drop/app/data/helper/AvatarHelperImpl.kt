@@ -19,7 +19,6 @@ import java.io.IOException
 class AvatarHelperImpl(
     private val context: Context,
 ) : AvatarHelper {
-
     override fun uriToBase64(uri: String): String? {
         return try {
             val bitmap = loadBitmapFromUri(uri.toUri()) ?: return null
@@ -29,7 +28,6 @@ class AvatarHelperImpl(
             null
         }
     }
-
 
     private fun loadBitmapFromUri(uri: Uri): Bitmap? {
         return try {
@@ -47,11 +45,12 @@ class AvatarHelperImpl(
         val height = bitmap.height
 
         // Calculate scaling factor
-        val scaleFactor = if (width > height) {
-            MAX_IMAGE_SIZE.toFloat() / width
-        } else {
-            MAX_IMAGE_SIZE.toFloat() / height
-        }
+        val scaleFactor =
+            if (width > height) {
+                MAX_IMAGE_SIZE.toFloat() / width
+            } else {
+                MAX_IMAGE_SIZE.toFloat() / height
+            }
 
         return if (scaleFactor < 1f) {
             val newWidth = (width * scaleFactor).toInt()
@@ -79,13 +78,15 @@ class AvatarHelperImpl(
         }
     }
 
-
     @SuppressLint("DiscouragedApi")
     override fun getDefaultAvatarBase64(avatarId: String): String {
         return try {
-            val resourceId = context.resources.getIdentifier(
-                avatarId, "drawable", context.packageName
-            )
+            val resourceId =
+                context.resources.getIdentifier(
+                    avatarId,
+                    "drawable",
+                    context.packageName,
+                )
             if (resourceId != 0) {
                 val bitmap = BitmapFactory.decodeResource(context.resources, resourceId)
                 bitmapToBase64(bitmap) ?: ""

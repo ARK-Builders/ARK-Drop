@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
 enum class ButtonVariant { Primary, Secondary }
+
 enum class ButtonSize { Medium, Large }
 
 @Composable
@@ -25,12 +26,13 @@ fun SendButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     loading: Boolean = false,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
-    val height = when (size) {
-        ButtonSize.Medium -> 44.dp
-        ButtonSize.Large -> 56.dp
-    }
+    val height =
+        when (size) {
+            ButtonSize.Medium -> 44.dp
+            ButtonSize.Large -> 56.dp
+        }
 
     when (variant) {
         ButtonVariant.Primary -> {
@@ -39,21 +41,31 @@ fun SendButton(
                 modifier = modifier.height(height),
                 enabled = enabled && !loading,
                 shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                    disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
-                    disabledContentColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f)
-                ),
-                elevation = ButtonDefaults.buttonElevation(
-                    defaultElevation = 2.dp, pressedElevation = 4.dp, disabledElevation = 0.dp
-                )
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                        disabledContainerColor =
+                            MaterialTheme.colorScheme.primary.copy(
+                                alpha = 0.3f,
+                            ),
+                        disabledContentColor =
+                            MaterialTheme.colorScheme.onPrimary.copy(
+                                alpha = 0.5f,
+                            ),
+                    ),
+                elevation =
+                    ButtonDefaults.buttonElevation(
+                        defaultElevation = 2.dp,
+                        pressedElevation = 4.dp,
+                        disabledElevation = 0.dp,
+                    ),
             ) {
                 if (loading) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(20.dp),
                         color = MaterialTheme.colorScheme.onPrimary,
-                        strokeWidth = 2.dp
+                        strokeWidth = 2.dp,
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                 }
@@ -67,16 +79,17 @@ fun SendButton(
                 modifier = modifier.height(height),
                 enabled = enabled && !loading,
                 shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.filledTonalButtonColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                )
+                colors =
+                    ButtonDefaults.filledTonalButtonColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    ),
             ) {
                 if (loading) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(20.dp),
                         color = MaterialTheme.colorScheme.onSecondaryContainer,
-                        strokeWidth = 2.dp
+                        strokeWidth = 2.dp,
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                 }

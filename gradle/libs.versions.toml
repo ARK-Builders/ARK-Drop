@@ -30,6 +30,7 @@ drop = "17348879247"
 devsrsouzaIcons = "1.1.0"
 coil = "2.5.0"
 koin = "4.1.1"
+ktlintGradlePlugin = "12.2.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -73,10 +74,6 @@ orbit-viewmodel = { module = "org.orbit-mvi:orbit-viewmodel", version.ref = "orb
 
 arkbuilders-drop = { module = "dev.arkbuilders:drop", version.ref = "drop" }
 
-dagger-hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
-androidx-hilt-nav-compose = { module = "androidx.hilt:hilt-navigation-compose", version.ref = "hiltNavCompose" }
-dagger-hilt-compiler = { module = "com.google.dagger:hilt-compiler", version.ref = "hilt" }
-
 simple-icons = { module = "br.com.devsrsouza.compose.icons:simple-icons", version.ref = "devsrsouzaIcons" }
 font-awesome = { module = "br.com.devsrsouza.compose.icons:font-awesome", version.ref = "devsrsouzaIcons" }
 tabler-icons = { module = "br.com.devsrsouza.compose.icons:tabler-icons", version.ref = "devsrsouzaIcons" }
@@ -97,3 +94,4 @@ ksp = { id = "com.google.devtools.ksp", version.ref = "ksp"}
 dagger-hilt = { id = "com.google.dagger.hilt.android", version.ref="hilt" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 triplet-play = { id = "com.github.triplet.play", version.ref = "tripletPlay" }
+ktlint-gradle = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlintGradlePlugin" }

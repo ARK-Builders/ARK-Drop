@@ -13,7 +13,7 @@ interface TransferHistoryItemRepository {
         peerName: String,
         peerAvatar: String?,
         fileCount: Int = 1,
-        status: TransferStatus = TransferStatus.COMPLETED
+        status: TransferStatus = TransferStatus.COMPLETED,
     )
 
     suspend fun addReceivedTransfer(
@@ -22,7 +22,7 @@ interface TransferHistoryItemRepository {
         peerName: String,
         peerAvatar: String?,
         fileCount: Int = 1,
-        status: TransferStatus = TransferStatus.COMPLETED
+        status: TransferStatus = TransferStatus.COMPLETED,
     )
 
     suspend fun deleteHistoryItem(itemId: Long)

@@ -74,10 +74,6 @@ orbit-viewmodel = { module = "org.orbit-mvi:orbit-viewmodel", version.ref = "orb
 
 arkbuilders-drop = { module = "dev.arkbuilders:drop", version.ref = "drop" }
 
-dagger-hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
-androidx-hilt-nav-compose = { module = "androidx.hilt:hilt-navigation-compose", version.ref = "hiltNavCompose" }
-dagger-hilt-compiler = { module = "com.google.dagger:hilt-compiler", version.ref = "hilt" }
-
 simple-icons = { module = "br.com.devsrsouza.compose.icons:simple-icons", version.ref = "devsrsouzaIcons" }
 font-awesome = { module = "br.com.devsrsouza.compose.icons:font-awesome", version.ref = "devsrsouzaIcons" }
 tabler-icons = { module = "br.com.devsrsouza.compose.icons:tabler-icons", version.ref = "devsrsouzaIcons" }

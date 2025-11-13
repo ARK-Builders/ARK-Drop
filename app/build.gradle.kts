@@ -4,7 +4,6 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    //  alias(libs.plugins.dagger.hilt)
     alias(libs.plugins.triplet.play)
     alias(libs.plugins.ksp)
     alias(libs.plugins.ktlint.gradle)
@@ -158,11 +157,6 @@ dependencies {
 
     implementation(libs.orbit.compose)
     implementation(libs.orbit.viewmodel)
-
-    // DAGGER SETUP
-    // implementation(libs.dagger.hilt.android)
-    // implementation(libs.androidx.hilt.nav.compose)
-    // ksp(libs.dagger.hilt.compiler)
 
     // EXTRA ICONS
     implementation(libs.simple.icons)

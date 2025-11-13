@@ -23,7 +23,7 @@ sealed class HomeScreenEffect
 class HomeViewModel(
     private val historyItemRepository: TransferHistoryItemRepository,
     private val profileRepo: ProfileRepo,
-): ViewModel(), ContainerHost<HomeScreenState, HomeScreenEffect>{
+) : ViewModel(), ContainerHost<HomeScreenState, HomeScreenEffect> {
     override val container: Container<HomeScreenState, HomeScreenEffect> =
         container(HomeScreenState(emptyList(), UserProfile.empty()))
 
@@ -47,5 +47,4 @@ class HomeViewModel(
             }
         }
     }
-
 }

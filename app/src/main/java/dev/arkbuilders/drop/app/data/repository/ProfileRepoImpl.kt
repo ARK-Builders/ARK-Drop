@@ -13,7 +13,6 @@ class ProfileRepoImpl(
     private val localDataSource: ProfileLocalDataSource,
     private val context: Context,
 ) : ProfileRepo {
-
     private val _profile = MutableStateFlow(localDataSource.loadProfile())
     override val profile: StateFlow<UserProfile> = _profile.asStateFlow()
 

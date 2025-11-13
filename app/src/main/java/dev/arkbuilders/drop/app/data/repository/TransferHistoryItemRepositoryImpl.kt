@@ -9,8 +9,8 @@ import kotlinx.coroutines.flow.Flow
 import java.time.OffsetDateTime
 
 class TransferHistoryItemRepositoryImpl(
-    private val localSource: TransferHistoryItemLocalDataSource
-): TransferHistoryItemRepository {
+    private val localSource: TransferHistoryItemLocalDataSource,
+) : TransferHistoryItemRepository {
     override val historyItems: Flow<List<TransferHistoryItem>> = localSource.flow()
 
     override suspend fun addSentTransfer(
@@ -21,16 +21,17 @@ class TransferHistoryItemRepositoryImpl(
         fileCount: Int,
         status: TransferStatus,
     ) {
-        val newItem = TransferHistoryItem(
-            fileName = if (fileCount > 1) "$fileName and ${fileCount - 1} more" else fileName,
-            fileSize = fileSize,
-            type = TransferType.SENT,
-            timestamp = OffsetDateTime.now(),
-            status = status,
-            peerName = peerName,
-            peerAvatar = peerAvatar,
-            fileCount = fileCount
-        )
+        val newItem =
+            TransferHistoryItem(
+                fileName = if (fileCount > 1) "$fileName and ${fileCount - 1} more" else fileName,
+                fileSize = fileSize,
+                type = TransferType.SENT,
+                timestamp = OffsetDateTime.now(),
+                status = status,
+                peerName = peerName,
+                peerAvatar = peerAvatar,
+                fileCount = fileCount,
+            )
         localSource.add(newItem)
     }
 
@@ -42,16 +43,17 @@ class TransferHistoryItemRepositoryImpl(
         fileCount: Int,
         status: TransferStatus,
     ) {
-        val newItem = TransferHistoryItem(
-            fileName = if (fileCount > 1) "$fileName and ${fileCount - 1} more" else fileName,
-            fileSize = fileSize,
-            type = TransferType.RECEIVED,
-            timestamp = OffsetDateTime.now(),
-            status = status,
-            peerName = peerName,
-            peerAvatar = peerAvatar,
-            fileCount = fileCount
-        )
+        val newItem =
+            TransferHistoryItem(
+                fileName = if (fileCount > 1) "$fileName and ${fileCount - 1} more" else fileName,
+                fileSize = fileSize,
+                type = TransferType.RECEIVED,
+                timestamp = OffsetDateTime.now(),
+                status = status,
+                peerName = peerName,
+                peerAvatar = peerAvatar,
+                fileCount = fileCount,
+            )
         localSource.add(newItem)
     }
 

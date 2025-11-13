@@ -42,35 +42,40 @@ fun ReceiveManualInputCard(
     inputError: String?,
     onPasteFromClipboard: () -> Unit,
     onSubmit: () -> Unit,
-    onCancel: () -> Unit
+    onCancel: () -> Unit,
 ) {
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(DesignTokens.CornerRadius.xl),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-            contentColor = MaterialTheme.colorScheme.onSurface
-        ),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = DesignTokens.Elevation.lg)
+        colors =
+            CardDefaults.elevatedCardColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.onSurface,
+            ),
+        elevation =
+            CardDefaults.elevatedCardElevation(
+                defaultElevation = DesignTokens.Elevation.lg,
+            ),
     ) {
         Column(
             modifier = Modifier.Companion.padding(DesignTokens.Spacing.xxl),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Box(
-                modifier = Modifier
-                    .size(80.dp)
-                    .background(
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        shape = CircleShape
-                    ),
-                contentAlignment = Alignment.Center
+                modifier =
+                    Modifier
+                        .size(80.dp)
+                        .background(
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            shape = CircleShape,
+                        ),
+                contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     TablerIcons.ArrowForward,
                     contentDescription = null,
                     modifier = Modifier.size(40.dp),
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
             }
 
@@ -80,17 +85,19 @@ fun ReceiveManualInputCard(
                 text = "Enter Transfer Code",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
             )
 
             Spacer(modifier = Modifier.Companion.height(DesignTokens.Spacing.md))
 
             Text(
-                text = "Paste or type the transfer code from the sender in the format: ticket confirmation",
+                text =
+                    "Paste or type the transfer code from the sender in the format:" +
+                        " ticket confirmation",
                 style = MaterialTheme.typography.bodyLarge,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.3
+                lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.3,
             )
 
             Spacer(modifier = Modifier.Companion.height(DesignTokens.Spacing.xl))
@@ -102,60 +109,66 @@ fun ReceiveManualInputCard(
                 placeholder = { Text("ticket confirmation") },
                 modifier = Modifier.fillMaxWidth(),
                 isError = inputError != null,
-                supportingText = inputError?.let { error ->
-                    { Text(error, color = MaterialTheme.colorScheme.error) }
-                },
+                supportingText =
+                    inputError?.let { error ->
+                        { Text(error, color = MaterialTheme.colorScheme.error) }
+                    },
                 trailingIcon = {
                     IconButton(onClick = onPasteFromClipboard) {
                         Icon(
                             TablerIcons.ArrowForward,
                             contentDescription = "Paste",
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = MaterialTheme.colorScheme.primary,
                         )
                     }
                 },
-                keyboardOptions = KeyboardOptions(
-                    imeAction = ImeAction.Done
-                ),
-                keyboardActions = KeyboardActions(
-                    onDone = { onSubmit() }
-                ),
-                shape = RoundedCornerShape(DesignTokens.CornerRadius.lg)
+                keyboardOptions =
+                    KeyboardOptions(
+                        imeAction = ImeAction.Done,
+                    ),
+                keyboardActions =
+                    KeyboardActions(
+                        onDone = { onSubmit() },
+                    ),
+                shape = RoundedCornerShape(DesignTokens.CornerRadius.lg),
             )
 
             Spacer(modifier = Modifier.Companion.height(DesignTokens.Spacing.xl))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.md)
+                horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.md),
             ) {
                 OutlinedButton(
                     onClick = onCancel,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(DesignTokens.TouchTarget.comfortable),
-                    shape = RoundedCornerShape(DesignTokens.CornerRadius.lg)
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .height(DesignTokens.TouchTarget.comfortable),
+                    shape = RoundedCornerShape(DesignTokens.CornerRadius.lg),
                 ) {
                     Text(
                         "Cancel",
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Medium,
                     )
                 }
 
                 Button(
                     onClick = onSubmit,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(DesignTokens.TouchTarget.comfortable),
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .height(DesignTokens.TouchTarget.comfortable),
                     shape = RoundedCornerShape(DesignTokens.CornerRadius.lg),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    ),
-                    enabled = inputText.trim().isNotEmpty()
+                    colors =
+                        ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                        ),
+                    enabled = inputText.trim().isNotEmpty(),
                 ) {
                     Text(
                         "Connect",
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.SemiBold,
                     )
                 }
             }

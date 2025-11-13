@@ -1,10 +1,12 @@
+import com.android.build.gradle.internal.tasks.factory.dependsOn
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
- //   alias(libs.plugins.dagger.hilt)
     alias(libs.plugins.triplet.play)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.ktlint.gradle)
 }
 
 kotlin {
@@ -56,7 +58,7 @@ android {
             signingConfig = signingConfigs.getByName("testRelease")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
 
             // Enable R8 full mode
@@ -79,17 +81,19 @@ android {
     packaging {
         jniLibs.excludes.add("META-INF/AL2.0")
         jniLibs.excludes.add("META-INF/LGPL2.1")
-        resources.excludes.addAll(listOf(
-            "META-INF/DEPENDENCIES",
-            "META-INF/LICENSE",
-            "META-INF/LICENSE.txt",
-            "META-INF/license.txt",
-            "META-INF/NOTICE",
-            "META-INF/NOTICE.txt",
-            "META-INF/notice.txt",
-            "META-INF/ASL2.0",
-            "META-INF/*.kotlin_module"
-        ))
+        resources.excludes.addAll(
+            listOf(
+                "META-INF/DEPENDENCIES",
+                "META-INF/LICENSE",
+                "META-INF/LICENSE.txt",
+                "META-INF/license.txt",
+                "META-INF/NOTICE",
+                "META-INF/NOTICE.txt",
+                "META-INF/notice.txt",
+                "META-INF/ASL2.0",
+                "META-INF/*.kotlin_module",
+            ),
+        )
     }
 
     bundle {
@@ -126,7 +130,7 @@ dependencies {
         }
     }
     //noinspection Aligned16KB
-    implementation("dev.arkbuilders:drop:17348879247") {
+    implementation(libs.arkbuilders.drop) {
         artifact {
             extension = "aar"
             type = "aar"
@@ -154,11 +158,6 @@ dependencies {
     implementation(libs.orbit.compose)
     implementation(libs.orbit.viewmodel)
 
-    // DAGGER SETUP
-    //implementation(libs.dagger.hilt.android)
-    //implementation(libs.androidx.hilt.nav.compose)
-    //ksp(libs.dagger.hilt.compiler)
-
     // EXTRA ICONS
     implementation(libs.simple.icons)
     implementation(libs.font.awesome)
@@ -185,7 +184,9 @@ dependencies {
     implementation(libs.io.koin.test)
 }
 
+tasks.preBuild.dependsOn(tasks.ktlintCheck)
+tasks.ktlintCheck.dependsOn(tasks.ktlintFormat)
+
 tasks.named<Delete>("clean") {
     delete(fileTree("$projectDir/src/main/jniLibs"))
 }
-

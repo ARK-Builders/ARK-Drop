@@ -36,13 +36,15 @@ class ProfileLocalDataSource(
 
     private fun createDefaultProfile(): UserProfile {
         val defaultAvatarId = "avatar_00"
-        val default = UserProfile(
-            name = "Anonymous",
-            avatar = UserAvatar(
-                base64 = avatarHelper.getDefaultAvatarBase64(defaultAvatarId),
-                predefinedId = defaultAvatarId,
+        val default =
+            UserProfile(
+                name = "Anonymous",
+                avatar =
+                    UserAvatar(
+                        base64 = avatarHelper.getDefaultAvatarBase64(defaultAvatarId),
+                        predefinedId = defaultAvatarId,
+                    ),
             )
-        )
         saveProfile(default)
         return default
     }
@@ -60,22 +62,26 @@ class ProfileLocalDataSource(
     }
 }
 
-private fun UserProfileDto.toDomain() = UserProfile(
-    name = name,
-    avatar = avatar.toDomain(),
-)
+private fun UserProfileDto.toDomain() =
+    UserProfile(
+        name = name,
+        avatar = avatar.toDomain(),
+    )
 
-private fun UserProfile.toDto() = UserProfileDto(
-    name = name,
-    avatar = avatar.toDto(),
-)
+private fun UserProfile.toDto() =
+    UserProfileDto(
+        name = name,
+        avatar = avatar.toDto(),
+    )
 
-private fun UserAvatar.toDto() = UserAvatarDto(
-    base64 = base64,
-    predefinedId = predefinedId,
-)
+private fun UserAvatar.toDto() =
+    UserAvatarDto(
+        base64 = base64,
+        predefinedId = predefinedId,
+    )
 
-private fun UserAvatarDto.toDomain() = UserAvatar(
-    base64 = base64,
-    predefinedId = predefinedId,
-)
+private fun UserAvatarDto.toDomain() =
+    UserAvatar(
+        base64 = base64,
+        predefinedId = predefinedId,
+    )

@@ -7,9 +7,9 @@ import dev.arkbuilders.drop.SenderFileData
 import java.io.InputStream
 
 class SenderFileDataImpl(
-    private val context: Context, private val uri: Uri
+    private val context: Context,
+    private val uri: Uri,
 ) : SenderFileData {
-
     companion object {
         private const val TAG = "SenderFileDataImpl"
     }

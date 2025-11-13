@@ -59,7 +59,7 @@ import java.util.Locale
 @Composable
 fun History(
     navController: NavController,
-    transferHistoryItemRepository: TransferHistoryItemRepository
+    transferHistoryItemRepository: TransferHistoryItemRepository,
 ) {
     val viewModel: HistoryViewModel = koinInject()
 
@@ -67,14 +67,15 @@ fun History(
     val state by viewModel.collectAsState()
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(16.dp),
     ) {
         // Top bar
         Row(
             modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = { navController.navigateUp() }) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -83,7 +84,7 @@ fun History(
                 text = "Transfer History",
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
             )
 
             if (state.historyItems.isNotEmpty()) {
@@ -91,7 +92,7 @@ fun History(
                     Icon(
                         TablerIcons.ClearAll,
                         contentDescription = "Clear All",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -104,39 +105,42 @@ fun History(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
+                colors =
+                    CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                    ),
             ) {
                 Column(
                     modifier = Modifier.padding(32.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Icon(
                         TablerIcons.History,
                         contentDescription = null,
                         modifier = Modifier.size(64.dp),
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = MaterialTheme.colorScheme.primary,
                     )
                     Spacer(modifier = Modifier.height(20.dp))
                     Text(
                         text = "No Transfer History",
                         style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        text = "Your sent and received files will appear here with details about each transfer.",
+                        text =
+                            "Your sent and received files will appear" +
+                                " here with details about each transfer.",
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.3
+                        lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.3,
                     )
                 }
             }
         } else {
             // History list
             LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 items(state.historyItems) { item ->
                     HistoryItemCard(
@@ -146,7 +150,7 @@ fun History(
                         onDismissDeleteDialog = viewModel::onDismissDeleteDialog,
                         onDelete = {
                             viewModel.onDelete(item.id)
-                        }
+                        },
                     )
                 }
             }
@@ -161,13 +165,14 @@ fun History(
                 Text(
                     "Clear All History",
                     style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
             },
             text = {
                 Text(
-                    "Are you sure you want to clear all transfer history? This action cannot be undone.",
-                    style = MaterialTheme.typography.bodyLarge
+                    "Are you sure you want to clear all transfer history?" +
+                        " This action cannot be undone.",
+                    style = MaterialTheme.typography.bodyLarge,
                 )
             },
             confirmButton = {
@@ -175,9 +180,10 @@ fun History(
                     onClick = {
                         viewModel.onClear()
                     },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error
-                    )
+                    colors =
+                        ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.error,
+                        ),
                 ) {
                     Text("Clear All", fontWeight = FontWeight.Medium)
                 }
@@ -187,7 +193,7 @@ fun History(
                     Text("Cancel", fontWeight = FontWeight.Medium)
                 }
             },
-            shape = RoundedCornerShape(16.dp)
+            shape = RoundedCornerShape(16.dp),
         )
     }
 }
@@ -198,27 +204,29 @@ private fun HistoryItemCard(
     item: TransferHistoryItem,
     onShowDeleteDialog: () -> Unit,
     onDismissDeleteDialog: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
 ) {
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp)
+        colors =
+            CardDefaults.elevatedCardColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+            ),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp),
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
-            verticalAlignment = Alignment.CenterVertically
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             // Peer avatar
             AvatarImageWithFallback(
                 avatarB64 = item.peerAvatar,
                 fallbackText = item.peerName,
-                size = 48.dp
+                size = 48.dp,
             )
 
             Spacer(modifier = Modifier.width(16.dp))
@@ -227,31 +235,35 @@ private fun HistoryItemCard(
             Column(modifier = Modifier.weight(1f)) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     // Transfer type icon
                     Icon(
-                        imageVector = when (item.type) {
-                            TransferType.SENT -> TablerIcons.FileUpload
-                            TransferType.RECEIVED -> TablerIcons.FileDownload
-                        },
+                        imageVector =
+                            when (item.type) {
+                                TransferType.SENT -> TablerIcons.FileUpload
+                                TransferType.RECEIVED -> TablerIcons.FileDownload
+                            },
                         contentDescription = null,
                         modifier = Modifier.size(20.dp),
-                        tint = when (item.status) {
-                            TransferStatus.COMPLETED -> MaterialTheme.colorScheme.primary
-                            TransferStatus.FAILED -> MaterialTheme.colorScheme.error
-                            TransferStatus.CANCELLED -> MaterialTheme.colorScheme.onSurfaceVariant
-                        }
+                        tint =
+                            when (item.status) {
+                                TransferStatus.COMPLETED -> MaterialTheme.colorScheme.primary
+                                TransferStatus.FAILED -> MaterialTheme.colorScheme.error
+                                TransferStatus.CANCELLED ->
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                            },
                     )
 
                     Text(
-                        text = when (item.type) {
-                            TransferType.SENT -> "Sent to ${item.peerName}"
-                            TransferType.RECEIVED -> "Received from ${item.peerName}"
-                        },
+                        text =
+                            when (item.type) {
+                                TransferType.SENT -> "Sent to ${item.peerName}"
+                                TransferType.RECEIVED -> "Received from ${item.peerName}"
+                            },
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
                 }
 
@@ -263,45 +275,45 @@ private fun HistoryItemCard(
                     fontWeight = FontWeight.Medium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
                         text = formatFileSize(item.fileSize),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
 
                     Text(
                         text = "•",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
 
                     Text(
                         text = formatTimestamp(item.timestamp),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
 
                     if (item.fileCount > 1) {
                         Text(
                             text = "•",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
 
                         Text(
                             text = "${item.fileCount} files",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Medium
+                            fontWeight = FontWeight.Medium,
                         )
                     }
                 }
@@ -310,18 +322,20 @@ private fun HistoryItemCard(
 
                 // Status
                 Text(
-                    text = when (item.status) {
-                        TransferStatus.COMPLETED -> "Completed"
-                        TransferStatus.FAILED -> "Failed"
-                        TransferStatus.CANCELLED -> "Cancelled"
-                    },
+                    text =
+                        when (item.status) {
+                            TransferStatus.COMPLETED -> "Completed"
+                            TransferStatus.FAILED -> "Failed"
+                            TransferStatus.CANCELLED -> "Cancelled"
+                        },
                     style = MaterialTheme.typography.bodySmall,
-                    color = when (item.status) {
-                        TransferStatus.COMPLETED -> MaterialTheme.colorScheme.primary
-                        TransferStatus.FAILED -> MaterialTheme.colorScheme.error
-                        TransferStatus.CANCELLED -> MaterialTheme.colorScheme.onSurfaceVariant
-                    },
-                    fontWeight = FontWeight.Medium
+                    color =
+                        when (item.status) {
+                            TransferStatus.COMPLETED -> MaterialTheme.colorScheme.primary
+                            TransferStatus.FAILED -> MaterialTheme.colorScheme.error
+                            TransferStatus.CANCELLED -> MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                    fontWeight = FontWeight.Medium,
                 )
             }
 
@@ -330,7 +344,7 @@ private fun HistoryItemCard(
                 Icon(
                     Icons.Default.Delete,
                     contentDescription = "Delete",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -344,13 +358,13 @@ private fun HistoryItemCard(
                 Text(
                     "Delete History Item",
                     style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
             },
             text = {
                 Text(
                     "Are you sure you want to delete this transfer from history?",
-                    style = MaterialTheme.typography.bodyLarge
+                    style = MaterialTheme.typography.bodyLarge,
                 )
             },
             confirmButton = {
@@ -358,9 +372,10 @@ private fun HistoryItemCard(
                     onClick = {
                         onDelete()
                     },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error
-                    )
+                    colors =
+                        ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.error,
+                        ),
                 ) {
                     Text("Delete", fontWeight = FontWeight.Medium)
                 }
@@ -370,7 +385,7 @@ private fun HistoryItemCard(
                     Text("Cancel", fontWeight = FontWeight.Medium)
                 }
             },
-            shape = RoundedCornerShape(16.dp)
+            shape = RoundedCornerShape(16.dp),
         )
     }
 }
@@ -394,8 +409,9 @@ private fun formatTimestamp(timestamp: OffsetDateTime): String {
         diff < 3600000 -> "${diff / 60000}m ago"
         diff < 86400000 -> "${diff / 3600000}h ago"
         diff < 604800000 -> "${diff / 86400000}d ago"
-        else -> timestamp.format(
-            DateTimeFormatter.ofPattern("MMM dd", Locale.getDefault())
-        )
+        else ->
+            timestamp.format(
+                DateTimeFormatter.ofPattern("MMM dd", Locale.getDefault()),
+            )
     }
 }

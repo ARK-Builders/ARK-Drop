@@ -6,8 +6,12 @@ import kotlinx.coroutines.flow.StateFlow
 
 interface ProfileRepo {
     val profile: StateFlow<UserProfile>
+
     fun getCurrentProfile() = profile.value
+
     fun updateProfile(profile: UserProfile)
+
     fun updateName(name: String)
+
     fun updateAvatar(avatar: UserAvatar)
 }

@@ -21,43 +21,48 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun SendInstructionsCard() {
     SendCard(
-        backgroundColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+        backgroundColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
     ) {
         Column(
-            modifier = Modifier.padding(20.dp)
+            modifier = Modifier.padding(20.dp),
         ) {
             Text(
-                text = "How to Send Files", style = MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.Bold
-                ), color = MaterialTheme.colorScheme.onSurface
+                text = "How to Send Files",
+                style =
+                    MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                    ),
+                color = MaterialTheme.colorScheme.onSurface,
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            val instructions = listOf(
-                "Select files you want to send",
-                "Tap 'Send Files' to generate QR code",
-                "Let the receiver scan the QR code",
-                "Files transfer automatically"
-            )
+            val instructions =
+                listOf(
+                    "Select files you want to send",
+                    "Tap 'Send Files' to generate QR code",
+                    "Let the receiver scan the QR code",
+                    "Files transfer automatically",
+                )
 
             instructions.forEachIndexed { index, instruction ->
                 Row(
                     verticalAlignment = Alignment.Top,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Surface(
                         modifier = Modifier.size(20.dp),
                         shape = CircleShape,
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Text(
                                 text = "${index + 1}",
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    fontWeight = FontWeight.Bold
-                                ),
-                                color = MaterialTheme.colorScheme.primary
+                                style =
+                                    MaterialTheme.typography.labelSmall.copy(
+                                        fontWeight = FontWeight.Bold,
+                                    ),
+                                color = MaterialTheme.colorScheme.primary,
                             )
                         }
                     }
@@ -66,7 +71,7 @@ fun SendInstructionsCard() {
                         text = instruction,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 2.dp)
+                        modifier = Modifier.padding(top = 2.dp),
                     )
                 }
 

@@ -33,35 +33,40 @@ import dev.arkbuilders.drop.app.presentation.theme.DesignTokens
 @Composable
 fun ReceiveQRCodeScannedCard(
     onAccept: () -> Unit,
-    onScanAgain: () -> Unit
+    onScanAgain: () -> Unit,
 ) {
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(DesignTokens.CornerRadius.xl),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-            contentColor = MaterialTheme.colorScheme.onSurface
-        ),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = DesignTokens.Elevation.lg)
+        colors =
+            CardDefaults.elevatedCardColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.onSurface,
+            ),
+        elevation =
+            CardDefaults.elevatedCardElevation(
+                defaultElevation = DesignTokens.Elevation.lg,
+            ),
     ) {
         Column(
             modifier = Modifier.Companion.padding(DesignTokens.Spacing.xxl),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Box(
-                modifier = Modifier
-                    .size(80.dp)
-                    .background(
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        shape = CircleShape
-                    ),
-                contentAlignment = Alignment.Center
+                modifier =
+                    Modifier
+                        .size(80.dp)
+                        .background(
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            shape = CircleShape,
+                        ),
+                contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     Icons.Default.CheckCircle,
                     contentDescription = null,
                     modifier = Modifier.size(40.dp),
-                    tint = MaterialTheme.colorScheme.primary
+                    tint = MaterialTheme.colorScheme.primary,
                 )
             }
 
@@ -71,7 +76,7 @@ fun ReceiveQRCodeScannedCard(
                 text = "Code Received!",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.primary,
             )
 
             Spacer(modifier = Modifier.Companion.height(DesignTokens.Spacing.md))
@@ -81,41 +86,44 @@ fun ReceiveQRCodeScannedCard(
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
-                lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.2
+                lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.2,
             )
 
             Spacer(modifier = Modifier.Companion.height(DesignTokens.Spacing.xl))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.md)
+                horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.md),
             ) {
                 OutlinedButton(
                     onClick = onScanAgain,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(DesignTokens.TouchTarget.comfortable),
-                    shape = RoundedCornerShape(DesignTokens.CornerRadius.lg)
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .height(DesignTokens.TouchTarget.comfortable),
+                    shape = RoundedCornerShape(DesignTokens.CornerRadius.lg),
                 ) {
                     Text(
                         "Try Again",
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Medium,
                     )
                 }
 
                 Button(
                     onClick = onAccept,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(DesignTokens.TouchTarget.comfortable),
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .height(DesignTokens.TouchTarget.comfortable),
                     shape = RoundedCornerShape(DesignTokens.CornerRadius.lg),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    )
+                    colors =
+                        ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                        ),
                 ) {
                     Text(
                         "Accept",
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.SemiBold,
                     )
                 }
             }

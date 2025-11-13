@@ -51,7 +51,7 @@ sealed class SendScreenState {
         val bytesTransferred: Long = 0L,
         val totalBytes: Long = 0L,
         val transferSpeedBps: Long = 0L,
-        val estimatedTimeRemaining: Long = 0L
+        val estimatedTimeRemaining: Long = 0L,
     ) : SendScreenState()
 
     data class Complete(val files: List<String>) : SendScreenState()
@@ -61,6 +61,7 @@ sealed class SendScreenState {
 
 sealed class SendScreenEffect {
     data object LaunchFilePicker : SendScreenEffect()
+
     data object NavigateBack : SendScreenEffect()
 }
 
@@ -68,116 +69,125 @@ class SendViewModel(
     private val resourcesHelper: ResourcesHelper,
     private val networkStatus: NetworkStatus,
     private val transferManager: TransferManager,
-): ViewModel(), ContainerHost<SendScreenState, SendScreenEffect> {
+) : ViewModel(), ContainerHost<SendScreenState, SendScreenEffect> {
     override val container: Container<SendScreenState, SendScreenEffect> =
         container(SendScreenState.FileSelection())
 
-    fun onAddFiles() = intent {
-        postSideEffect(SendScreenEffect.LaunchFilePicker)
-    }
+    fun onAddFiles() =
+        intent {
+            postSideEffect(SendScreenEffect.LaunchFilePicker)
+        }
 
-    fun onFilesAdded(newFiles: List<String>) = intent {
-        val s = state
-        if (s is SendScreenState.FileSelection) {
-            val validated = resourcesHelper.validateUris(newFiles)
-            val allFiles = s.files + validated.first
-            val canStartTransfer = allFiles.isNotEmpty() && networkStatus.isOnline()
+    fun onFilesAdded(newFiles: List<String>) =
+        intent {
+            val s = state
+            if (s is SendScreenState.FileSelection) {
+                val validated = resourcesHelper.validateUris(newFiles)
+                val allFiles = s.files + validated.first
+                val canStartTransfer = allFiles.isNotEmpty() && networkStatus.isOnline()
 
-            val size = allFiles.sumOf { resourcesHelper.getFileSize(it) }
+                val size = allFiles.sumOf { resourcesHelper.getFileSize(it) }
 
-            reduce {
-                s.copy(files = allFiles, size = size, canStartTransfer = canStartTransfer)
+                reduce {
+                    s.copy(files = allFiles, size = size, canStartTransfer = canStartTransfer)
+                }
             }
         }
-    }
 
-    fun onFileRemove(file: String) = intent {
-        val s = state
-        if (s is SendScreenState.FileSelection) {
-            val newFiles = s.files - file
-            val size = newFiles.sumOf { resourcesHelper.getFileSize(it) }
-            reduce {
-                s.copy(files = newFiles, size = size)
+    fun onFileRemove(file: String) =
+        intent {
+            val s = state
+            if (s is SendScreenState.FileSelection) {
+                val newFiles = s.files - file
+                val size = newFiles.sumOf { resourcesHelper.getFileSize(it) }
+                reduce {
+                    s.copy(files = newFiles, size = size)
+                }
             }
         }
-    }
 
-    fun onStartTransfer() = intent {
-        val s = state
-        if (s !is SendScreenState.FileSelection) {
-            reduce {
-                SendScreenState.Error(Error(""))
+    fun onStartTransfer() =
+        intent {
+            val s = state
+            if (s !is SendScreenState.FileSelection) {
+                reduce {
+                    SendScreenState.Error(Error(""))
+                }
+                return@intent
             }
-            return@intent
-        }
-        val bubble = transferManager.sendFiles(s.files.map { it.toUri() })
-        if (bubble == null) {
-            reduce {
-                SendScreenState.Error(Error(""))
+            val bubble = transferManager.sendFiles(s.files.map { it.toUri() })
+            if (bubble == null) {
+                reduce {
+                    SendScreenState.Error(Error(""))
+                }
+                return@intent
             }
-            return@intent
-        }
-        val ticket = transferManager.getCurrentSendTicket() ?: ""
-        val confirmation = transferManager.getCurrentSendConfirmation() ?: 0u
+            val ticket = transferManager.getCurrentSendTicket() ?: ""
+            val confirmation = transferManager.getCurrentSendConfirmation() ?: 0u
 
-        if (ticket.isEmpty()) {
-            reduce {
-                SendScreenState.Error(Error(""))
+            if (ticket.isEmpty()) {
+                reduce {
+                    SendScreenState.Error(Error(""))
+                }
+                return@intent
             }
-            return@intent
-        }
-        val copyString = "${bubble.getTicket()} ${bubble.getConfirmation()}"
+            val copyString = "${bubble.getTicket()} ${bubble.getConfirmation()}"
 
-        val qrBitmap = generateQRCodeSafely(ticket, confirmation)
-        if (qrBitmap == null) {
-            reduce {
-                SendScreenState.Error(Error(""))
+            val qrBitmap = generateQRCodeSafely(ticket, confirmation)
+            if (qrBitmap == null) {
+                reduce {
+                    SendScreenState.Error(Error(""))
+                }
+                return@intent
             }
-            return@intent
-        }
-        listenToSendProgress()
-        monitorTransferCompletion()
-        reduce {
-            SendScreenState.WaitingForReceiver(
-                files = s.files,
-                qrBitmap = qrBitmap,
-                copyString = copyString,
-            )
-        }
-    }
-
-    fun onCancelTransfer() = intent {
-        transferManager.cancelSend()
-        postSideEffect(SendScreenEffect.NavigateBack)
-    }
-
-    fun onCancelQrGeneration() = intent {
-        reduce {
-            SendScreenState.FileSelection()
-        }
-    }
-
-    fun onComplete() = intent {
-        val s = state
-        if (s is SendScreenState.Transfer) {
-            transferManager.recordSendCompletion(s.files.map { it.toUri() })
+            listenToSendProgress()
+            monitorTransferCompletion()
             reduce {
-                SendScreenState.Complete(files = s.files)
+                SendScreenState.WaitingForReceiver(
+                    files = s.files,
+                    qrBitmap = qrBitmap,
+                    copyString = copyString,
+                )
             }
         }
-    }
 
-    fun onDone() = intent {
-        transferManager.cancelSend()
-        postSideEffect(SendScreenEffect.NavigateBack)
-    }
-
-    fun onSendMore() = intent {
-        transferManager.cancelSend()
-        reduce {
-            SendScreenState.FileSelection()
+    fun onCancelTransfer() =
+        intent {
+            transferManager.cancelSend()
+            postSideEffect(SendScreenEffect.NavigateBack)
         }
-    }
+
+    fun onCancelQrGeneration() =
+        intent {
+            reduce {
+                SendScreenState.FileSelection()
+            }
+        }
+
+    fun onComplete() =
+        intent {
+            val s = state
+            if (s is SendScreenState.Transfer) {
+                transferManager.recordSendCompletion(s.files.map { it.toUri() })
+                reduce {
+                    SendScreenState.Complete(files = s.files)
+                }
+            }
+        }
+
+    fun onDone() =
+        intent {
+            transferManager.cancelSend()
+            postSideEffect(SendScreenEffect.NavigateBack)
+        }
+
+    fun onSendMore() =
+        intent {
+            transferManager.cancelSend()
+            reduce {
+                SendScreenState.FileSelection()
+            }
+        }
 
     private fun listenToSendProgress() {
         transferManager.sendProgress!!.onEach { progress ->
@@ -186,23 +196,25 @@ class SendViewModel(
                     return@intent
 
                 val s = state
-                val files = when (s) {
-                    is SendScreenState.Transfer -> s.files
-                    is SendScreenState.WaitingForReceiver -> s.files
-                    else -> return@intent
-                }
+                val files =
+                    when (s) {
+                        is SendScreenState.Transfer -> s.files
+                        is SendScreenState.WaitingForReceiver -> s.files
+                        else -> return@intent
+                    }
 
-                val transfer = SendScreenState.Transfer(
-                    files = files,
-                    isConnected = progress.isConnected,
-                    receiverName = progress.receiverName,
-                    receiverAvatar = progress.receiverAvatar,
-                    currentFileName = progress.fileName,
-                    bytesTransferred = progress.sent.toLong(),
-                    totalBytes = (progress.sent + progress.remaining).toLong(),
-                    transferSpeedBps = 0L,
-                    estimatedTimeRemaining = 0L,
-                )
+                val transfer =
+                    SendScreenState.Transfer(
+                        files = files,
+                        isConnected = progress.isConnected,
+                        receiverName = progress.receiverName,
+                        receiverAvatar = progress.receiverAvatar,
+                        currentFileName = progress.fileName,
+                        bytesTransferred = progress.sent.toLong(),
+                        totalBytes = (progress.sent + progress.remaining).toLong(),
+                        transferSpeedBps = 0L,
+                        estimatedTimeRemaining = 0L,
+                    )
 
                 reduce {
                     transfer
@@ -213,18 +225,21 @@ class SendViewModel(
 
     private fun monitorTransferCompletion() {
         viewModelScope.launch {
-           while (coroutineContext.isActive) {
-               val isFinished = transferManager.isSendFinished()
-               if (isFinished) {
-                   onComplete()
-                   break
-               }
-               delay(500)
-           }
+            while (coroutineContext.isActive) {
+                val isFinished = transferManager.isSendFinished()
+                if (isFinished) {
+                    onComplete()
+                    break
+                }
+                delay(500)
+            }
         }
     }
 
-    private fun generateQRCodeSafely(ticket: String, confirmation: UByte): Bitmap? {
+    private fun generateQRCodeSafely(
+        ticket: String,
+        confirmation: UByte,
+    ): Bitmap? {
         val writer = QRCodeWriter()
         try {
             if (ticket.isEmpty()) {
@@ -239,20 +254,21 @@ class SendViewModel(
 
             for (x in 0 until width) {
                 for (y in 0 until height) {
-                    bitmap[x, y] = if (bitMatrix[x, y]) {
-                        Color.BLACK
-                    } else {
-                        Color.WHITE
-                    }
+                    bitmap[x, y] =
+                        if (bitMatrix[x, y]) {
+                            Color.BLACK
+                        } else {
+                            Color.WHITE
+                        }
                 }
             }
             return bitmap
         } catch (e: WriterException) {
             // TODO
- //           throw RuntimeException("QR code generation failed: ${e.message}", e)
+            //           throw RuntimeException("QR code generation failed: ${e.message}", e)
             return null
         } catch (e: Exception) {
- //           throw RuntimeException("Unexpected error during QR code generation: ${e.message}", e)
+            //           throw RuntimeException("Unexpected error during QR code generation: ${e.message}", e)
             return null
         }
     }

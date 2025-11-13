@@ -27,39 +27,51 @@ import dev.arkbuilders.drop.app.presentation.send.SendException
 
 @Composable
 fun SendErrorOverlay(
-    error: SendException, onDismiss: () -> Unit, onAction: (String) -> Unit
+    error: SendException,
+    onDismiss: () -> Unit,
+    onAction: (String) -> Unit,
 ) {
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.5f))
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() }, indication = null
-            ) { onDismiss() }, contentAlignment = Alignment.Center
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.5f))
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                ) { onDismiss() },
+        contentAlignment = Alignment.Center,
     ) {
         SendCard(
-            modifier = Modifier
-                .padding(20.dp)
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() }, indication = null
-                ) { /* Prevent dismiss on card click */ }) {
+            modifier =
+                Modifier
+                    .padding(20.dp)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                    ) { /* Prevent dismiss on card click */ },
+        ) {
             Column(
                 modifier = Modifier.padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Icon(
                     imageVector = error.icon,
                     contentDescription = null,
                     modifier = Modifier.size(48.dp),
-                    tint = MaterialTheme.colorScheme.error
+                    tint = MaterialTheme.colorScheme.error,
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
-                    text = error.title, style = MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.Bold
-                    ), color = MaterialTheme.colorScheme.onSurface, textAlign = TextAlign.Center
+                    text = error.title,
+                    style =
+                        MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                        ),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center,
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -68,22 +80,23 @@ fun SendErrorOverlay(
                     text = error.message,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
                 )
 
                 Spacer(modifier = Modifier.height(20.dp))
 
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     if (error.isRecoverable && error.actionLabel != null) {
                         SendButton(
                             onClick = { onAction(error.actionLabel) },
                             variant = ButtonVariant.Primary,
-                            size = ButtonSize.Medium
+                            size = ButtonSize.Medium,
                         ) {
                             Text(
-                                error.actionLabel, fontWeight = FontWeight.Medium
+                                error.actionLabel,
+                                fontWeight = FontWeight.Medium,
                             )
                         }
                     }
@@ -91,10 +104,11 @@ fun SendErrorOverlay(
                     SendButton(
                         onClick = onDismiss,
                         variant = ButtonVariant.Secondary,
-                        size = ButtonSize.Medium
+                        size = ButtonSize.Medium,
                     ) {
                         Text(
-                            "Dismiss", fontWeight = FontWeight.Medium
+                            "Dismiss",
+                            fontWeight = FontWeight.Medium,
                         )
                     }
                 }

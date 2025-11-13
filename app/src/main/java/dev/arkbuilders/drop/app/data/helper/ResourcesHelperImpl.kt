@@ -18,7 +18,9 @@ class ResourcesHelperImpl(
                     if (cursor.moveToFirst()) {
                         val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
                         if (nameIndex >= 0) cursor.getString(nameIndex) else null
-                    } else null
+                    } else {
+                        null
+                    }
                 }
         } catch (e: Exception) {
             Timber.Forest.e(e, "Error getting filename for URI: $uri")
@@ -52,11 +54,12 @@ class ResourcesHelperImpl(
                 if (cursor.moveToFirst()) {
                     val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
                     if (sizeIndex >= 0) cursor.getLong(sizeIndex) else 0L
-                } else 0L
+                } else {
+                    0L
+                }
             } ?: 0L
         } catch (e: Exception) {
             0L
         }
     }
-
 }

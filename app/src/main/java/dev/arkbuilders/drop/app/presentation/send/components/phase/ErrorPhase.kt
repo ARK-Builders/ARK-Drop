@@ -26,19 +26,23 @@ import dev.arkbuilders.drop.app.presentation.send.components.SendCard
 
 @Composable
 private fun ErrorPhase(
-    error: SendException?, onRetry: () -> Unit, onCancel: () -> Unit
+    error: SendException?,
+    onRetry: () -> Unit,
+    onCancel: () -> Unit,
 ) {
     Box(
-        modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center,
     ) {
         Column(
             modifier = Modifier.padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+            verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
             error?.let { err ->
                 SendErrorCard(
-                    error = err, onAction = if (err.isRecoverable) onRetry else null
+                    error = err,
+                    onAction = if (err.isRecoverable) onRetry else null,
                 )
             }
 
@@ -46,12 +50,14 @@ private fun ErrorPhase(
                 onClick = onCancel,
                 variant = ButtonVariant.Secondary,
                 size = ButtonSize.Large,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 Text(
-                    "Cancel", style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Medium
-                    )
+                    "Cancel",
+                    style =
+                        MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Medium,
+                        ),
                 )
             }
         }
@@ -60,27 +66,33 @@ private fun ErrorPhase(
 
 @Composable
 private fun SendErrorCard(
-    error: SendException, onAction: (() -> Unit)? = null
+    error: SendException,
+    onAction: (() -> Unit)? = null,
 ) {
     SendCard(
-        backgroundColor = MaterialTheme.colorScheme.errorContainer
+        backgroundColor = MaterialTheme.colorScheme.errorContainer,
     ) {
         Column(
-            modifier = Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally
+            modifier = Modifier.padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Icon(
                 imageVector = error.icon,
                 contentDescription = null,
                 modifier = Modifier.size(48.dp),
-                tint = MaterialTheme.colorScheme.error
+                tint = MaterialTheme.colorScheme.error,
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = error.title, style = MaterialTheme.typography.titleLarge.copy(
-                    fontWeight = FontWeight.Bold
-                ), color = MaterialTheme.colorScheme.onErrorContainer, textAlign = TextAlign.Center
+                text = error.title,
+                style =
+                    MaterialTheme.typography.titleLarge.copy(
+                        fontWeight = FontWeight.Bold,
+                    ),
+                color = MaterialTheme.colorScheme.onErrorContainer,
+                textAlign = TextAlign.Center,
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -89,17 +101,20 @@ private fun SendErrorCard(
                 text = error.message,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f),
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
             )
 
             if (onAction != null && error.actionLabel != null) {
                 Spacer(modifier = Modifier.height(20.dp))
 
                 SendButton(
-                    onClick = onAction, variant = ButtonVariant.Primary, size = ButtonSize.Medium
+                    onClick = onAction,
+                    variant = ButtonVariant.Primary,
+                    size = ButtonSize.Medium,
                 ) {
                     Text(
-                        error.actionLabel, fontWeight = FontWeight.Medium
+                        error.actionLabel,
+                        fontWeight = FontWeight.Medium,
                     )
                 }
             }

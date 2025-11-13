@@ -37,35 +37,40 @@ import dev.arkbuilders.drop.app.presentation.theme.DesignTokens
 fun ReceiveCompleteCard(
     receivedFiles: List<String>,
     onReceiveMore: () -> Unit,
-    onDone: () -> Unit
+    onDone: () -> Unit,
 ) {
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(DesignTokens.CornerRadius.lg),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-            contentColor = MaterialTheme.colorScheme.onTertiaryContainer
-        ),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = DesignTokens.Elevation.lg)
+        colors =
+            CardDefaults.elevatedCardColors(
+                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+            ),
+        elevation =
+            CardDefaults.elevatedCardElevation(
+                defaultElevation = DesignTokens.Elevation.lg,
+            ),
     ) {
         Column(
             modifier = Modifier.Companion.padding(DesignTokens.Spacing.xl),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Box(
-                modifier = Modifier
-                    .size(80.dp)
-                    .background(
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                        shape = CircleShape
-                    ),
-                contentAlignment = Alignment.Center
+                modifier =
+                    Modifier
+                        .size(80.dp)
+                        .background(
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                            shape = CircleShape,
+                        ),
+                contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     Icons.Default.CheckCircle,
                     contentDescription = "Complete",
                     modifier = Modifier.size(48.dp),
-                    tint = MaterialTheme.colorScheme.primary
+                    tint = MaterialTheme.colorScheme.primary,
                 )
             }
 
@@ -75,35 +80,38 @@ fun ReceiveCompleteCard(
                 text = "Files Received Successfully!",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
             )
 
             Spacer(modifier = Modifier.Companion.height(DesignTokens.Spacing.sm))
 
             Text(
-                text = "${receivedFiles.size} file${if (receivedFiles.size != 1) "s" else ""} saved to Downloads",
+                text = "${receivedFiles.size} file${
+                    if (receivedFiles.size != 1) "s" else ""
+                } saved to Downloads",
                 style = MaterialTheme.typography.bodyLarge,
                 textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.8f)
+                color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.8f),
             )
 
             if (receivedFiles.isNotEmpty()) {
                 Spacer(modifier = Modifier.Companion.height(DesignTokens.Spacing.lg))
                 Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        contentColor = MaterialTheme.colorScheme.onSurface
-                    ),
-                    shape = RoundedCornerShape(DesignTokens.CornerRadius.md)
+                    colors =
+                        CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            contentColor = MaterialTheme.colorScheme.onSurface,
+                        ),
+                    shape = RoundedCornerShape(DesignTokens.CornerRadius.md),
                 ) {
                     Column(
-                        modifier = Modifier.Companion.padding(DesignTokens.Spacing.lg)
+                        modifier = Modifier.Companion.padding(DesignTokens.Spacing.lg),
                     ) {
                         Text(
                             text = "Received Files:",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = MaterialTheme.colorScheme.onSurface,
                         )
                         Spacer(modifier = Modifier.Companion.height(DesignTokens.Spacing.sm))
 
@@ -114,7 +122,7 @@ fun ReceiveCompleteCard(
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                                 maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
+                                overflow = TextOverflow.Ellipsis,
                             )
                         }
                         if (receivedFiles.size > 3) {
@@ -122,7 +130,7 @@ fun ReceiveCompleteCard(
                                 text = "• ... and ${receivedFiles.size - 3} more",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                                fontWeight = FontWeight.Medium
+                                fontWeight = FontWeight.Medium,
                             )
                         }
                     }
@@ -133,19 +141,20 @@ fun ReceiveCompleteCard(
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.md)
+                horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.md),
             ) {
                 OutlinedButton(
                     onClick = onReceiveMore,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(DesignTokens.TouchTarget.comfortable),
-                    shape = RoundedCornerShape(DesignTokens.CornerRadius.md)
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .height(DesignTokens.TouchTarget.comfortable),
+                    shape = RoundedCornerShape(DesignTokens.CornerRadius.md),
                 ) {
                     Icon(
                         Icons.Default.Refresh,
                         contentDescription = null,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(18.dp),
                     )
                     Spacer(modifier = Modifier.Companion.width(DesignTokens.Spacing.sm))
                     Text("Receive More", fontWeight = FontWeight.Medium)
@@ -153,10 +162,11 @@ fun ReceiveCompleteCard(
 
                 Button(
                     onClick = onDone,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(DesignTokens.TouchTarget.comfortable),
-                    shape = RoundedCornerShape(DesignTokens.CornerRadius.md)
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .height(DesignTokens.TouchTarget.comfortable),
+                    shape = RoundedCornerShape(DesignTokens.CornerRadius.md),
                 ) {
                     Text("Done", fontWeight = FontWeight.Medium)
                 }

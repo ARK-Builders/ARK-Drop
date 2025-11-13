@@ -21,24 +21,25 @@ import dev.arkbuilders.drop.app.domain.usecase.ReceiveFilesUseCase
 import dev.arkbuilders.drop.app.domain.usecase.SendFilesUseCase
 import org.koin.dsl.module
 
-val appModule = module {
-    single<ProfileRepo> { ProfileRepoImpl(get(), get()) }
-    single<TransferManager> { TransferManager(get(), get(), get()) }
-    single<ResourcesHelper> { ResourcesHelperImpl(get()) }
-    single<Database> { Database.build(get()) }
-    single<TransferHistoryItemRepository> { TransferHistoryItemRepositoryImpl(get()) }
-    single<PermissionsHelper> { PermissionsHelperImpl(get()) }
-    single<NetworkStatus> { NetworkStatusImpl(get()) }
-    single<AvatarHelper> { AvatarHelperImpl(get()) }
-    single{ ProfileLocalDataSource(get(), get()) }
-    single{ TransferHistoryItemLocalDataSource(get()) }
-    factory<TransferHistoryItemDao> {
-        val db: Database = get()
-        db.transferHistoryDao()
+val appModule =
+    module {
+        single<ProfileRepo> { ProfileRepoImpl(get(), get()) }
+        single<TransferManager> { TransferManager(get(), get(), get()) }
+        single<ResourcesHelper> { ResourcesHelperImpl(get()) }
+        single<Database> { Database.build(get()) }
+        single<TransferHistoryItemRepository> { TransferHistoryItemRepositoryImpl(get()) }
+        single<PermissionsHelper> { PermissionsHelperImpl(get()) }
+        single<NetworkStatus> { NetworkStatusImpl(get()) }
+        single<AvatarHelper> { AvatarHelperImpl(get()) }
+        single { ProfileLocalDataSource(get(), get()) }
+        single { TransferHistoryItemLocalDataSource(get()) }
+        factory<TransferHistoryItemDao> {
+            val db: Database = get()
+            db.transferHistoryDao()
+        }
+        factory<SendFilesUseCase> { SendFilesUseCase(get(), get(), get()) }
+        factory<ReceiveFilesUseCase> { ReceiveFilesUseCase(get(), get(), get()) }
     }
-    factory<SendFilesUseCase> { SendFilesUseCase(get(), get(), get()) }
-    factory<ReceiveFilesUseCase> { ReceiveFilesUseCase(get(), get(), get()) }
-}
 
 /*@Module
 @InstallIn(SingletonComponent::class)

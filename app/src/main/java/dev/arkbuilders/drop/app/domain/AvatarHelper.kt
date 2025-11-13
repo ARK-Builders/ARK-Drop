@@ -1,10 +1,8 @@
 package dev.arkbuilders.drop.app.domain
 
-import android.content.Context
-import android.net.Uri
-
 interface AvatarHelper {
     fun uriToBase64(uri: String): String?
+
     fun getDefaultAvatarBase64(avatarId: String): String
 
     companion object {

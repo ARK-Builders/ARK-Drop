@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -41,7 +42,8 @@ class MainActivity : ComponentActivity() {
                 Scaffold(
                     modifier =
                         Modifier
-                            .fillMaxSize(),
+                            .fillMaxSize()
+                            .safeDrawingPadding(),
                 ) { innerPadding ->
                     DropNavigation(
                         modifier =

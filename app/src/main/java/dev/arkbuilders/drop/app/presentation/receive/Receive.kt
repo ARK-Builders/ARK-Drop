@@ -155,8 +155,7 @@ fun Receive(navController: NavController) {
     Column(
         modifier =
             Modifier
-                .fillMaxSize()
-                .padding(DesignTokens.Spacing.lg),
+                .fillMaxSize(),
     ) {
         DropTopBarBack(
             title = "Receive files",
@@ -370,6 +369,7 @@ fun Receive(navController: NavController) {
             Spacer(modifier = Modifier.weight(1f))
 
             Card(
+                modifier = Modifier.padding(16.dp),
                 colors =
                     CardDefaults.cardColors(
                         containerColor =

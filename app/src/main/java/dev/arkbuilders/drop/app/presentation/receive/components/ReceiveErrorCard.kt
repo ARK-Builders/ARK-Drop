@@ -40,7 +40,7 @@ fun ReceiveErrorCard(
     onDismiss: () -> Unit,
 ) {
     ElevatedCard(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().padding(16.dp),
         shape = RoundedCornerShape(DesignTokens.CornerRadius.lg),
         colors =
             CardDefaults.elevatedCardColors(

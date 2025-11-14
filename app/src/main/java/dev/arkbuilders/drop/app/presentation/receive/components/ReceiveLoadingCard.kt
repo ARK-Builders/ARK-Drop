@@ -23,7 +23,7 @@ import dev.arkbuilders.drop.app.presentation.theme.DesignTokens
 @Composable
 fun ReceiveLoadingCard(message: String) {
     ElevatedCard(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().padding(16.dp),
         shape = RoundedCornerShape(DesignTokens.CornerRadius.lg),
         colors =
             CardDefaults.elevatedCardColors(

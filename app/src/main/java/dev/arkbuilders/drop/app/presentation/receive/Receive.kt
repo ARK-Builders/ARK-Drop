@@ -26,7 +26,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -34,7 +33,6 @@ import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -50,13 +48,12 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import dev.arkbuilders.drop.app.R
+import dev.arkbuilders.drop.app.presentation.components.DropTopBarBack
 import dev.arkbuilders.drop.app.presentation.receive.components.ReceiveCompleteCard
 import dev.arkbuilders.drop.app.presentation.receive.components.ReceiveErrorCard
 import dev.arkbuilders.drop.app.presentation.receive.components.ReceiveLoadingCard
@@ -161,48 +158,10 @@ fun Receive(navController: NavController) {
                 .fillMaxSize()
                 .padding(DesignTokens.Spacing.lg),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Surface(
-                onClick = { navController.navigateUp() },
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
-                modifier = Modifier.Companion.size(DesignTokens.TouchTarget.minimum),
-            ) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier.fillMaxSize(),
-                ) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(20.dp),
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.Companion.width(DesignTokens.Spacing.md))
-
-            Icon(
-                modifier = Modifier.size(32.dp),
-                painter = painterResource(R.drawable.ic_logo),
-                contentDescription = null,
-                tint = Color.Unspecified,
-            )
-
-            Spacer(modifier = Modifier.Companion.width(DesignTokens.Spacing.md))
-
-            Text(
-                text = "Receive Files",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.weight(1f),
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-        }
+        DropTopBarBack(
+            title = "Receive files",
+            onBackClick = { navController.navigateUp() },
+        )
 
         Spacer(modifier = Modifier.Companion.height(DesignTokens.Spacing.xl))
 

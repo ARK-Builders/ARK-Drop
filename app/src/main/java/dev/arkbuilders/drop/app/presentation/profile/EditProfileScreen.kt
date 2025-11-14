@@ -34,7 +34,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Edit
@@ -50,8 +49,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -88,6 +85,7 @@ import dev.arkbuilders.drop.app.presentation.components.DropCard
 import dev.arkbuilders.drop.app.presentation.components.DropCardContent
 import dev.arkbuilders.drop.app.presentation.components.DropCardSize
 import dev.arkbuilders.drop.app.presentation.components.DropCardVariant
+import dev.arkbuilders.drop.app.presentation.components.DropTopBarBack
 import dev.arkbuilders.drop.app.presentation.components.ErrorState
 import dev.arkbuilders.drop.app.presentation.components.ErrorStateDisplay
 import dev.arkbuilders.drop.app.presentation.components.ErrorType
@@ -135,34 +133,12 @@ fun EditProfileEnhanced(navController: NavController) {
                 .windowInsetsPadding(WindowInsets.ime)
                 .verticalScroll(rememberScrollState()),
     ) {
-        // Enhanced Top App Bar
-        TopAppBar(
-            title = {
-                Text(
-                    text = "Edit Profile",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.SemiBold,
-                )
-            },
-            navigationIcon = {
-                IconButton(
-                    onClick = {
-                        navController.navigateUp()
-                    },
-                    modifier =
-                        Modifier.semantics {
-                            contentDescription = "Go back to previous screen"
-                        },
-                ) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = null,
-                        tint = colorScheme.onSurface,
-                    )
-                }
-            },
-            actions = {
+        DropTopBarBack(
+            title = "Edit Profile",
+            onBackClick = { navController.navigateUp() },
+            trailingContent = {
                 AnimatedVisibility(
+                    modifier = Modifier.padding(end = DesignTokens.Spacing.lg),
                     visible = state.hasChanges,
                     enter = scaleIn(spring(stiffness = Spring.StiffnessHigh)) + fadeIn(),
                     exit = scaleOut(spring(stiffness = Spring.StiffnessHigh)) + fadeOut(),
@@ -181,11 +157,6 @@ fun EditProfileEnhanced(navController: NavController) {
                     }
                 }
             },
-            colors =
-                TopAppBarDefaults.topAppBarColors(
-                    containerColor = colorScheme.surface,
-                    titleContentColor = colorScheme.onSurface,
-                ),
         )
 
         AnimatedVisibility(

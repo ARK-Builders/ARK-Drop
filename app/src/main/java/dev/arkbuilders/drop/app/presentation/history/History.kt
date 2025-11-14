@@ -14,7 +14,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -48,6 +47,7 @@ import dev.arkbuilders.drop.app.domain.model.TransferStatus
 import dev.arkbuilders.drop.app.domain.model.TransferType
 import dev.arkbuilders.drop.app.domain.repository.TransferHistoryItemRepository
 import dev.arkbuilders.drop.app.presentation.components.AvatarImageWithFallback
+import dev.arkbuilders.drop.app.presentation.components.DropTopBarBack
 import org.koin.compose.koinInject
 import org.orbitmvi.orbit.compose.collectAsState
 import java.time.Duration
@@ -72,22 +72,10 @@ fun History(
                 .fillMaxSize()
                 .padding(16.dp),
     ) {
-        // Top bar
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            IconButton(onClick = { navController.navigateUp() }) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-            }
-            Text(
-                text = "Transfer History",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.weight(1f),
-            )
-
-            if (state.historyItems.isNotEmpty()) {
+        DropTopBarBack(
+            title = "Transfer history",
+            onBackClick = { navController.navigateUp() },
+            trailingContent = {
                 IconButton(onClick = { viewModel.onShowClearDialog() }) {
                     Icon(
                         TablerIcons.ClearAll,
@@ -95,8 +83,8 @@ fun History(
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-            }
-        }
+            },
+        )
 
         Spacer(modifier = Modifier.height(16.dp))
 

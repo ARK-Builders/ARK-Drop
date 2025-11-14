@@ -6,8 +6,6 @@ import android.content.Context
 import android.graphics.Bitmap
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,22 +23,17 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -50,29 +43,23 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import compose.icons.TablerIcons
 import compose.icons.tablericons.AlertCircle
-import compose.icons.tablericons.CloudUpload
 import compose.icons.tablericons.Copy
 import compose.icons.tablericons.Qrcode
-import dev.arkbuilders.drop.app.R
 import dev.arkbuilders.drop.app.data.repository.TransferManager
+import dev.arkbuilders.drop.app.presentation.components.DropTopBarBack
 import dev.arkbuilders.drop.app.presentation.send.components.ButtonSize
 import dev.arkbuilders.drop.app.presentation.send.components.ButtonVariant
 import dev.arkbuilders.drop.app.presentation.send.components.SendButton
@@ -207,11 +194,9 @@ fun Send(
                 .windowInsetsPadding(WindowInsets.navigationBars)
                 .windowInsetsPadding(WindowInsets.ime),
         topBar = {
-            SendTopBar(
-                onBackClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    navController.navigateUp()
-                },
+            DropTopBarBack(
+                title = "Send files",
+                onBackClick = { navController.navigateUp() },
             )
         },
         containerColor = MaterialTheme.colorScheme.background,
@@ -306,90 +291,6 @@ fun Send(
             }
         }
     }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun SendTopBar(onBackClick: () -> Unit) {
-    TopAppBar(
-        title = {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Icon(
-                    modifier = Modifier.size(24.dp),
-                    painter = painterResource(R.drawable.ic_logo),
-                    contentDescription = null,
-                    tint = Color.Unspecified,
-                )
-                Text(
-                    text = "Send Files",
-                    style =
-                        MaterialTheme.typography.headlineSmall.copy(
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 20.sp,
-                        ),
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-            }
-        },
-        navigationIcon = {
-            IconButton(
-                onClick = onBackClick,
-                modifier =
-                    Modifier
-                        .size(44.dp)
-                        .clip(CircleShape)
-                        .semantics { contentDescription = "Go back" },
-            ) {
-                Icon(
-                    Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.size(24.dp),
-                )
-            }
-        },
-        actions = {
-            // Network status indicator
-//            NetworkStatusIndicator(
-//                connected = networkConnected, modifier = Modifier.padding(end = 8.dp)
-//            )
-        },
-        colors =
-            TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
-                titleContentColor = MaterialTheme.colorScheme.onSurface,
-            ),
-    )
-}
-
-@Composable
-private fun NetworkStatusIndicator(
-    connected: Boolean,
-    modifier: Modifier = Modifier,
-) {
-    val alpha by animateFloatAsState(
-        targetValue = if (connected) 0.7f else 1f,
-        animationSpec = tween(300),
-        label = "networkAlpha",
-    )
-
-    Icon(
-        imageVector = if (connected) TablerIcons.CloudUpload else Icons.Default.Warning,
-        contentDescription = if (connected) "Network connected" else "Network disconnected",
-        modifier =
-            modifier
-                .size(20.dp)
-                .alpha(alpha),
-        tint =
-            if (connected) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                MaterialTheme.colorScheme.error
-            },
-    )
 }
 
 private fun copyToClipboard(

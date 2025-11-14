@@ -45,7 +45,7 @@ fun ReceiveManualInputCard(
     onCancel: () -> Unit,
 ) {
     ElevatedCard(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().padding(16.dp),
         shape = RoundedCornerShape(DesignTokens.CornerRadius.xl),
         colors =
             CardDefaults.elevatedCardColors(

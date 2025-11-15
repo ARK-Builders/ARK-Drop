@@ -11,8 +11,9 @@ import com.google.zxing.BarcodeFormat
 import com.google.zxing.WriterException
 import com.google.zxing.common.BitMatrix
 import com.google.zxing.qrcode.QRCodeWriter
-import dev.arkbuilders.drop.app.data.repository.TransferManager
+import dev.arkbuilders.drop.app.data.repository.SendSessionRepo
 import dev.arkbuilders.drop.app.domain.ResourcesHelper
+import dev.arkbuilders.drop.app.domain.model.SendSession
 import dev.arkbuilders.drop.app.domain.repository.NetworkStatus
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.launchIn
@@ -35,12 +36,14 @@ sealed class SendScreenState {
     ) : SendScreenState()
 
     data class WaitingForReceiver(
+        val session: SendSession,
         val files: List<String>,
         val qrBitmap: Bitmap,
         val copyString: String,
     ) : SendScreenState()
 
     data class Transfer(
+        val session: SendSession,
         val files: List<String>,
         val isConnected: Boolean = false,
         val receiverName: String = "",
@@ -54,7 +57,10 @@ sealed class SendScreenState {
         val estimatedTimeRemaining: Long = 0L,
     ) : SendScreenState()
 
-    data class Complete(val files: List<String>) : SendScreenState()
+    data class Complete(
+        val session: SendSession,
+        val files: List<String>,
+    ) : SendScreenState()
 
     data class Error(val error: Throwable) : SendScreenState()
 }
@@ -68,7 +74,7 @@ sealed class SendScreenEffect {
 class SendViewModel(
     private val resourcesHelper: ResourcesHelper,
     private val networkStatus: NetworkStatus,
-    private val transferManager: TransferManager,
+    private val sendSessionRepo: SendSessionRepo,
 ) : ViewModel(), ContainerHost<SendScreenState, SendScreenEffect> {
     override val container: Container<SendScreenState, SendScreenEffect> =
         container(SendScreenState.FileSelection())
@@ -115,15 +121,15 @@ class SendViewModel(
                 }
                 return@intent
             }
-            val bubble = transferManager.sendFiles(s.files.map { it.toUri() })
-            if (bubble == null) {
+            val session = sendSessionRepo.sendFiles(s.files.map { it.toUri() })
+            if (session == null) {
                 reduce {
                     SendScreenState.Error(Error(""))
                 }
                 return@intent
             }
-            val ticket = transferManager.getCurrentSendTicket() ?: ""
-            val confirmation = transferManager.getCurrentSendConfirmation() ?: 0u
+            val ticket = session.bubble.getTicket()
+            val confirmation = session.bubble.getConfirmation()
 
             if (ticket.isEmpty()) {
                 reduce {
@@ -131,7 +137,7 @@ class SendViewModel(
                 }
                 return@intent
             }
-            val copyString = "${bubble.getTicket()} ${bubble.getConfirmation()}"
+            val copyString = "${session.bubble.getTicket()} ${session.bubble.getConfirmation()}"
 
             val qrBitmap = generateQRCodeSafely(ticket, confirmation)
             if (qrBitmap == null) {
@@ -140,10 +146,11 @@ class SendViewModel(
                 }
                 return@intent
             }
-            listenToSendProgress()
-            monitorTransferCompletion()
+            listenToSendProgress(session)
+            monitorTransferCompletion(session)
             reduce {
                 SendScreenState.WaitingForReceiver(
+                    session = session,
                     files = s.files,
                     qrBitmap = qrBitmap,
                     copyString = copyString,
@@ -153,7 +160,14 @@ class SendViewModel(
 
     fun onCancelTransfer() =
         intent {
-            transferManager.cancelSend()
+            val s = state
+            val session =
+                when (s) {
+                    is SendScreenState.WaitingForReceiver -> s.session
+                    is SendScreenState.Transfer -> s.session
+                    else -> null
+                }
+            session?.let { sendSessionRepo.cancelSend(it) }
             postSideEffect(SendScreenEffect.NavigateBack)
         }
 
@@ -168,29 +182,38 @@ class SendViewModel(
         intent {
             val s = state
             if (s is SendScreenState.Transfer) {
-                transferManager.recordSendCompletion(s.files.map { it.toUri() })
+                sendSessionRepo.recordSendCompletion(
+                    s.files.map { it.toUri() },
+                    s.session,
+                )
                 reduce {
-                    SendScreenState.Complete(files = s.files)
+                    SendScreenState.Complete(session = s.session, files = s.files)
                 }
             }
         }
 
     fun onDone() =
         intent {
-            transferManager.cancelSend()
+            val s = state
+            if (s is SendScreenState.Complete) {
+                sendSessionRepo.cancelSend(s.session)
+            }
             postSideEffect(SendScreenEffect.NavigateBack)
         }
 
     fun onSendMore() =
         intent {
-            transferManager.cancelSend()
+            val s = state
+            if (s is SendScreenState.Complete) {
+                sendSessionRepo.cancelSend(s.session)
+            }
             reduce {
                 SendScreenState.FileSelection()
             }
         }
 
-    private fun listenToSendProgress() {
-        transferManager.sendProgress!!.onEach { progress ->
+    private fun listenToSendProgress(session: SendSession) {
+        session.subscriber.progress.onEach { progress ->
             intent {
                 if (progress.isConnected.not())
                     return@intent
@@ -205,6 +228,7 @@ class SendViewModel(
 
                 val transfer =
                     SendScreenState.Transfer(
+                        session = session,
                         files = files,
                         isConnected = progress.isConnected,
                         receiverName = progress.receiverName,
@@ -223,10 +247,10 @@ class SendViewModel(
         }.launchIn(viewModelScope)
     }
 
-    private fun monitorTransferCompletion() {
+    private fun monitorTransferCompletion(session: SendSession) {
         viewModelScope.launch {
             while (coroutineContext.isActive) {
-                val isFinished = transferManager.isSendFinished()
+                val isFinished = session.bubble.isFinished()
                 if (isFinished) {
                     onComplete()
                     break

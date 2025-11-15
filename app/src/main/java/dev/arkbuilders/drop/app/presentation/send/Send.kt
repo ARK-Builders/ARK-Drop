@@ -8,20 +8,14 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.ime
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -30,7 +24,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -58,7 +51,6 @@ import compose.icons.TablerIcons
 import compose.icons.tablericons.AlertCircle
 import compose.icons.tablericons.Copy
 import compose.icons.tablericons.Qrcode
-import dev.arkbuilders.drop.app.data.repository.TransferManager
 import dev.arkbuilders.drop.app.presentation.components.DropTopBarBack
 import dev.arkbuilders.drop.app.presentation.send.components.ButtonSize
 import dev.arkbuilders.drop.app.presentation.send.components.ButtonVariant
@@ -157,10 +149,7 @@ data class TransferProgressState(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Send(
-    navController: NavController,
-    transferManager: TransferManager,
-) {
+fun Send(navController: NavController) {
     val haptic = LocalHapticFeedback.current
     val listState = rememberLazyListState()
     val viewModel: SendViewModel = koinInject()
@@ -186,79 +175,67 @@ fun Send(
         }
     }
 
-    Scaffold(
+    Column(
         modifier =
             Modifier
-                .fillMaxSize()
-                .windowInsetsPadding(WindowInsets.statusBars)
-                .windowInsetsPadding(WindowInsets.navigationBars)
-                .windowInsetsPadding(WindowInsets.ime),
-        topBar = {
-            DropTopBarBack(
-                title = "Send files",
-                onBackClick = { navController.navigateUp() },
-            )
-        },
-        containerColor = MaterialTheme.colorScheme.background,
-    ) { paddingValues ->
+                .fillMaxSize(),
+    ) {
+        DropTopBarBack(
+            title = "Send files",
+            onBackClick = { navController.navigateUp() },
+        )
 
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-        ) {
-            val sendScreenState = state
-            when (sendScreenState) {
-                is SendScreenState.FileSelection -> {
-                    FileSelectionPhase(
-                        selectedFiles = sendScreenState.files,
-                        totalFileSize = sendScreenState.size,
-                        onAddFiles = {
-                            viewModel.onAddFiles()
-                        },
-                        onRemoveFile = { uri ->
-                            viewModel.onFileRemove(uri)
-                        },
-                        onStartTransfer = {
-                            viewModel.onStartTransfer()
-                        },
-                        canStartTransfer = sendScreenState.canStartTransfer,
-                        listState = listState,
-                    )
-                }
+        val sendScreenState = state
+        when (sendScreenState) {
+            is SendScreenState.FileSelection -> {
+                FileSelectionPhase(
+                    selectedFiles = sendScreenState.files,
+                    totalFileSize = sendScreenState.size,
+                    onAddFiles = {
+                        viewModel.onAddFiles()
+                    },
+                    onRemoveFile = { uri ->
+                        viewModel.onFileRemove(uri)
+                    },
+                    onStartTransfer = {
+                        viewModel.onStartTransfer()
+                    },
+                    canStartTransfer = sendScreenState.canStartTransfer,
+                    listState = listState,
+                )
+            }
 
-                is SendScreenState.GeneratingQR -> {
-                    GeneratingQRPhase(onCancel = { viewModel.onCancelQrGeneration() })
-                }
+            is SendScreenState.GeneratingQR -> {
+                GeneratingQRPhase(onCancel = { viewModel.onCancelQrGeneration() })
+            }
 
-                is SendScreenState.WaitingForReceiver -> {
-                    WaitingForReceiverPhase(
-                        fileCount = sendScreenState.files.size,
-                        onCancel = { viewModel.onCancelTransfer() },
-                    )
-                }
+            is SendScreenState.WaitingForReceiver -> {
+                WaitingForReceiverPhase(
+                    fileCount = sendScreenState.files.size,
+                    onCancel = { viewModel.onCancelTransfer() },
+                )
+            }
 
-                is SendScreenState.Transfer -> {
-                    TransferringPhase(
-                        progress = sendScreenState,
-                        onCancel = { viewModel.onCancelTransfer() },
-                    )
-                }
+            is SendScreenState.Transfer -> {
+                TransferringPhase(
+                    progress = sendScreenState,
+                    onCancel = { viewModel.onCancelTransfer() },
+                )
+            }
 
-                is SendScreenState.Complete -> {
-                    TransferCompletePhase(
-                        fileCount = sendScreenState.files.size,
-                        onSendMore = {
-                            viewModel.onSendMore()
-                        },
-                        onDone = {
-                            viewModel.onDone()
-                        },
-                    )
-                }
+            is SendScreenState.Complete -> {
+                TransferCompletePhase(
+                    fileCount = sendScreenState.files.size,
+                    onSendMore = {
+                        viewModel.onSendMore()
+                    },
+                    onDone = {
+                        viewModel.onDone()
+                    },
+                )
+            }
 
-                is SendScreenState.Error -> {
+            is SendScreenState.Error -> {
 //                    ErrorPhase(
 //                        error = sendState.error,
 //                        onRetry = { handleError("Retry") },
@@ -267,8 +244,8 @@ fun Send(
 //                            navController.navigateUp()
 //                        }
 //                    )
-                }
             }
+        }
 
 //            sendState.error?.let { error ->
 //                if (sendState.phase != SendPhase.Error) {
@@ -279,16 +256,14 @@ fun Send(
 //                }
 //            }
 
-            val s = state
-            if (s is SendScreenState.WaitingForReceiver) {
-                SendQRDialog(
-                    qrBitmap = s.qrBitmap,
-                    fileCount = s.files.size,
-                    copyString = s.copyString,
-                    onDismiss = { },
-                    onCancel = {},
-                )
-            }
+        if (sendScreenState is SendScreenState.WaitingForReceiver) {
+            SendQRDialog(
+                qrBitmap = sendScreenState.qrBitmap,
+                fileCount = sendScreenState.files.size,
+                copyString = sendScreenState.copyString,
+                onDismiss = { },
+                onCancel = {},
+            )
         }
     }
 }

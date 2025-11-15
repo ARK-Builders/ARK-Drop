@@ -15,7 +15,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navDeepLink
-import dev.arkbuilders.drop.app.data.repository.TransferManager
 import dev.arkbuilders.drop.app.domain.repository.ProfileRepo
 import dev.arkbuilders.drop.app.domain.repository.TransferHistoryItemRepository
 import dev.arkbuilders.drop.app.presentation.history.History
@@ -28,8 +27,6 @@ import dev.arkbuilders.drop.app.presentation.theme.DropTheme
 import org.koin.android.ext.android.get
 
 class MainActivity : ComponentActivity() {
-    private val transferManager: TransferManager = get()
-
     private val profileRepo: ProfileRepo = get()
 
     private val transferHistoryItemRepository: TransferHistoryItemRepository = get()
@@ -49,7 +46,6 @@ class MainActivity : ComponentActivity() {
                         modifier =
                             Modifier
                                 .padding(innerPadding),
-                        transferManager = transferManager,
                         profileRepo = profileRepo,
                         transferHistoryItemRepository = transferHistoryItemRepository,
                     )
@@ -63,7 +59,6 @@ class MainActivity : ComponentActivity() {
 fun DropNavigation(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
-    transferManager: TransferManager,
     profileRepo: ProfileRepo,
     transferHistoryItemRepository: TransferHistoryItemRepository,
 ) {
@@ -82,7 +77,6 @@ fun DropNavigation(
         composable(DropDestination.Send.route) {
             Send(
                 navController = navController,
-                transferManager = transferManager,
             )
         }
         composable(

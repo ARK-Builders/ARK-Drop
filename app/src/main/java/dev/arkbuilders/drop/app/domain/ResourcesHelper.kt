@@ -6,4 +6,9 @@ interface ResourcesHelper {
     fun validateUris(uris: List<String>): Pair<List<String>, Int>
 
     fun getFileSize(uri: String): Long
+
+    fun saveFileToDownloads(
+        fileName: String,
+        data: ByteArray,
+    ): String?
 }

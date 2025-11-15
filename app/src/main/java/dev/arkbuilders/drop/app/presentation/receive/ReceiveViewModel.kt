@@ -3,8 +3,9 @@ package dev.arkbuilders.drop.app.presentation.receive
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.arkbuilders.drop.app.data.ReceivingProgress
-import dev.arkbuilders.drop.app.data.repository.TransferManager
+import dev.arkbuilders.drop.app.data.repository.ReceiveSessionRepo
 import dev.arkbuilders.drop.app.domain.PermissionsHelper
+import dev.arkbuilders.drop.app.domain.model.ReceiveSession
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -25,11 +26,20 @@ sealed class ReceiveScreenState {
 
     data object Connecting : ReceiveScreenState()
 
-    data class Receiving(val progress: ReceivingProgress) : ReceiveScreenState()
+    data class Receiving(
+        val session: ReceiveSession,
+        val progress: ReceivingProgress,
+    ) : ReceiveScreenState()
 
-    data class Success(val receivedFiles: List<String>) : ReceiveScreenState()
+    data class Success(
+        val session: ReceiveSession,
+        val receivedFiles: List<String>,
+    ) : ReceiveScreenState()
 
-    data class Error(val error: ReceiveError) : ReceiveScreenState()
+    data class Error(
+        val session: ReceiveSession? = null,
+        val error: ReceiveError,
+    ) : ReceiveScreenState()
 }
 
 sealed class ReceiveScreenEffect {
@@ -43,7 +53,7 @@ sealed class ReceiveScreenEffect {
 }
 
 class ReceiveViewModel(
-    private val transferManager: TransferManager,
+    private val receiveSessionRepo: ReceiveSessionRepo,
     private val permissionsHelper: PermissionsHelper,
 ) : ViewModel(), ContainerHost<ReceiveScreenState, ReceiveScreenEffect> {
     override val container: Container<ReceiveScreenState, ReceiveScreenEffect> =
@@ -51,16 +61,8 @@ class ReceiveViewModel(
 
     init {
         intent {
-            val receiveProgress = transferManager.receiveProgress?.value
-            val state =
-                if (receiveProgress != null && receiveProgress.isConnected) {
-                    listenToProgress()
-                    ReceiveScreenState.Receiving(receiveProgress)
-                } else {
-                    ReceiveScreenState.Initial(permissionsHelper.isCameraGranted())
-                }
             reduce {
-                state
+                ReceiveScreenState.Initial(permissionsHelper.isCameraGranted())
             }
         }
     }
@@ -97,7 +99,7 @@ class ReceiveViewModel(
     fun onError(error: ReceiveError) =
         intent {
             reduce {
-                ReceiveScreenState.Error(error)
+                ReceiveScreenState.Error(error = error)
             }
         }
 
@@ -115,16 +117,19 @@ class ReceiveViewModel(
                     ReceiveScreenState.Connecting
                 }
 
-                val bubble =
-                    transferManager.receiveFiles(ticket, confirmation)
-                if (bubble != null) {
+                val session =
+                    receiveSessionRepo.receiveFiles(ticket, confirmation)
+                if (session != null) {
                     reduce {
-                        ReceiveScreenState.Receiving(transferManager.receiveProgress!!.value)
+                        ReceiveScreenState.Receiving(
+                            session,
+                            session.subscriber.progress.value,
+                        )
                     }
-                    listenToProgress()
+                    listenToProgress(session)
                 } else {
                     reduce {
-                        ReceiveScreenState.Error(ReceiveError.ConnectionFailed)
+                        ReceiveScreenState.Error(error = ReceiveError.ConnectionFailed)
                     }
                 }
             } catch (e: Exception) {
@@ -139,7 +144,7 @@ class ReceiveViewModel(
                     }
 
                 reduce {
-                    ReceiveScreenState.Error(error)
+                    ReceiveScreenState.Error(error = error)
                 }
             }
         }
@@ -150,7 +155,7 @@ class ReceiveViewModel(
                 if (isGranted) {
                     ReceiveScreenState.Scanning
                 } else {
-                    ReceiveScreenState.Error(ReceiveError.CameraPermissionDenied)
+                    ReceiveScreenState.Error(error = ReceiveError.CameraPermissionDenied)
                 }
             reduce {
                 state
@@ -172,7 +177,10 @@ class ReceiveViewModel(
 
     fun onReceiveMore() =
         intent {
-            transferManager.cancelReceive()
+            val s = state
+            if (s is ReceiveScreenState.Success) {
+                receiveSessionRepo.cancelReceive(s.session)
+            }
             reduce {
                 ReceiveScreenState.Initial(permissionsHelper.isCameraGranted())
             }
@@ -180,7 +188,10 @@ class ReceiveViewModel(
 
     fun onDone() =
         intent {
-            transferManager.cancelReceive()
+            val s = state
+            if (s is ReceiveScreenState.Success) {
+                receiveSessionRepo.cancelReceive(s.session)
+            }
             postSideEffect(ReceiveScreenEffect.NavigateBack)
         }
 
@@ -209,7 +220,12 @@ class ReceiveViewModel(
 
     fun onErrorDismiss() =
         intent {
-            transferManager.cancelReceive()
+            val s = state
+            if (s is ReceiveScreenState.Error) {
+                s.session?.let {
+                    receiveSessionRepo.cancelReceive(it)
+                }
+            }
             postSideEffect(ReceiveScreenEffect.NavigateBack)
         }
 
@@ -238,7 +254,11 @@ class ReceiveViewModel(
 
     fun onCancelReceiving() =
         intent {
-            transferManager.cancelReceive()
+            val s = state
+            if (s is ReceiveScreenState.Receiving) {
+                receiveSessionRepo.cancelReceive(s.session)
+            }
+
             reduce {
                 ReceiveScreenState.Initial(permissionsHelper.isCameraGranted())
             }
@@ -276,8 +296,8 @@ class ReceiveViewModel(
             }
         }
 
-    private fun listenToProgress() {
-        transferManager.receiveProgress!!.onEach { progress ->
+    private fun listenToProgress(session: ReceiveSession) {
+        session.subscriber.progress.onEach { progress ->
             intent {
                 val s = state
                 if (s !is ReceiveScreenState.Receiving)
@@ -301,18 +321,20 @@ class ReceiveViewModel(
                         // Small delay to ensure UI updates are visible
                         delay(1000)
                         try {
-                            val savedFiles = transferManager.saveReceivedFiles()
+                            val savedFiles = receiveSessionRepo.saveReceivedFiles(session)
                             if (savedFiles.isNotEmpty()) {
                                 reduce {
                                     ReceiveScreenState.Success(
-                                        receivedFiles = savedFiles.map { it.name },
+                                        session = session,
+                                        receivedFiles = savedFiles,
                                     )
                                 }
                                 postSideEffect(ReceiveScreenEffect.ShowSuccessAnimation)
                             } else {
                                 reduce {
                                     ReceiveScreenState.Error(
-                                        ReceiveError.NoFilesReceived,
+                                        session = session,
+                                        error = ReceiveError.NoFilesReceived,
                                     )
                                 }
                             }
@@ -328,7 +350,10 @@ class ReceiveViewModel(
                                     else -> ReceiveError.UnknownError
                                 }
                             reduce {
-                                ReceiveScreenState.Error(error)
+                                ReceiveScreenState.Error(
+                                    session = session,
+                                    error = error,
+                                )
                             }
                         }
                     }

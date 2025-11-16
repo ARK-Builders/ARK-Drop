@@ -53,9 +53,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import dev.arkbuilders.drop.app.presentation.components.DropErrorCard
 import dev.arkbuilders.drop.app.presentation.components.DropTopBarBack
 import dev.arkbuilders.drop.app.presentation.receive.components.ReceiveCompleteCard
-import dev.arkbuilders.drop.app.presentation.receive.components.ReceiveErrorCard
 import dev.arkbuilders.drop.app.presentation.receive.components.ReceiveLoadingCard
 import dev.arkbuilders.drop.app.presentation.receive.components.ReceiveManualInputCard
 import dev.arkbuilders.drop.app.presentation.receive.components.ReceivePermissionRequestCard
@@ -68,36 +68,6 @@ import kotlinx.coroutines.delay
 import org.koin.compose.koinInject
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
-
-sealed class ReceiveError(val message: String, val isRecoverable: Boolean = true) {
-    object CameraPermissionDenied :
-        ReceiveError("Camera permission is required to scan QR codes", true)
-
-    object CameraInitializationFailed :
-        ReceiveError("Unable to initialize camera. Please try again.", true)
-
-    object InvalidQRCode :
-        ReceiveError("This QR code is not from Drop. Please scan a valid Drop QR code.", true)
-
-    object InvalidManualInput :
-        ReceiveError("Invalid format. Please enter: ticket confirmation", true)
-
-    object ConnectionFailed :
-        ReceiveError("Unable to connect to sender. Please ensure you're on the same network.", true)
-
-    object TransferInterrupted :
-        ReceiveError("File transfer was interrupted. Please try again.", true)
-
-    object NoFilesReceived : ReceiveError("No files were received from the sender.", true)
-
-    object StorageError :
-        ReceiveError("Unable to save files. Please check your storage permissions.", true)
-
-    object NetworkError :
-        ReceiveError("Network connection lost. Please check your connection and try again.", true)
-
-    object UnknownError : ReceiveError("An unexpected error occurred. Please try again.", true)
-}
 
 @OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -351,8 +321,8 @@ fun Receive(navController: NavController) {
             }
 
             is ReceiveScreenState.Error -> {
-                ReceiveErrorCard(
-                    error = receiveScreenState.error,
+                DropErrorCard(
+                    message = receiveScreenState.error.toMessage(),
                     onRetry = {
                         viewModel.onErrorRetry()
                     },
@@ -422,3 +392,21 @@ fun Receive(navController: NavController) {
         }
     }
 }
+
+private fun ReceiveError.toMessage() =
+    when (this) {
+        ReceiveError.CameraInitializationFailed -> "Unable to initialize camera. Please try again."
+        ReceiveError.CameraPermissionDenied -> "Camera permission is required to scan QR codes"
+        ReceiveError.ConnectionFailed -> "Unable to connect to sender."
+        ReceiveError.InvalidManualInput -> "Invalid format. Please enter: ticket confirmation"
+        ReceiveError.InvalidQRCode ->
+            "This QR code is not from Drop. Please scan a valid Drop QR code."
+
+        ReceiveError.NetworkError ->
+            "Network connection lost. Please check your connection and try again."
+
+        ReceiveError.NoFilesReceived -> "No files were received from the sender."
+        ReceiveError.StorageError -> "Unable to save files. Please check your storage permissions."
+        ReceiveError.TransferInterrupted -> "File transfer was interrupted. Please try again."
+        ReceiveError.UnknownError -> "An unexpected error occurred. Please try again."
+    }

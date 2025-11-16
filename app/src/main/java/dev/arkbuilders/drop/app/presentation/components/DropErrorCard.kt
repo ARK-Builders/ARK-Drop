@@ -1,4 +1,4 @@
-package dev.arkbuilders.drop.app.presentation.receive.components
+package dev.arkbuilders.drop.app.presentation.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -20,27 +20,27 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import compose.icons.TablerIcons
-import compose.icons.tablericons.AlertCircle
-import dev.arkbuilders.drop.app.presentation.receive.ReceiveError
 import dev.arkbuilders.drop.app.presentation.theme.DesignTokens
 
 @Composable
-fun ReceiveErrorCard(
-    error: ReceiveError,
+fun DropErrorCard(
+    message: String,
     onRetry: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     ElevatedCard(
-        modifier = Modifier.fillMaxWidth().padding(16.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
         shape = RoundedCornerShape(DesignTokens.CornerRadius.lg),
         colors =
             CardDefaults.elevatedCardColors(
@@ -67,7 +67,7 @@ fun ReceiveErrorCard(
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
-                    if (error.isRecoverable) Icons.Default.Warning else TablerIcons.AlertCircle,
+                    Icons.Default.Warning,
                     contentDescription = null,
                     modifier = Modifier.size(40.dp),
                     tint = MaterialTheme.colorScheme.error,
@@ -77,16 +77,7 @@ fun ReceiveErrorCard(
             Spacer(modifier = Modifier.Companion.height(DesignTokens.Spacing.lg))
 
             Text(
-                text = if (error.isRecoverable) "Something went wrong" else "Error occurred",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
-            )
-
-            Spacer(modifier = Modifier.Companion.height(DesignTokens.Spacing.sm))
-
-            Text(
-                text = error.message,
+                text = message,
                 style = MaterialTheme.typography.bodyLarge,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f),
@@ -99,7 +90,7 @@ fun ReceiveErrorCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.md),
             ) {
-                OutlinedButton(
+                TextButton(
                     onClick = onDismiss,
                     modifier =
                         Modifier
@@ -110,21 +101,19 @@ fun ReceiveErrorCard(
                     Text("Cancel", fontWeight = FontWeight.Medium)
                 }
 
-                if (error.isRecoverable) {
-                    Button(
-                        onClick = onRetry,
-                        modifier =
-                            Modifier
-                                .weight(1f)
-                                .height(DesignTokens.TouchTarget.comfortable),
-                        shape = RoundedCornerShape(DesignTokens.CornerRadius.md),
-                        colors =
-                            ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary,
-                            ),
-                    ) {
-                        Text("Try Again", fontWeight = FontWeight.SemiBold)
-                    }
+                Button(
+                    onClick = onRetry,
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .height(DesignTokens.TouchTarget.comfortable),
+                    shape = RoundedCornerShape(DesignTokens.CornerRadius.md),
+                    colors =
+                        ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                        ),
+                ) {
+                    Text("Retry", fontWeight = FontWeight.SemiBold)
                 }
             }
         }

@@ -18,8 +18,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -38,7 +36,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.contentDescription
@@ -48,7 +45,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import compose.icons.TablerIcons
-import compose.icons.tablericons.AlertCircle
 import compose.icons.tablericons.Copy
 import compose.icons.tablericons.Qrcode
 import dev.arkbuilders.drop.app.presentation.components.DropTopBarBack
@@ -56,6 +52,7 @@ import dev.arkbuilders.drop.app.presentation.send.components.ButtonSize
 import dev.arkbuilders.drop.app.presentation.send.components.ButtonVariant
 import dev.arkbuilders.drop.app.presentation.send.components.SendButton
 import dev.arkbuilders.drop.app.presentation.send.components.SendLoadingIndicator
+import dev.arkbuilders.drop.app.presentation.send.components.phase.ErrorPhase
 import dev.arkbuilders.drop.app.presentation.send.components.phase.FileSelectionPhase
 import dev.arkbuilders.drop.app.presentation.send.components.phase.GeneratingQRPhase
 import dev.arkbuilders.drop.app.presentation.send.components.phase.TransferCompletePhase
@@ -66,86 +63,6 @@ import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
-
-// Comprehensive exception handling
-sealed class SendException(
-    val title: String,
-    val message: String,
-    val icon: ImageVector,
-    val isRecoverable: Boolean = true,
-    val actionLabel: String? = null,
-) {
-    object NetworkUnavailable : SendException(
-        title = "No Network Connection",
-        message = "Please check your Wi-Fi or mobile data connection and try again.",
-        icon = Icons.Default.Warning,
-        actionLabel = "Retry",
-    )
-
-    object FileTooLarge : SendException(
-        title = "File Too Large",
-        message =
-            "Some files exceed the 2GB limit and were skipped." +
-                " You can send the remaining files.",
-        icon = Icons.Default.Warning,
-        actionLabel = "Continue",
-    )
-
-    object NoFilesSelected : SendException(
-        title = "No Files Selected",
-        message = "Please select at least one file to send.",
-        icon = Icons.Default.Warning,
-        isRecoverable = false,
-    )
-
-    object TransferInitializationFailed : SendException(
-        title = "Transfer Setup Failed",
-        message = "Unable to prepare files for transfer. Please try again.",
-        icon = TablerIcons.AlertCircle,
-        actionLabel = "Retry",
-    )
-
-    object QRGenerationFailed : SendException(
-        title = "QR Code Generation Failed",
-        message = "Unable to create QR code. Please restart the transfer.",
-        icon = TablerIcons.AlertCircle,
-        actionLabel = "Retry",
-    )
-
-    object TransferInterrupted : SendException(
-        title = "Transfer Interrupted",
-        message = "The connection was lost during transfer. You can try sending again.",
-        icon = TablerIcons.AlertCircle,
-        actionLabel = "Retry",
-    )
-
-    object ReceiverDisconnected : SendException(
-        title = "Receiver Disconnected",
-        message = "The receiving device disconnected. Please try again.",
-        icon = Icons.Default.Warning,
-        actionLabel = "Retry",
-    )
-
-    class UnknownError(details: String) : SendException(
-        title = "Something Went Wrong",
-        message = "An unexpected error occurred: $details",
-        icon = TablerIcons.AlertCircle,
-        actionLabel = "Retry",
-    )
-}
-
-data class TransferProgressState(
-    val isConnected: Boolean = false,
-    val receiverName: String = "",
-    val receiverAvatar: String? = null,
-    val currentFileName: String = "",
-    val filesCompleted: Int = 0,
-    val totalFiles: Int = 0,
-    val bytesTransferred: Long = 0L,
-    val totalBytes: Long = 0L,
-    val transferSpeedBps: Long = 0L,
-    val estimatedTimeRemaining: Long = 0L,
-)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -236,25 +153,17 @@ fun Send(navController: NavController) {
             }
 
             is SendScreenState.Error -> {
-//                    ErrorPhase(
-//                        error = sendState.error,
-//                        onRetry = { handleError("Retry") },
-//                        onCancel = {
-//                            transferManager.cancelSend()
-//                            navController.navigateUp()
-//                        }
-//                    )
+                ErrorPhase(
+                    error = sendScreenState.error,
+                    onRetry = {
+                        viewModel.onErrorRetry()
+                    },
+                    onCancel = {
+                        viewModel.onErrorDismiss()
+                    },
+                )
             }
         }
-
-//            sendState.error?.let { error ->
-//                if (sendState.phase != SendPhase.Error) {
-//                    SendErrorOverlay(
-//                        error = error,
-//                        onDismiss = { sendState = sendState.copy(error = null) },
-//                        onAction = { action -> handleError(action) })
-//                }
-//            }
 
         if (sendScreenState is SendScreenState.WaitingForReceiver) {
             SendQRDialog(

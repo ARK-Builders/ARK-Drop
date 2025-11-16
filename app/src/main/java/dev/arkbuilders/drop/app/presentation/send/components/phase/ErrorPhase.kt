@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -25,7 +27,7 @@ import dev.arkbuilders.drop.app.presentation.send.components.SendButton
 import dev.arkbuilders.drop.app.presentation.send.components.SendCard
 
 @Composable
-private fun ErrorPhase(
+fun ErrorPhase(
     error: SendException?,
     onRetry: () -> Unit,
     onCancel: () -> Unit,
@@ -42,7 +44,7 @@ private fun ErrorPhase(
             error?.let { err ->
                 SendErrorCard(
                     error = err,
-                    onAction = if (err.isRecoverable) onRetry else null,
+                    onAction = onRetry,
                 )
             }
 
@@ -67,7 +69,7 @@ private fun ErrorPhase(
 @Composable
 private fun SendErrorCard(
     error: SendException,
-    onAction: (() -> Unit)? = null,
+    onAction: () -> Unit,
 ) {
     SendCard(
         backgroundColor = MaterialTheme.colorScheme.errorContainer,
@@ -77,7 +79,7 @@ private fun SendErrorCard(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Icon(
-                imageVector = error.icon,
+                imageVector = Icons.Default.Warning,
                 contentDescription = null,
                 modifier = Modifier.size(48.dp),
                 tint = MaterialTheme.colorScheme.error,
@@ -86,38 +88,31 @@ private fun SendErrorCard(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = error.title,
-                style =
-                    MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.Bold,
-                    ),
-                color = MaterialTheme.colorScheme.onErrorContainer,
-                textAlign = TextAlign.Center,
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = error.message,
+                text = error.toMessage(),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f),
                 textAlign = TextAlign.Center,
             )
 
-            if (onAction != null && error.actionLabel != null) {
-                Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-                SendButton(
-                    onClick = onAction,
-                    variant = ButtonVariant.Primary,
-                    size = ButtonSize.Medium,
-                ) {
-                    Text(
-                        error.actionLabel,
-                        fontWeight = FontWeight.Medium,
-                    )
-                }
+            SendButton(
+                onClick = onAction,
+                variant = ButtonVariant.Primary,
+                size = ButtonSize.Medium,
+            ) {
+                Text(
+                    "Retry",
+                    fontWeight = FontWeight.Medium,
+                )
             }
         }
     }
 }
+
+private fun SendException.toMessage() =
+    when (this) {
+        SendException.TransferInitializationFailed -> "Transfer initialization failed"
+        SendException.QRGenerationFailed -> "QR generation failed"
+        SendException.TransferInterrupted -> "Transfer interrupted"
+    }

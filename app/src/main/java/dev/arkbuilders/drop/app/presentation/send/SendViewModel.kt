@@ -23,53 +23,10 @@ import kotlinx.coroutines.launch
 import org.orbitmvi.orbit.Container
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.viewmodel.container
-
-sealed class SendScreenState {
-    data class FileSelection(
-        val files: List<String> = emptyList<String>(),
-        val size: Long = 0L,
-        val canStartTransfer: Boolean = false,
-    ) : SendScreenState()
-
-    data class GeneratingQR(
-        val files: List<String>,
-    ) : SendScreenState()
-
-    data class WaitingForReceiver(
-        val session: SendSession,
-        val files: List<String>,
-        val qrBitmap: Bitmap,
-        val copyString: String,
-    ) : SendScreenState()
-
-    data class Transfer(
-        val session: SendSession,
-        val files: List<String>,
-        val isConnected: Boolean = false,
-        val receiverName: String = "",
-        val receiverAvatar: String? = null,
-        val currentFileName: String = "",
-        val filesCompleted: Int = 0,
-        val totalFiles: Int = 0,
-        val bytesTransferred: Long = 0L,
-        val totalBytes: Long = 0L,
-        val transferSpeedBps: Long = 0L,
-        val estimatedTimeRemaining: Long = 0L,
-    ) : SendScreenState()
-
-    data class Complete(
-        val session: SendSession,
-        val files: List<String>,
-    ) : SendScreenState()
-
-    data class Error(val error: Throwable) : SendScreenState()
-}
-
-sealed class SendScreenEffect {
-    data object LaunchFilePicker : SendScreenEffect()
-
-    data object NavigateBack : SendScreenEffect()
-}
+import timber.log.Timber
+import kotlin.collections.isNotEmpty
+import kotlin.collections.plus
+import kotlin.collections.sumOf
 
 class SendViewModel(
     private val resourcesHelper: ResourcesHelper,
@@ -116,15 +73,19 @@ class SendViewModel(
         intent {
             val s = state
             if (s !is SendScreenState.FileSelection) {
-                reduce {
-                    SendScreenState.Error(Error(""))
-                }
                 return@intent
             }
+            reduce {
+                SendScreenState.GeneratingQR(s.files)
+            }
+
             val session = sendSessionRepo.sendFiles(s.files.map { it.toUri() })
             if (session == null) {
                 reduce {
-                    SendScreenState.Error(Error(""))
+                    SendScreenState.Error(
+                        files = s.files,
+                        error = SendException.TransferInitializationFailed,
+                    )
                 }
                 return@intent
             }
@@ -133,7 +94,11 @@ class SendViewModel(
 
             if (ticket.isEmpty()) {
                 reduce {
-                    SendScreenState.Error(Error(""))
+                    SendScreenState.Error(
+                        session = session,
+                        files = s.files,
+                        error = SendException.TransferInitializationFailed,
+                    )
                 }
                 return@intent
             }
@@ -142,7 +107,11 @@ class SendViewModel(
             val qrBitmap = generateQRCodeSafely(ticket, confirmation)
             if (qrBitmap == null) {
                 reduce {
-                    SendScreenState.Error(Error(""))
+                    SendScreenState.Error(
+                        session = session,
+                        files = s.files,
+                        error = SendException.QRGenerationFailed,
+                    )
                 }
                 return@intent
             }
@@ -173,8 +142,16 @@ class SendViewModel(
 
     fun onCancelQrGeneration() =
         intent {
+            val s = state
+            val files =
+                if (s is SendScreenState.GeneratingQR) {
+                    s.files
+                } else {
+                    emptyList()
+                }
+
             reduce {
-                SendScreenState.FileSelection()
+                SendScreenState.FileSelection(files)
             }
         }
 
@@ -212,12 +189,47 @@ class SendViewModel(
             }
         }
 
+    fun onErrorRetry() =
+        intent {
+            val s = state
+            if (s is SendScreenState.Error) {
+                s.session?.let {
+                    sendSessionRepo.cancelSend(it)
+                }
+            }
+            val files =
+                when (s) {
+                    is SendScreenState.Error -> s.files
+                    else -> emptyList()
+                } ?: emptyList()
+
+            val validated = resourcesHelper.validateUris(files).first
+            val canStartTransfer = validated.isNotEmpty() && networkStatus.isOnline()
+            val size = validated.sumOf { resourcesHelper.getFileSize(it) }
+
+            reduce {
+                SendScreenState.FileSelection(
+                    files = validated,
+                    size = size,
+                    canStartTransfer = canStartTransfer,
+                )
+            }
+        }
+
+    fun onErrorDismiss() =
+        intent {
+            val s = state
+            if (s is SendScreenState.Error) {
+                s.session?.let {
+                    sendSessionRepo.cancelSend(it)
+                }
+            }
+            postSideEffect(SendScreenEffect.NavigateBack)
+        }
+
     private fun listenToSendProgress(session: SendSession) {
         session.subscriber.progress.onEach { progress ->
             intent {
-                if (progress.isConnected.not())
-                    return@intent
-
                 val s = state
                 val files =
                     when (s) {
@@ -226,22 +238,36 @@ class SendViewModel(
                         else -> return@intent
                     }
 
-                val transfer =
-                    SendScreenState.Transfer(
-                        session = session,
-                        files = files,
-                        isConnected = progress.isConnected,
-                        receiverName = progress.receiverName,
-                        receiverAvatar = progress.receiverAvatar,
-                        currentFileName = progress.fileName,
-                        bytesTransferred = progress.sent.toLong(),
-                        totalBytes = (progress.sent + progress.remaining).toLong(),
-                        transferSpeedBps = 0L,
-                        estimatedTimeRemaining = 0L,
-                    )
+                try {
+                    if (progress.isConnected.not())
+                        return@intent
 
-                reduce {
-                    transfer
+                    val transfer =
+                        SendScreenState.Transfer(
+                            session = session,
+                            files = files,
+                            isConnected = progress.isConnected,
+                            receiverName = progress.receiverName,
+                            receiverAvatar = progress.receiverAvatar,
+                            currentFileName = progress.fileName,
+                            bytesTransferred = progress.sent.toLong(),
+                            totalBytes = (progress.sent + progress.remaining).toLong(),
+                            transferSpeedBps = 0L,
+                            estimatedTimeRemaining = 0L,
+                        )
+
+                    reduce {
+                        transfer
+                    }
+                } catch (e: Throwable) {
+                    Timber.e("Transfer interrupted: ${e::class.simpleName} ${e.message}")
+                    reduce {
+                        SendScreenState.Error(
+                            session = session,
+                            files = files,
+                            error = SendException.TransferInterrupted,
+                        )
+                    }
                 }
             }
         }.launchIn(viewModelScope)

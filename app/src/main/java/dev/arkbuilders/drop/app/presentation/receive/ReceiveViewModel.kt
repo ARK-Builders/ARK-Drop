@@ -2,7 +2,6 @@ package dev.arkbuilders.drop.app.presentation.receive
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import dev.arkbuilders.drop.app.data.ReceivingProgress
 import dev.arkbuilders.drop.app.data.repository.ReceiveSessionRepo
 import dev.arkbuilders.drop.app.domain.PermissionsHelper
 import dev.arkbuilders.drop.app.domain.model.ReceiveSession
@@ -12,45 +11,6 @@ import kotlinx.coroutines.flow.onEach
 import org.orbitmvi.orbit.Container
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.viewmodel.container
-
-sealed class ReceiveScreenState {
-    data class Initial(val cameraPermissionGranted: Boolean) : ReceiveScreenState()
-
-    data object RequestingPermission : ReceiveScreenState()
-
-    data object Scanning : ReceiveScreenState()
-
-    data class ManualInput(val inputText: String, val inputError: String?) : ReceiveScreenState()
-
-    data class QRCodeScanned(val ticket: String, val confirmation: UByte) : ReceiveScreenState()
-
-    data object Connecting : ReceiveScreenState()
-
-    data class Receiving(
-        val session: ReceiveSession,
-        val progress: ReceivingProgress,
-    ) : ReceiveScreenState()
-
-    data class Success(
-        val session: ReceiveSession,
-        val receivedFiles: List<String>,
-    ) : ReceiveScreenState()
-
-    data class Error(
-        val session: ReceiveSession? = null,
-        val error: ReceiveError,
-    ) : ReceiveScreenState()
-}
-
-sealed class ReceiveScreenEffect {
-    data object HideKeyboard : ReceiveScreenEffect()
-
-    data object NavigateBack : ReceiveScreenEffect()
-
-    data object ShowSuccessAnimation : ReceiveScreenEffect()
-
-    data object RequestCameraPermission : ReceiveScreenEffect()
-}
 
 class ReceiveViewModel(
     private val receiveSessionRepo: ReceiveSessionRepo,

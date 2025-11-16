@@ -33,26 +33,23 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import compose.icons.TablerIcons
 import compose.icons.tablericons.Copy
 import compose.icons.tablericons.Qrcode
+import dev.arkbuilders.drop.app.presentation.components.DropErrorCard
 import dev.arkbuilders.drop.app.presentation.components.DropTopBarBack
 import dev.arkbuilders.drop.app.presentation.send.components.ButtonSize
 import dev.arkbuilders.drop.app.presentation.send.components.ButtonVariant
 import dev.arkbuilders.drop.app.presentation.send.components.SendButton
 import dev.arkbuilders.drop.app.presentation.send.components.SendLoadingIndicator
-import dev.arkbuilders.drop.app.presentation.send.components.phase.ErrorPhase
 import dev.arkbuilders.drop.app.presentation.send.components.phase.FileSelectionPhase
 import dev.arkbuilders.drop.app.presentation.send.components.phase.GeneratingQRPhase
 import dev.arkbuilders.drop.app.presentation.send.components.phase.TransferCompletePhase
@@ -153,12 +150,12 @@ fun Send(navController: NavController) {
             }
 
             is SendScreenState.Error -> {
-                ErrorPhase(
-                    error = sendScreenState.error,
+                DropErrorCard(
+                    message = sendScreenState.error.toMessage(),
                     onRetry = {
                         viewModel.onErrorRetry()
                     },
-                    onCancel = {
+                    onDismiss = {
                         viewModel.onErrorDismiss()
                     },
                 )
@@ -333,3 +330,10 @@ private fun SendQRDialog(
         shape = RoundedCornerShape(20.dp),
     )
 }
+
+private fun SendException.toMessage() =
+    when (this) {
+        SendException.TransferInitializationFailed -> "Transfer initialization failed"
+        SendException.QRGenerationFailed -> "QR generation failed"
+        SendException.TransferInterrupted -> "Transfer interrupted"
+    }

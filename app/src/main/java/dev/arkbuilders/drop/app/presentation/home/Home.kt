@@ -35,7 +35,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import compose.icons.TablerIcons
 import compose.icons.tablericons.ArrowDownCircle
@@ -44,11 +43,11 @@ import compose.icons.tablericons.CloudDownload
 import compose.icons.tablericons.CloudUpload
 import compose.icons.tablericons.History
 import dev.arkbuilders.drop.app.R
-import dev.arkbuilders.drop.app.domain.model.TransferHistoryItem
+import dev.arkbuilders.drop.app.domain.model.TransferSession
 import dev.arkbuilders.drop.app.domain.model.TransferType
 import dev.arkbuilders.drop.app.domain.model.UserProfile
 import dev.arkbuilders.drop.app.domain.repository.ProfileRepo
-import dev.arkbuilders.drop.app.domain.repository.TransferHistoryItemRepository
+import dev.arkbuilders.drop.app.domain.repository.TransferSessionRepo
 import dev.arkbuilders.drop.app.presentation.components.AvatarImage
 import dev.arkbuilders.drop.app.presentation.components.AvatarImageWithFallback
 import dev.arkbuilders.drop.app.presentation.components.DropButton
@@ -74,7 +73,7 @@ import java.util.Locale
 fun Home(
     navController: NavController,
     profileRepo: ProfileRepo,
-    transferHistoryItemRepository: TransferHistoryItemRepository,
+    transferSessionRepo: TransferSessionRepo,
 ) {
     val viewModel: HomeViewModel = koinInject()
     val state by viewModel.collectAsState()
@@ -263,7 +262,7 @@ private fun QuickActionsSection(
 
 @Composable
 private fun RecentTransfersSection(
-    historyItems: List<TransferHistoryItem>,
+    historyItems: List<TransferSession>,
     onViewAllClick: () -> Unit,
     showViewAll: Boolean,
 ) {
@@ -326,7 +325,7 @@ private fun EmptyTransfersSection() {
 }
 
 @Composable
-private fun EnhancedTransferHistoryCard(item: TransferHistoryItem) {
+private fun EnhancedTransferHistoryCard(item: TransferSession) {
     DropCard(
         variant = DropCardVariant.Elevated,
         size = DropCardSize.Medium,
@@ -372,8 +371,8 @@ private fun EnhancedTransferHistoryCard(item: TransferHistoryItem) {
                     )
                     Spacer(modifier = Modifier.Companion.height(DesignTokens.Spacing.xs))
                     Text(
-                        text = "${item.fileCount} file${
-                            if (item.fileCount != 1) "s" else ""
+                        text = "${item.files.size} file${
+                            if (item.files.size != 1) "s" else ""
                         } • ${formatTimestamp(
                             item.timestamp,
                         )}",

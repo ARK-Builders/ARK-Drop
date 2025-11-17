@@ -35,17 +35,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import compose.icons.TablerIcons
 import compose.icons.tablericons.ClearAll
 import compose.icons.tablericons.FileDownload
 import compose.icons.tablericons.FileUpload
 import compose.icons.tablericons.History
-import dev.arkbuilders.drop.app.domain.model.TransferHistoryItem
+import dev.arkbuilders.drop.app.domain.model.TransferSession
 import dev.arkbuilders.drop.app.domain.model.TransferStatus
 import dev.arkbuilders.drop.app.domain.model.TransferType
-import dev.arkbuilders.drop.app.domain.repository.TransferHistoryItemRepository
+import dev.arkbuilders.drop.app.domain.repository.TransferSessionRepo
 import dev.arkbuilders.drop.app.presentation.components.AvatarImageWithFallback
 import dev.arkbuilders.drop.app.presentation.components.DropTopBarBack
 import org.koin.compose.koinInject
@@ -59,7 +58,7 @@ import java.util.Locale
 @Composable
 fun History(
     navController: NavController,
-    transferHistoryItemRepository: TransferHistoryItemRepository,
+    transferSessionRepo: TransferSessionRepo,
 ) {
     val viewModel: HistoryViewModel = koinInject()
 
@@ -189,7 +188,7 @@ fun History(
 @Composable
 private fun HistoryItemCard(
     state: HistoryScreenState,
-    item: TransferHistoryItem,
+    item: TransferSession,
     onShowDeleteDialog: () -> Unit,
     onDismissDeleteDialog: () -> Unit,
     onDelete: () -> Unit,
@@ -258,7 +257,7 @@ private fun HistoryItemCard(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = item.fileName,
+                    text = item.files.firstOrNull()?.name ?: "",
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Medium,
                     maxLines = 1,
@@ -273,7 +272,7 @@ private fun HistoryItemCard(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = formatFileSize(item.fileSize),
+                        text = formatFileSize(item.files.sumOf { it.size }),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -290,7 +289,7 @@ private fun HistoryItemCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
 
-                    if (item.fileCount > 1) {
+                    if (item.files.size > 1) {
                         Text(
                             text = "•",
                             style = MaterialTheme.typography.bodyMedium,
@@ -298,7 +297,7 @@ private fun HistoryItemCard(
                         )
 
                         Text(
-                            text = "${item.fileCount} files",
+                            text = "${item.files.size} files",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.Medium,

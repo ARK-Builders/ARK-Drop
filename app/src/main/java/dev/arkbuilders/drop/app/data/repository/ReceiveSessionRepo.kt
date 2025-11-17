@@ -2,9 +2,10 @@ package dev.arkbuilders.drop.app.data.repository
 
 import dev.arkbuilders.drop.app.data.ReceiveFilesSubscriberImpl
 import dev.arkbuilders.drop.app.domain.ResourcesHelper
+import dev.arkbuilders.drop.app.domain.model.DropFileInfo
 import dev.arkbuilders.drop.app.domain.model.ReceiveSession
 import dev.arkbuilders.drop.app.domain.model.TransferStatus
-import dev.arkbuilders.drop.app.domain.repository.TransferHistoryItemRepository
+import dev.arkbuilders.drop.app.domain.repository.TransferSessionRepo
 import dev.arkbuilders.drop.app.domain.usecase.ReceiveFilesUseCase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -17,7 +18,7 @@ import timber.log.Timber
 
 class ReceiveSessionRepo(
     private val receiveFilesUseCase: ReceiveFilesUseCase,
-    private val transferHistoryRepository: TransferHistoryItemRepository,
+    private val transferHistoryRepository: TransferSessionRepo,
     private val resourcesHelper: ResourcesHelper,
 ) {
     // Keep references to active sessions here so file transfers continue even if the ViewModel dies
@@ -59,13 +60,13 @@ class ReceiveSessionRepo(
         withContext(Dispatchers.IO) {
             val subscriber = session.subscriber
             val completeFiles = subscriber.getCompleteFiles()
-            val savedFiles = mutableListOf<String>()
+            val savedFiles = mutableListOf<DropFileInfo>()
 
             try {
                 completeFiles.forEach { (fileInfo, data) ->
                     val savedFile = resourcesHelper.saveFileToDownloads(fileInfo.name, data)
                     if (savedFile != null) {
-                        savedFiles.add(savedFile)
+                        savedFiles.add(DropFileInfo(savedFile, fileInfo.size.toLong()))
                         Timber.i("Saved file name: $savedFile")
                     } else {
                         Timber.e("Failed to save file: ${fileInfo.name}")
@@ -77,15 +78,10 @@ class ReceiveSessionRepo(
                     val senderName = progress.senderName
                     val senderAvatar = progress.senderAvatar
 
-                    val totalSize = completeFiles.sumOf { it.second.size.toLong() }
-                    val firstFileName = savedFiles.firstOrNull() ?: "Unknown"
-
                     transferHistoryRepository.addReceivedTransfer(
-                        fileName = firstFileName,
-                        fileSize = totalSize,
+                        files = savedFiles,
                         peerName = senderName,
                         peerAvatar = senderAvatar,
-                        fileCount = savedFiles.size,
                         status = TransferStatus.COMPLETED,
                     )
                 }
@@ -97,16 +93,14 @@ class ReceiveSessionRepo(
                 val senderAvatar = progress.senderAvatar
 
                 transferHistoryRepository.addReceivedTransfer(
-                    fileName = "Transfer failed",
-                    fileSize = 0L,
+                    files = emptyList(),
                     peerName = senderName,
                     peerAvatar = senderAvatar,
-                    fileCount = completeFiles.size,
                     status = TransferStatus.FAILED,
                 )
             }
 
-            savedFiles
+            return@withContext savedFiles.map { it.name }
         }
 
     fun cancelReceive(session: ReceiveSession) {

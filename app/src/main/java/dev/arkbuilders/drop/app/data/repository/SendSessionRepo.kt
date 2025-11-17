@@ -3,9 +3,10 @@ package dev.arkbuilders.drop.app.data.repository
 import android.net.Uri
 import dev.arkbuilders.drop.app.data.SendFilesSubscriberImpl
 import dev.arkbuilders.drop.app.domain.ResourcesHelper
+import dev.arkbuilders.drop.app.domain.model.DropFileInfo
 import dev.arkbuilders.drop.app.domain.model.SendSession
 import dev.arkbuilders.drop.app.domain.model.TransferStatus
-import dev.arkbuilders.drop.app.domain.repository.TransferHistoryItemRepository
+import dev.arkbuilders.drop.app.domain.repository.TransferSessionRepo
 import dev.arkbuilders.drop.app.domain.usecase.SendFilesUseCase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -19,7 +20,7 @@ import timber.log.Timber
 class SendSessionRepo(
     private val sendUseCase: SendFilesUseCase,
     private val resourcesHelper: ResourcesHelper,
-    private val transferHistoryRepository: TransferHistoryItemRepository,
+    private val transferSessionRepository: TransferSessionRepo,
 ) {
     // Keep references to active sessions here so file transfers continue even if the ViewModel dies
     private val activeSessions = mutableListOf<SendSession>()
@@ -59,21 +60,18 @@ class SendSessionRepo(
             val receiverName = progress.receiverName
             val receiverAvatar = progress.receiverAvatar
 
-            val totalSize =
-                fileUris.sumOf { uri ->
-                    resourcesHelper.getFileSize(uri.toString())
+            val filesInfo =
+                fileUris.map {
+                    DropFileInfo(
+                        name = resourcesHelper.getFileName(it.toString()) ?: "",
+                        size = resourcesHelper.getFileSize(it.toString()),
+                    )
                 }
 
-            val firstFileName =
-                fileUris.firstOrNull()?.let { resourcesHelper.getFileName(it.toString()) }
-                    ?: "Unknown"
-
-            transferHistoryRepository.addSentTransfer(
-                fileName = firstFileName,
-                fileSize = totalSize,
+            transferSessionRepository.addSentTransfer(
+                files = filesInfo,
                 peerName = receiverName,
                 peerAvatar = receiverAvatar,
-                fileCount = fileUris.size,
                 status = TransferStatus.COMPLETED,
             )
         } catch (e: Exception) {

@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.onEach
 import org.orbitmvi.orbit.Container
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.viewmodel.container
+import timber.log.Timber
 
 class ReceiveViewModel(
     private val receiveSessionRepo: ReceiveSessionRepo,
@@ -299,6 +300,7 @@ class ReceiveViewModel(
                                 }
                             }
                         } catch (e: Exception) {
+                            Timber.w("Save failed: ${e::class.simpleName} ${e.message}")
                             val error =
                                 when {
                                     e.message?.contains("storage", ignoreCase = true) == true ->

@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "5fa9ecea78d66afdf6f2502843c1f445",
+    "identityHash": "be40b7222d453a16e4b006fe48729c8e",
     "entities": [
       {
-        "tableName": "TransferHistoryItemEntity",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `fileName` TEXT NOT NULL, `fileSize` INTEGER NOT NULL, `type` TEXT NOT NULL, `timestamp` TEXT NOT NULL, `status` TEXT NOT NULL, `peerName` TEXT NOT NULL, `peerAvatar` TEXT, `fileCount` INTEGER NOT NULL)",
+        "tableName": "RoomTransferSession",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `files` TEXT NOT NULL, `type` TEXT NOT NULL, `timestamp` TEXT NOT NULL, `status` TEXT NOT NULL, `peerName` TEXT NOT NULL, `peerAvatar` TEXT)",
         "fields": [
           {
             "fieldPath": "id",
@@ -15,15 +15,9 @@
             "notNull": true
           },
           {
-            "fieldPath": "fileName",
-            "columnName": "fileName",
+            "fieldPath": "files",
+            "columnName": "files",
             "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "fileSize",
-            "columnName": "fileSize",
-            "affinity": "INTEGER",
             "notNull": true
           },
           {
@@ -54,12 +48,6 @@
             "fieldPath": "peerAvatar",
             "columnName": "peerAvatar",
             "affinity": "TEXT"
-          },
-          {
-            "fieldPath": "fileCount",
-            "columnName": "fileCount",
-            "affinity": "INTEGER",
-            "notNull": true
           }
         ],
         "primaryKey": {
@@ -72,7 +60,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '5fa9ecea78d66afdf6f2502843c1f445')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'be40b7222d453a16e4b006fe48729c8e')"
     ]
   }
 }

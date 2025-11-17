@@ -16,7 +16,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navDeepLink
 import dev.arkbuilders.drop.app.domain.repository.ProfileRepo
-import dev.arkbuilders.drop.app.domain.repository.TransferHistoryItemRepository
+import dev.arkbuilders.drop.app.domain.repository.TransferSessionRepo
 import dev.arkbuilders.drop.app.presentation.history.History
 import dev.arkbuilders.drop.app.presentation.home.Home
 import dev.arkbuilders.drop.app.presentation.navigation.DropDestination
@@ -29,7 +29,7 @@ import org.koin.android.ext.android.get
 class MainActivity : ComponentActivity() {
     private val profileRepo: ProfileRepo = get()
 
-    private val transferHistoryItemRepository: TransferHistoryItemRepository = get()
+    private val transferSessionRepo: TransferSessionRepo = get()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,7 +47,7 @@ class MainActivity : ComponentActivity() {
                             Modifier
                                 .padding(innerPadding),
                         profileRepo = profileRepo,
-                        transferHistoryItemRepository = transferHistoryItemRepository,
+                        transferSessionRepo = transferSessionRepo,
                     )
                 }
             }
@@ -60,7 +60,7 @@ fun DropNavigation(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
     profileRepo: ProfileRepo,
-    transferHistoryItemRepository: TransferHistoryItemRepository,
+    transferSessionRepo: TransferSessionRepo,
 ) {
     NavHost(
         navController = navController,
@@ -71,7 +71,7 @@ fun DropNavigation(
             Home(
                 navController = navController,
                 profileRepo = profileRepo,
-                transferHistoryItemRepository = transferHistoryItemRepository,
+                transferSessionRepo = transferSessionRepo,
             )
         }
         composable(DropDestination.Send.route) {
@@ -95,7 +95,7 @@ fun DropNavigation(
         composable(DropDestination.History.route) {
             History(
                 navController = navController,
-                transferHistoryItemRepository = transferHistoryItemRepository,
+                transferSessionRepo = transferSessionRepo,
             )
         }
         composable(DropDestination.EditProfile.route) {

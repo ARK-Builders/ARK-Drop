@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.triplet.play)
     alias(libs.plugins.ksp)
     alias(libs.plugins.ktlint.gradle)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 kotlin {

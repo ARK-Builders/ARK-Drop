@@ -2,8 +2,8 @@ package dev.arkbuilders.drop.app.presentation.history
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import dev.arkbuilders.drop.app.domain.model.TransferHistoryItem
-import dev.arkbuilders.drop.app.domain.repository.TransferHistoryItemRepository
+import dev.arkbuilders.drop.app.domain.model.TransferSession
+import dev.arkbuilders.drop.app.domain.repository.TransferSessionRepo
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import org.orbitmvi.orbit.Container
@@ -11,7 +11,7 @@ import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.viewmodel.container
 
 data class HistoryScreenState(
-    val historyItems: List<TransferHistoryItem>,
+    val historyItems: List<TransferSession>,
     val showClearDialog: Boolean,
     val showDeleteDialog: Boolean,
 )
@@ -19,7 +19,7 @@ data class HistoryScreenState(
 sealed class HistoryScreenEffect
 
 class HistoryViewModel(
-    private val historyItemRepository: TransferHistoryItemRepository,
+    private val historyItemRepository: TransferSessionRepo,
 ) : ViewModel(), ContainerHost<HistoryScreenState, HistoryScreenEffect> {
     override val container: Container<HistoryScreenState, HistoryScreenEffect> =
         container(
@@ -71,7 +71,7 @@ class HistoryViewModel(
 
     fun onDelete(id: Long) =
         intent {
-            historyItemRepository.deleteHistoryItem(id)
+            historyItemRepository.deleteSession(id)
             reduce {
                 state.copy(showDeleteDialog = false)
             }

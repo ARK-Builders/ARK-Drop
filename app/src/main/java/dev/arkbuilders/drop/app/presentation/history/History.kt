@@ -2,6 +2,7 @@ package dev.arkbuilders.drop.app.presentation.history
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -68,8 +69,7 @@ fun History(
     Column(
         modifier =
             Modifier
-                .fillMaxSize()
-                .padding(16.dp),
+                .fillMaxSize(),
     ) {
         DropTopBarBack(
             title = "Transfer history",
@@ -85,12 +85,9 @@ fun History(
             },
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
-
         if (state.historyItems.isEmpty()) {
-            // Empty state
             Card(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
                 shape = RoundedCornerShape(20.dp),
                 colors =
                     CardDefaults.cardColors(
@@ -125,9 +122,10 @@ fun History(
                 }
             }
         } else {
-            // History list
             LazyColumn(
+                modifier = Modifier,
                 verticalArrangement = Arrangement.spacedBy(12.dp),
+                contentPadding = PaddingValues(16.dp),
             ) {
                 items(state.historyItems) { item ->
                     HistoryItemCard(
@@ -144,7 +142,6 @@ fun History(
         }
     }
 
-    // Clear all confirmation dialog
     if (state.showClearDialog) {
         AlertDialog(
             onDismissRequest = { viewModel.onDismissClearDialog() },
@@ -176,7 +173,7 @@ fun History(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { viewModel.onClear() }) {
+                TextButton(onClick = { viewModel.onDismissClearDialog() }) {
                     Text("Cancel", fontWeight = FontWeight.Medium)
                 }
             },
@@ -267,45 +264,23 @@ private fun HistoryItemCard(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = formatFileSize(item.files.sumOf { it.size }),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                val size = formatFileSize(item.files.sumOf { it.size })
+                val timestamp = formatTimestamp(item.timestamp)
+                val filesCount =
+                    if (item.files.size > 1)
+                        " • ${item.files.size} files"
+                    else
+                        ""
 
-                    Text(
-                        text = "•",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                val info = "$size • $timestamp$filesCount"
 
-                    Text(
-                        text = formatTimestamp(item.timestamp),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                Text(
+                    text = info,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
 
-                    if (item.files.size > 1) {
-                        Text(
-                            text = "•",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-
-                        Text(
-                            text = "${item.files.size} files",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Medium,
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 // Status
                 Text(

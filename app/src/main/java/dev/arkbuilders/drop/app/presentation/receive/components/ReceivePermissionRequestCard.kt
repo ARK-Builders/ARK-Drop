@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import compose.icons.TablerIcons
 import compose.icons.tablericons.ArrowForward
 import compose.icons.tablericons.Camera
+import dev.arkbuilders.drop.app.presentation.components.DropInstructionsCard
 import dev.arkbuilders.drop.app.presentation.theme.DesignTokens
 
 @Composable
@@ -144,4 +145,16 @@ fun ReceivePermissionRequestCard(
             }
         }
     }
+
+    DropInstructionsCard(
+        modifier = Modifier.fillMaxWidth().padding(16.dp),
+        title = "How to receive files:",
+        steps =
+            listOf(
+                "Ask the sender to start a transfer",
+                "Scan QR code OR enter transfer code manually",
+                "Accept the transfer",
+                "Files will be saved to your Downloads folder",
+            ),
+    )
 }

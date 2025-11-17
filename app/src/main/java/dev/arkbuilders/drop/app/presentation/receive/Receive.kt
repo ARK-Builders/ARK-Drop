@@ -15,21 +15,18 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -333,64 +330,6 @@ fun Receive(navController: NavController) {
                         viewModel.onErrorDismiss()
                     },
                 )
-            }
-        }
-
-        if (state !is ReceiveScreenState.Success &&
-            state !is ReceiveScreenState.Error
-        ) {
-            Spacer(modifier = Modifier.weight(1f))
-
-            Card(
-                modifier = Modifier.padding(16.dp),
-                colors =
-                    CardDefaults.cardColors(
-                        containerColor =
-                            MaterialTheme.colorScheme.surfaceVariant.copy(
-                                alpha = 0.5f,
-                            ),
-                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    ),
-                shape = RoundedCornerShape(DesignTokens.CornerRadius.lg),
-            ) {
-                Column(
-                    modifier = Modifier.Companion.padding(DesignTokens.Spacing.lg),
-                ) {
-                    Text(
-                        text = "How to receive files:",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    Spacer(modifier = Modifier.Companion.height(DesignTokens.Spacing.md))
-
-                    val steps =
-                        listOf(
-                            "Ask the sender to start a transfer",
-                            "Scan QR code OR enter transfer code manually",
-                            "Accept the transfer",
-                            "Files will be saved to your Downloads folder",
-                        )
-
-                    steps.forEachIndexed { index, step ->
-                        Row(
-                            verticalAlignment = Alignment.Top,
-                            modifier = Modifier.padding(vertical = 2.dp),
-                        ) {
-                            Text(
-                                text = "${index + 1}.",
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.primary,
-                            )
-                            Spacer(modifier = Modifier.Companion.width(DesignTokens.Spacing.sm))
-                            Text(
-                                text = step,
-                                style = MaterialTheme.typography.bodyMedium,
-                                lineHeight = MaterialTheme.typography.bodyMedium.lineHeight * 1.2,
-                            )
-                        }
-                    }
-                }
             }
         }
     }

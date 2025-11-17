@@ -24,13 +24,13 @@ import compose.icons.TablerIcons
 import compose.icons.tablericons.FileText
 import compose.icons.tablericons.Plus
 import dev.arkbuilders.drop.app.presentation.DisplayUtils.formatBytes
+import dev.arkbuilders.drop.app.presentation.components.DropInstructionsCard
 import dev.arkbuilders.drop.app.presentation.send.components.ButtonSize
 import dev.arkbuilders.drop.app.presentation.send.components.ButtonVariant
 import dev.arkbuilders.drop.app.presentation.send.components.SendButton
 import dev.arkbuilders.drop.app.presentation.send.components.SendCard
 import dev.arkbuilders.drop.app.presentation.send.components.SendEmptyState
 import dev.arkbuilders.drop.app.presentation.send.components.SendFileItem
-import dev.arkbuilders.drop.app.presentation.send.components.SendInstructionsCard
 
 @Composable
 fun FileSelectionPhase(
@@ -151,6 +151,16 @@ fun FileSelectionPhase(
             )
         }
 
-        SendInstructionsCard()
+        DropInstructionsCard(
+            modifier = Modifier.fillMaxWidth(),
+            title = "How to send files:",
+            steps =
+                listOf(
+                    "Select files you want to send",
+                    "Tap 'Send Files' to generate QR code",
+                    "Let the receiver scan the QR code",
+                    "Files transfer automatically",
+                ),
+        )
     }
 }

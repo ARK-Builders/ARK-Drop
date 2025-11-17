@@ -37,8 +37,6 @@ sealed class ReceiveScreenEffect {
 
     data object NavigateBack : ReceiveScreenEffect()
 
-    data object ShowSuccessAnimation : ReceiveScreenEffect()
-
     data object RequestCameraPermission : ReceiveScreenEffect()
 }
 

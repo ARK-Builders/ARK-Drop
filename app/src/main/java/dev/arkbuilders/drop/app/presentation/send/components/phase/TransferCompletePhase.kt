@@ -47,46 +47,6 @@ fun TransferCompletePhase(
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
             SendCard(
-                backgroundColor = MaterialTheme.colorScheme.primaryContainer,
-                modifier = Modifier,
-            ) {
-                Column(
-                    modifier = Modifier.padding(40.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Icon(
-                        Icons.Default.CheckCircle,
-                        contentDescription = "Success",
-                        modifier = Modifier.size(64.dp),
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
-
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    Text(
-                        text = "Transfer Complete!",
-                        style =
-                            MaterialTheme.typography.headlineSmall.copy(
-                                fontWeight = FontWeight.Bold,
-                            ),
-                        textAlign = TextAlign.Center,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Text(
-                        text = "$fileCount file${
-                            if (fileCount != 1) "s" else ""
-                        } sent successfully",
-                        style = MaterialTheme.typography.bodyLarge,
-                        textAlign = TextAlign.Center,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
-                    )
-                }
-            }
-
-            SendCard(
                 backgroundColor = MaterialTheme.colorScheme.tertiaryContainer,
             ) {
                 Column(

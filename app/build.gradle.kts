@@ -178,6 +178,8 @@ dependencies {
     implementation(libs.androidx.compose.foundation)
     implementation(libs.kotlinx.serialization)
 
+    implementation(libs.ark.about)
+
     // Koin Dependency Injection
     implementation(libs.io.koin.core)
     implementation(libs.io.koin.android)

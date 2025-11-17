@@ -3,53 +3,17 @@ package dev.arkbuilders.drop.app.presentation.receive
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import dev.arkbuilders.drop.app.presentation.components.DropErrorCard
@@ -62,8 +26,6 @@ import dev.arkbuilders.drop.app.presentation.receive.components.ReceiveProgressC
 import dev.arkbuilders.drop.app.presentation.receive.components.ReceiveQRCodeScannedCard
 import dev.arkbuilders.drop.app.presentation.receive.components.ReceiveReadyToScanCard
 import dev.arkbuilders.drop.app.presentation.receive.components.ReceiveScanningCard
-import dev.arkbuilders.drop.app.presentation.theme.DesignTokens
-import kotlinx.coroutines.delay
 import org.koin.compose.koinInject
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
@@ -96,30 +58,8 @@ fun Receive(navController: NavController) {
             ReceiveScreenEffect.RequestCameraPermission -> {
                 requestPermissionLauncher.launch(Manifest.permission.CAMERA)
             }
-
-            ReceiveScreenEffect.ShowSuccessAnimation -> {
-            }
         }
     }
-
-    var showSuccessAnimation by remember { mutableStateOf(false) }
-
-    LaunchedEffect(showSuccessAnimation) {
-        if (showSuccessAnimation) {
-            delay(3000)
-            showSuccessAnimation = false
-        }
-    }
-
-    val successScale by animateFloatAsState(
-        targetValue = if (showSuccessAnimation) 1f else 0f,
-        animationSpec =
-            spring(
-                dampingRatio = Spring.DampingRatioMediumBouncy,
-                stiffness = Spring.StiffnessLow,
-            ),
-        label = "successScale",
-    )
 
     Column(
         modifier =
@@ -131,100 +71,6 @@ fun Receive(navController: NavController) {
             title = "Receive files",
             onBackClick = { navController.navigateUp() },
         )
-
-        Spacer(modifier = Modifier.Companion.height(DesignTokens.Spacing.xl))
-
-        AnimatedVisibility(
-            visible = showSuccessAnimation,
-            enter =
-                scaleIn(
-                    animationSpec =
-                        spring(
-                            dampingRatio = Spring.DampingRatioMediumBouncy,
-                            stiffness = Spring.StiffnessLow,
-                        ),
-                ) + fadeIn(),
-            exit =
-                scaleOut(
-                    animationSpec = tween(DesignTokens.Animation.NORMAL),
-                ) + fadeOut(),
-        ) {
-            Box(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center,
-            ) {
-                ElevatedCard(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .scale(successScale),
-                    shape = RoundedCornerShape(DesignTokens.CornerRadius.xl),
-                    colors =
-                        CardDefaults.elevatedCardColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                        ),
-                    elevation =
-                        CardDefaults.elevatedCardElevation(
-                            defaultElevation = DesignTokens.Elevation.xl,
-                        ),
-                ) {
-                    Column(
-                        modifier = Modifier.Companion.padding(DesignTokens.Spacing.xxl),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        Box(
-                            modifier =
-                                Modifier
-                                    .size(80.dp)
-                                    .background(
-                                        brush =
-                                            Brush.radialGradient(
-                                                colors =
-                                                    listOf(
-                                                        MaterialTheme.colorScheme.primary.copy(
-                                                            alpha = 0.2f,
-                                                        ),
-                                                        Color.Transparent,
-                                                    ),
-                                            ),
-                                        shape = CircleShape,
-                                    )
-                                    .clip(CircleShape),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Icon(
-                                Icons.Default.CheckCircle,
-                                contentDescription = "Success",
-                                modifier = Modifier.size(48.dp),
-                                tint = MaterialTheme.colorScheme.primary,
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.Companion.height(DesignTokens.Spacing.lg))
-
-                        Text(
-                            text = "Files Received!",
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold,
-                            textAlign = TextAlign.Center,
-                        )
-
-                        Spacer(modifier = Modifier.Companion.height(DesignTokens.Spacing.sm))
-
-                        Text(
-                            text =
-                                "All files have been successfully saved to your" +
-                                    " Downloads folder.",
-                            style = MaterialTheme.typography.bodyLarge,
-                            textAlign = TextAlign.Center,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
-                            lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.2,
-                        )
-                    }
-                }
-            }
-        }
 
         val receiveScreenState = state
         when (receiveScreenState) {
@@ -307,17 +153,15 @@ fun Receive(navController: NavController) {
             }
 
             is ReceiveScreenState.Success -> {
-                if (!showSuccessAnimation) {
-                    ReceiveCompleteCard(
-                        receivedFiles = receiveScreenState.receivedFiles,
-                        onReceiveMore = {
-                            viewModel.onReceiveMore()
-                        },
-                        onDone = {
-                            viewModel.onDone()
-                        },
-                    )
-                }
+                ReceiveCompleteCard(
+                    receivedFiles = receiveScreenState.receivedFiles,
+                    onReceiveMore = {
+                        viewModel.onReceiveMore()
+                    },
+                    onDone = {
+                        viewModel.onDone()
+                    },
+                )
             }
 
             is ReceiveScreenState.Error -> {

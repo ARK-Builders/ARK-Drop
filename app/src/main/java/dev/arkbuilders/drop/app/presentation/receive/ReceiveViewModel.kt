@@ -290,7 +290,6 @@ class ReceiveViewModel(
                                         receivedFiles = savedFiles,
                                     )
                                 }
-                                postSideEffect(ReceiveScreenEffect.ShowSuccessAnimation)
                             } else {
                                 reduce {
                                     ReceiveScreenState.Error(

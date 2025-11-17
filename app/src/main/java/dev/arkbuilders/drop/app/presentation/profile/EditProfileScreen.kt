@@ -37,6 +37,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -89,6 +90,7 @@ import dev.arkbuilders.drop.app.presentation.components.DropTopBarBack
 import dev.arkbuilders.drop.app.presentation.components.ErrorState
 import dev.arkbuilders.drop.app.presentation.components.ErrorStateDisplay
 import dev.arkbuilders.drop.app.presentation.components.ErrorType
+import dev.arkbuilders.drop.app.presentation.navigation.DropDestination
 import dev.arkbuilders.drop.app.presentation.theme.DesignTokens
 import kotlinx.coroutines.delay
 import org.koin.compose.koinInject
@@ -220,6 +222,8 @@ fun EditProfileEnhanced(navController: NavController) {
                     viewModel.onAvatarSelected(avatarId)
                 },
             )
+
+            About(navController = navController)
 
             PrivacyNoticeSection()
 
@@ -670,6 +674,43 @@ private fun PrivacyNoticeSection() {
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun About(navController: NavController) {
+    DropCard(
+        variant = DropCardVariant.Filled,
+        size = DropCardSize.Medium,
+        colors =
+            CardDefaults.cardColors(
+                containerColor = colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                contentColor = colorScheme.onSurfaceVariant,
+            ),
+        onClick = {
+            navController.navigate(DropDestination.About.route)
+        },
+    ) {
+        Row(Modifier.padding(DesignTokens.Spacing.lg)) {
+            Icon(
+                Icons.Default.Info,
+                contentDescription = null,
+                modifier =
+                    Modifier
+                        .size(20.dp)
+                        .padding(top = 2.dp),
+                tint = colorScheme.primary,
+            )
+
+            Spacer(modifier = Modifier.Companion.width(DesignTokens.Spacing.md))
+
+            Text(
+                text = "About",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = colorScheme.onSurface,
+            )
         }
     }
 }

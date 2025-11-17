@@ -3,6 +3,8 @@ agp = "8.12.1"
 kotlin = "2.2.0"
 ksp = "2.2.0-2.0.2"
 coreKtx = "1.15.0"
+
+arkAbout = "0.2.0"
 junit = "4.13.2"
 junitVersion = "1.2.1"
 espressoCore = "3.6.1"
@@ -49,6 +51,8 @@ androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-man
 androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
 androidx-compose-foundation = { group = "androidx.compose.foundation", name = "foundation" }
+
+ark-about = { module = "dev.arkbuilders.components:about", version.ref = "arkAbout" }
 
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
 timber = { module = "com.jakewharton.timber:timber", version.ref = "timber" }

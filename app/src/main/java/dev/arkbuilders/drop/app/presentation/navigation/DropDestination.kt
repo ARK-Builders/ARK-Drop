@@ -9,6 +9,8 @@ sealed class DropDestination(val route: String) {
 
     object EditProfile : DropDestination("edit_profile")
 
+    object About : DropDestination("about")
+
     object Receive : DropDestination("receive?ticket={ticket}&confirmation={confirmation}") {
         const val DEEP_LINK_PATTERN = "drop://receive?ticket={ticket}&confirmation={confirmation}"
 

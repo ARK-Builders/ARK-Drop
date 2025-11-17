@@ -20,6 +20,7 @@ import dev.arkbuilders.drop.app.domain.repository.TransferSessionRepo
 import dev.arkbuilders.drop.app.presentation.history.History
 import dev.arkbuilders.drop.app.presentation.home.Home
 import dev.arkbuilders.drop.app.presentation.navigation.DropDestination
+import dev.arkbuilders.drop.app.presentation.profile.AboutScreen
 import dev.arkbuilders.drop.app.presentation.profile.EditProfileEnhanced
 import dev.arkbuilders.drop.app.presentation.receive.Receive
 import dev.arkbuilders.drop.app.presentation.send.Send
@@ -100,6 +101,11 @@ fun DropNavigation(
         }
         composable(DropDestination.EditProfile.route) {
             EditProfileEnhanced(
+                navController = navController,
+            )
+        }
+        composable(DropDestination.About.route) {
+            AboutScreen(
                 navController = navController,
             )
         }

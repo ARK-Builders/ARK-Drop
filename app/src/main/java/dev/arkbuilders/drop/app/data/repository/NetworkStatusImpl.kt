@@ -5,7 +5,6 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
-import android.os.Build
 import dev.arkbuilders.drop.app.domain.repository.NetworkStatus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,7 +12,7 @@ import kotlinx.coroutines.flow.StateFlow
 class NetworkStatusImpl(
     private val context: Context,
 ) : NetworkStatus {
-    private val cm =
+    private val connectivityManager =
         context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
     private val _onlineStatus = MutableStateFlow(checkIsOnline())
@@ -24,13 +23,10 @@ class NetworkStatusImpl(
             NetworkRequest.Builder()
                 .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
                 .addCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
-                .apply {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
-                        addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_SUSPENDED)
-                }
+                .addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_SUSPENDED)
                 .build()
 
-        cm.registerNetworkCallback(
+        connectivityManager.registerNetworkCallback(
             networkRequest,
             object : ConnectivityManager.NetworkCallback() {
                 override fun onLost(network: Network) {
@@ -45,17 +41,12 @@ class NetworkStatusImpl(
     }
 
     private fun checkIsOnline(): Boolean {
-        val network: Network = cm.activeNetwork ?: return false
+        val network: Network = connectivityManager.activeNetwork ?: return false
         val networkCapabilities: NetworkCapabilities =
-            cm.getNetworkCapabilities(network) ?: return false
+            connectivityManager.getNetworkCapabilities(network) ?: return false
 
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
-                networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) &&
-                networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_SUSPENDED)
-        } else {
-            networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
-                networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
-        }
+        return networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+            networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) &&
+            networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_SUSPENDED)
     }
 }

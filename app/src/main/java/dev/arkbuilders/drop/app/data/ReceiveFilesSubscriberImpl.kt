@@ -1,12 +1,12 @@
 package dev.arkbuilders.drop.app.data
 
-import android.util.Log
 import dev.arkbuilders.drop.ReceiveFilesConnectingEvent
 import dev.arkbuilders.drop.ReceiveFilesReceivingEvent
 import dev.arkbuilders.drop.ReceiveFilesSubscriber
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import timber.log.Timber
 import java.io.ByteArrayOutputStream
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
@@ -46,11 +46,11 @@ class ReceiveFilesSubscriberImpl : ReceiveFilesSubscriber {
     override fun getId(): String = id
 
     override fun log(message: String) {
-        Log.d(TAG, message)
+        Timber.tag(TAG).d(message)
     }
 
     override fun notifyReceiving(event: ReceiveFilesReceivingEvent) {
-        Log.d(TAG, "Receiving data for file: ${event.id}, data size: ${event.data.size}")
+        Timber.tag(TAG).d("Receiving data for file: ${event.id}, data size: ${event.data.size}")
 
         // Get or create ByteArrayOutputStream for this file
         val stream = receivedDataStreams.getOrPut(event.id) { ByteArrayOutputStream() }
@@ -83,13 +83,13 @@ class ReceiveFilesSubscriberImpl : ReceiveFilesSubscriber {
                 )
 
             if (isComplete) {
-                Log.d(TAG, "File ${fileInfo.name} completed: $receivedBytes bytes")
+                Timber.tag(TAG).d("File ${fileInfo.name} completed: $receivedBytes bytes")
             }
         }
     }
 
     override fun notifyConnecting(event: ReceiveFilesConnectingEvent) {
-        Log.d(TAG, "Connected to sender: ${event.sender.name}, files: ${event.files.size}")
+        Timber.tag(TAG).d("Connected to sender: ${event.sender.name}, files: ${event.files.size}")
 
         val fileInfos =
             event.files.map { file ->
@@ -163,7 +163,7 @@ class ReceiveFilesSubscriberImpl : ReceiveFilesSubscriber {
     /**
      * Check if all files are complete
      */
-    public fun areAllFilesComplete(): Boolean {
+    fun areAllFilesComplete(): Boolean {
         val currentProgress = _progress.value
         return currentProgress.files.isNotEmpty() &&
             currentProgress.files.all { file ->

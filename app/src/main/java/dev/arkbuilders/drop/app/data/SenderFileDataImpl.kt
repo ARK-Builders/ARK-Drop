@@ -2,8 +2,8 @@ package dev.arkbuilders.drop.app.data
 
 import android.content.Context
 import android.net.Uri
-import android.util.Log
 import dev.arkbuilders.drop.SenderFileData
+import timber.log.Timber
 import java.io.InputStream
 
 class SenderFileDataImpl(
@@ -36,9 +36,9 @@ class SenderFileDataImpl(
             inputStream = context.contentResolver.openInputStream(uri)
             isInitialized = true
 
-            Log.d(TAG, "Initialized SenderFileData for URI: $uri, size: $totalLength")
+            Timber.tag(TAG).d("Initialized SenderFileData for URI: $uri, size: $totalLength")
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to initialize SenderFileData", e)
+            Timber.tag(TAG).e(e, "Failed to initialize SenderFileData")
         }
     }
 
@@ -58,7 +58,7 @@ class SenderFileDataImpl(
                 byte?.toUByte()
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error reading byte", e)
+            Timber.tag(TAG).e(e, "Error reading byte")
             null
         }
     }
@@ -80,7 +80,7 @@ class SenderFileDataImpl(
             inputStream?.read(bytes) ?: 0
             bytes
         } catch (e: Exception) {
-            Log.e(TAG, "Error reading chunk of size $size", e)
+            Timber.tag(TAG).e(e, "Error reading chunk of size $size")
             ByteArray(0)
         }
     }

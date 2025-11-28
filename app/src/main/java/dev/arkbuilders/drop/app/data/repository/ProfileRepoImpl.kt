@@ -1,6 +1,5 @@
 package dev.arkbuilders.drop.app.data.repository
 
-import android.content.Context
 import dev.arkbuilders.drop.app.data.datasource.ProfileLocalDataSource
 import dev.arkbuilders.drop.app.domain.model.UserAvatar
 import dev.arkbuilders.drop.app.domain.model.UserProfile
@@ -11,7 +10,6 @@ import kotlinx.coroutines.flow.asStateFlow
 
 class ProfileRepoImpl(
     private val localDataSource: ProfileLocalDataSource,
-    private val context: Context,
 ) : ProfileRepo {
     private val _profile = MutableStateFlow(localDataSource.loadProfile())
     override val profile: StateFlow<UserProfile> = _profile.asStateFlow()

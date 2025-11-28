@@ -24,7 +24,7 @@ import org.koin.dsl.module
 
 val appModule =
     module {
-        single<ProfileRepo> { ProfileRepoImpl(get(), get()) }
+        single<ProfileRepo> { ProfileRepoImpl(get()) }
         single<ResourcesHelper> { ResourcesHelperImpl(get()) }
         single<Database> { Database.build(get()) }
         single<TransferSessionRepo> { TransferSessionRepoImpl(get()) }
@@ -40,5 +40,5 @@ val appModule =
             db.transferHistoryDao()
         }
         factory<SendFilesUseCase> { SendFilesUseCase(get(), get(), get()) }
-        factory<ReceiveFilesUseCase> { ReceiveFilesUseCase(get(), get(), get()) }
+        factory<ReceiveFilesUseCase> { ReceiveFilesUseCase(get()) }
     }

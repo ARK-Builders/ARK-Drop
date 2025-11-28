@@ -11,7 +11,7 @@ import dev.arkbuilders.drop.app.domain.model.UserProfile
 import kotlinx.serialization.json.Json
 
 class ProfileLocalDataSource(
-    private val context: Context,
+    context: Context,
     private val avatarHelper: AvatarHelper,
 ) {
     private val prefs: SharedPreferences =
@@ -20,10 +20,7 @@ class ProfileLocalDataSource(
     private val json = Json { ignoreUnknownKeys = true }
 
     fun loadProfile(): UserProfile {
-        val profileJson = prefs.getString(KEY_PROFILE, null)
-        if (profileJson == null) {
-            return createDefaultProfile()
-        }
+        val profileJson = prefs.getString(KEY_PROFILE, null) ?: return createDefaultProfile()
 
         return runCatching {
             json

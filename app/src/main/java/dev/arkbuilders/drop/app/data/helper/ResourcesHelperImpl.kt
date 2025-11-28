@@ -28,7 +28,7 @@ class ResourcesHelperImpl(
                     }
                 }
         } catch (e: Exception) {
-            Timber.Forest.e(e, "Error getting filename for URI: $uri")
+            Timber.e(e, "Error getting filename for URI: $uri")
             null
         }
     }
@@ -40,12 +40,12 @@ class ResourcesHelperImpl(
         uris.forEach { uri ->
             try {
                 val size = getFileSize(uri)
-                if (size > 0 && size <= 2_000_000_000L) { // 2GB limit
+                if (size in 1..2_000_000_000L) { // 2GB limit
                     validFiles.add(uri)
                 } else {
                     skippedCount++
                 }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 skippedCount++
             }
         }
@@ -63,7 +63,7 @@ class ResourcesHelperImpl(
                     0L
                 }
             } ?: 0L
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             0L
         }
     }

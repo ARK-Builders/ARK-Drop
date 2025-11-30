@@ -1,12 +1,12 @@
 package dev.arkbuilders.drop.app.data
 
-import android.util.Log
 import dev.arkbuilders.drop.SendFilesConnectingEvent
 import dev.arkbuilders.drop.SendFilesSendingEvent
 import dev.arkbuilders.drop.SendFilesSubscriber
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import timber.log.Timber
 import java.util.UUID
 
 data class SendingProgress(
@@ -31,14 +31,11 @@ class SendFilesSubscriberImpl : SendFilesSubscriber {
     override fun getId(): String = id
 
     override fun log(message: String) {
-        Log.d(TAG, message)
+        Timber.tag(TAG).d(message)
     }
 
     override fun notifySending(event: SendFilesSendingEvent) {
-        Log.d(
-            TAG,
-            "Sending progress: ${event.name} - sent: ${event.sent}, remaining: ${event.remaining}",
-        )
+        log("Sending progress: ${event.name} - sent: ${event.sent}, remaining: ${event.remaining}")
 
         _progress.value =
             _progress.value.copy(
@@ -49,7 +46,7 @@ class SendFilesSubscriberImpl : SendFilesSubscriber {
     }
 
     override fun notifyConnecting(event: SendFilesConnectingEvent) {
-        Log.d(TAG, "Connected to receiver: ${event.receiver.name}")
+        log("Connected to receiver: ${event.receiver.name}")
 
         _progress.value =
             _progress.value.copy(

@@ -13,7 +13,7 @@ import timber.log.Timber
 class DropApplication : Application() {
     override fun onCreate() {
         super.onCreate()
-        Timber.Forest.plant(Timber.DebugTree())
+        Timber.plant(Timber.DebugTree())
 
         val buildConfigFieldsModule =
             module {

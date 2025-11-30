@@ -5,6 +5,7 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
+import android.os.Build
 import dev.arkbuilders.drop.app.domain.repository.NetworkStatus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,7 +24,11 @@ class NetworkStatusImpl(
             NetworkRequest.Builder()
                 .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
                 .addCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
-                .addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_SUSPENDED)
+                .apply {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                        addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_SUSPENDED)
+                    }
+                }
                 .build()
 
         connectivityManager.registerNetworkCallback(
@@ -45,8 +50,12 @@ class NetworkStatusImpl(
         val networkCapabilities: NetworkCapabilities =
             connectivityManager.getNetworkCapabilities(network) ?: return false
 
-        return networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
-            networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) &&
-            networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_SUSPENDED)
+        var isOnline = networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+            networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+           isOnline =  isOnline && networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_SUSPENDED)
+        }
+        return isOnline
     }
 }

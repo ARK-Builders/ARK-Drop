@@ -31,7 +31,7 @@ android {
 
     defaultConfig {
         applicationId = "dev.arkbuilders.drop.app"
-        minSdk = 29
+        minSdk = 26
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"

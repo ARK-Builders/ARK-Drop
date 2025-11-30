@@ -24,7 +24,7 @@ import org.koin.dsl.module
 
 val appModule =
     module {
-        single<ProfileRepo> { ProfileRepoImpl(get(), get()) }
+        single<ProfileRepo> { ProfileRepoImpl(get()) }
         single<ResourcesHelper> { ResourcesHelperImpl(get()) }
         single<Database> { Database.build(get()) }
         single<TransferSessionRepo> { TransferSessionRepoImpl(get()) }
@@ -40,66 +40,5 @@ val appModule =
             db.transferHistoryDao()
         }
         factory<SendFilesUseCase> { SendFilesUseCase(get(), get(), get()) }
-        factory<ReceiveFilesUseCase> { ReceiveFilesUseCase(get(), get(), get()) }
+        factory<ReceiveFilesUseCase> { ReceiveFilesUseCase(get()) }
     }
-
-/*@Module
-@InstallIn(SingletonComponent::class)
-object AppModule {
-
-    @Provides
-    @Singleton
-    fun provideProfileRepo(impl: ProfileRepoImpl): ProfileRepo = impl
-
-    @Provides
-    @Singleton
-    fun provideTransferManager(
-        @ApplicationContext context: Context,
-        profileRepo: ProfileRepo,
-        transferHistoryItemRepository: TransferHistoryItemRepository
-    ): TransferManager {
-        return TransferManager(context, profileRepo, transferHistoryItemRepository)
-    }
-
-    @Provides
-    @Singleton
-    fun provideResourcesHelper(
-        impl: ResourcesHelperImpl
-    ): ResourcesHelper = impl
-
-    @Provides
-    @Singleton
-    fun provideDatabase(
-        @ApplicationContext context: Context,
-    ) = Database.build(context)
-
-    @Provides
-    fun provideTransferHistoryItemDao(
-        db: Database,
-    ) = db.transferHistoryDao()
-
-    @Provides
-    @Singleton
-    fun provideTransferHistoryItemRepository(
-        impl: TransferHistoryItemRepositoryImpl
-    ): TransferHistoryItemRepository = impl
-
-    @Provides
-    @Singleton
-    fun providePermissionHelper(
-        impl: PermissionsHelperImpl
-    ): PermissionsHelper = impl
-
-    @Provides
-    @Singleton
-    fun provideNetworkStatus(
-        impl: NetworkStatusImpl
-    ): NetworkStatus = impl
-
-    @Provides
-    @Singleton
-    fun provideAvatarHelper(
-        impl: AvatarHelperImpl
-    ): AvatarHelper = impl
-}
-*/

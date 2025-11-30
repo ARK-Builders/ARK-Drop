@@ -24,7 +24,7 @@ class AvatarHelperImpl(
             val bitmap = loadBitmapFromUri(uri.toUri()) ?: return null
             val optimizedBitmap = optimizeBitmap(bitmap)
             bitmapToBase64(optimizedBitmap)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
     }
@@ -33,9 +33,9 @@ class AvatarHelperImpl(
         return try {
             val source = ImageDecoder.createSource(context.contentResolver, uri)
             ImageDecoder.decodeBitmap(source)
-        } catch (e: IOException) {
+        } catch (_: IOException) {
             null
-        } catch (e: SecurityException) {
+        } catch (_: SecurityException) {
             null
         }
     }
@@ -73,7 +73,7 @@ class AvatarHelperImpl(
             }
 
             Base64.encodeToString(byteArray, Base64.DEFAULT)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
     }
@@ -93,7 +93,7 @@ class AvatarHelperImpl(
             } else {
                 ""
             }
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             ""
         }
     }

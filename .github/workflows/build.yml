@@ -34,7 +34,7 @@ jobs:
               run: ./gradlew assembleDebug
 
     build:
-        needs: [check, lint, ktlint]
+        needs: [lint, ktlint]
         environment: Development
         runs-on: ubuntu-latest
         steps:

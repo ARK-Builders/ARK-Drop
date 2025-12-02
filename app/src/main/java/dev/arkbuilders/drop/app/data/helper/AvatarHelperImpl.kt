@@ -1,11 +1,11 @@
 package dev.arkbuilders.drop.app.data.helper
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.ImageDecoder
 import android.net.Uri
+import android.os.Build
 import android.util.Base64
 import androidx.core.graphics.scale
 import androidx.core.net.toUri
@@ -14,7 +14,6 @@ import dev.arkbuilders.drop.app.domain.AvatarHelper.Companion.JPEG_QUALITY
 import dev.arkbuilders.drop.app.domain.AvatarHelper.Companion.MAX_FILE_SIZE
 import dev.arkbuilders.drop.app.domain.AvatarHelper.Companion.MAX_IMAGE_SIZE
 import java.io.ByteArrayOutputStream
-import java.io.IOException
 
 class AvatarHelperImpl(
     private val context: Context,
@@ -31,11 +30,15 @@ class AvatarHelperImpl(
 
     private fun loadBitmapFromUri(uri: Uri): Bitmap? {
         return try {
-            val source = ImageDecoder.createSource(context.contentResolver, uri)
-            ImageDecoder.decodeBitmap(source)
-        } catch (_: IOException) {
-            null
-        } catch (_: SecurityException) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                val source = ImageDecoder.createSource(context.contentResolver, uri)
+                ImageDecoder.decodeBitmap(source)
+            } else {
+                context.contentResolver.openInputStream(uri)?.use { input ->
+                    BitmapFactory.decodeStream(input)
+                }
+            }
+        } catch (_: Throwable) {
             null
         }
     }

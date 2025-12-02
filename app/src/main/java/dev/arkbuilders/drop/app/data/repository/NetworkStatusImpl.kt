@@ -50,11 +50,13 @@ class NetworkStatusImpl(
         val networkCapabilities: NetworkCapabilities =
             connectivityManager.getNetworkCapabilities(network) ?: return false
 
-        var isOnline = networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
-            networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+        var isOnline =
+            networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+                networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-           isOnline =  isOnline && networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_SUSPENDED)
+            isOnline = isOnline &&
+                networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_SUSPENDED)
         }
         return isOnline
     }

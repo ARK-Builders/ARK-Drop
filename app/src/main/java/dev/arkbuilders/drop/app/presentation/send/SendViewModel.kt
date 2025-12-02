@@ -8,7 +8,6 @@ import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.zxing.BarcodeFormat
-import com.google.zxing.WriterException
 import com.google.zxing.common.BitMatrix
 import com.google.zxing.qrcode.QRCodeWriter
 import dev.arkbuilders.drop.app.data.repository.SendSessionRepo
@@ -313,12 +312,8 @@ class SendViewModel(
                 }
             }
             return bitmap
-        } catch (e: WriterException) {
-            // TODO
-            //           throw RuntimeException("QR code generation failed: ${e.message}", e)
-            return null
-        } catch (e: Exception) {
-            //           throw RuntimeException("Unexpected error during QR code generation: ${e.message}", e)
+        } catch (e: Throwable) {
+            Timber.e("Unexpected error during QR code generation: ${e.message}")
             return null
         }
     }

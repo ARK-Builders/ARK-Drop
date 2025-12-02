@@ -78,7 +78,6 @@ class AvatarHelperImpl(
         }
     }
 
-    @SuppressLint("DiscouragedApi")
     override fun getDefaultAvatarBase64(avatarId: String): String {
         return try {
             val resourceId =

@@ -1,5 +1,9 @@
 package dev.arkbuilders.drop.app.presentation.home
 
+import android.Manifest
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -29,6 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -64,6 +69,7 @@ import dev.arkbuilders.drop.app.presentation.theme.DesignTokens
 import kotlinx.coroutines.delay
 import org.koin.compose.koinInject
 import org.orbitmvi.orbit.compose.collectAsState
+import org.orbitmvi.orbit.compose.collectSideEffect
 import java.time.Duration
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
@@ -77,6 +83,7 @@ fun Home(
 ) {
     val viewModel: HomeViewModel = koinInject()
     val state by viewModel.collectAsState()
+    val context = LocalContext.current
 
     var logoScale by remember { mutableStateOf(0f) }
 
@@ -95,6 +102,30 @@ fun Home(
             ),
         label = "logoScale",
     )
+
+    val requestWritePermissionLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.RequestPermission(),
+        ) { isGranted ->
+            if (isGranted) {
+                navController.navigate(DropDestination.Receive.route)
+            } else {
+                Toast
+                    .makeText(context, "Write permission not granted", Toast.LENGTH_SHORT)
+                    .show()
+            }
+        }
+
+    viewModel.collectSideEffect { effect ->
+        when (effect) {
+            HomeScreenEffect.AskWritePermission -> {
+                requestWritePermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+            }
+            HomeScreenEffect.NavigateToReceiveScreen -> {
+                navController.navigate(DropDestination.Receive.route)
+            }
+        }
+    }
 
     LazyColumn(
         modifier =
@@ -116,7 +147,7 @@ fun Home(
         item {
             QuickActionsSection(
                 onSendClick = { navController.navigate(DropDestination.Send.route) },
-                onReceiveClick = { navController.navigate(DropDestination.Receive.route) },
+                onReceiveClick = { viewModel.onReceiveClick() },
             )
         }
 

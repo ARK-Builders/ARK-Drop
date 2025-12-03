@@ -2,6 +2,7 @@ package dev.arkbuilders.drop.app.presentation.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dev.arkbuilders.drop.app.domain.PermissionsHelper
 import dev.arkbuilders.drop.app.domain.model.TransferSession
 import dev.arkbuilders.drop.app.domain.model.UserProfile
 import dev.arkbuilders.drop.app.domain.repository.ProfileRepo
@@ -18,11 +19,16 @@ data class HomeScreenState(
     val profile: UserProfile,
 )
 
-sealed class HomeScreenEffect
+sealed class HomeScreenEffect {
+    object AskWritePermission : HomeScreenEffect()
+
+    object NavigateToReceiveScreen : HomeScreenEffect()
+}
 
 class HomeViewModel(
     private val historyItemRepository: TransferSessionRepo,
     private val profileRepo: ProfileRepo,
+    private val permissionsHelper: PermissionsHelper,
 ) : ViewModel(), ContainerHost<HomeScreenState, HomeScreenEffect> {
     override val container: Container<HomeScreenState, HomeScreenEffect> =
         container(HomeScreenState(emptyList(), UserProfile.empty()))
@@ -47,4 +53,13 @@ class HomeViewModel(
             }
         }
     }
+
+    fun onReceiveClick() =
+        intent {
+            if (permissionsHelper.isWritePermissionGranted()) {
+                postSideEffect(HomeScreenEffect.NavigateToReceiveScreen)
+            } else {
+                postSideEffect(HomeScreenEffect.AskWritePermission)
+            }
+        }
 }

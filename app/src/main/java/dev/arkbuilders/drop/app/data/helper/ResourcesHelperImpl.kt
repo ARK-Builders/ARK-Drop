@@ -2,13 +2,17 @@ package dev.arkbuilders.drop.app.data.helper
 
 import android.content.ContentValues
 import android.content.Context
+import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.provider.OpenableColumns
 import android.webkit.MimeTypeMap
+import androidx.annotation.RequiresApi
 import androidx.core.net.toUri
 import dev.arkbuilders.drop.app.domain.ResourcesHelper
 import timber.log.Timber
+import java.io.File
+import java.io.FileOutputStream
 import java.net.URLConnection
 
 class ResourcesHelperImpl(
@@ -72,46 +76,73 @@ class ResourcesHelperImpl(
         fileName: String,
         data: ByteArray,
     ): String? {
-        val resolver = context.contentResolver
-
         val uniqueName = getUniqueFileName(fileName)
-        val mime = getMimeType(uniqueName)
+
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            saveModern(uniqueName, data)
+        } else {
+            saveLegacy(uniqueName, data)
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.Q)
+    private fun saveModern(
+        fileName: String,
+        data: ByteArray,
+    ): String? {
+        val resolver = context.contentResolver
+        val mime = getMimeType(fileName)
+        val relativePath = Environment.DIRECTORY_DOWNLOADS + "/"
 
         val values =
             ContentValues().apply {
-                put(MediaStore.MediaColumns.DISPLAY_NAME, uniqueName)
+                put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
                 put(MediaStore.MediaColumns.MIME_TYPE, mime)
-                put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+                put(MediaStore.MediaColumns.RELATIVE_PATH, relativePath)
+                put(MediaStore.MediaColumns.IS_PENDING, 1)
             }
 
         val uri =
             resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
                 ?: return null
 
-        resolver.openOutputStream(uri)?.use { it.write(data) }
+        try {
+            resolver.openOutputStream(uri)?.use { it.write(data) }
+        } catch (e: Exception) {
+            resolver.delete(uri, null, null)
+            return null
+        }
 
-        return uniqueName
+        values.clear()
+        values.put(MediaStore.MediaColumns.IS_PENDING, 0)
+        resolver.update(uri, values, null, null)
+
+        return fileName
+    }
+
+    private fun saveLegacy(
+        fileName: String,
+        data: ByteArray,
+    ): String {
+        val downloads =
+            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+        if (!downloads.exists()) downloads.mkdirs()
+
+        val file = File(downloads, fileName)
+
+        FileOutputStream(file).use { it.write(data) }
+
+        return fileName
     }
 
     private fun getUniqueFileName(originalName: String): String {
-        val resolver = context.contentResolver
-
         val baseName = originalName.substringBeforeLast(".")
         val ext = originalName.substringAfterLast(".", "")
         var candidateName = originalName
         var attempt = 1
 
         while (true) {
-            val values =
-                ContentValues().apply {
-                    put(MediaStore.MediaColumns.DISPLAY_NAME, candidateName)
-                    put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
-                }
-
-            val testUri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
-
-            if (testUri != null) {
-                resolver.delete(testUri, null, null)
+            if (doesFileExistInDownloads(candidateName).not()) {
                 return candidateName
             }
 
@@ -133,6 +164,52 @@ class ResourcesHelperImpl(
                 }
             }
         }
+    }
+
+    private fun doesFileExistInDownloads(name: String): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            doesFileExistModern(name)
+        } else {
+            doesFileExistLegacy(name)
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.Q)
+    private fun doesFileExistModern(name: String): Boolean {
+        val resolver = context.contentResolver
+
+        val projection = arrayOf(MediaStore.MediaColumns.DISPLAY_NAME)
+
+        val selection =
+            "${MediaStore.MediaColumns.DISPLAY_NAME} = ? AND " +
+                "${MediaStore.MediaColumns.RELATIVE_PATH} = ?"
+
+        val selectionArgs =
+            arrayOf(
+                name,
+                Environment.DIRECTORY_DOWNLOADS + "/",
+            )
+
+        resolver.query(
+            MediaStore.Downloads.EXTERNAL_CONTENT_URI,
+            projection,
+            selection,
+            selectionArgs,
+            null,
+        )?.use { cursor ->
+            return cursor.moveToFirst()
+        }
+
+        return false
+    }
+
+    private fun doesFileExistLegacy(name: String): Boolean {
+        val downloads =
+            Environment
+                .getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+
+        val file = File(downloads, name)
+        return file.exists()
     }
 
     private fun getMimeType(fileName: String): String {

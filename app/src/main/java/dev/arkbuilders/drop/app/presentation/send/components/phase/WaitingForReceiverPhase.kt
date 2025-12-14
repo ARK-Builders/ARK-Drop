@@ -1,5 +1,11 @@
 package dev.arkbuilders.drop.app.presentation.send.components.phase
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.graphics.Bitmap
+import android.widget.Toast
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -7,88 +13,140 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import compose.icons.TablerIcons
+import compose.icons.tablericons.Copy
 import dev.arkbuilders.drop.app.presentation.send.components.ButtonSize
 import dev.arkbuilders.drop.app.presentation.send.components.ButtonVariant
 import dev.arkbuilders.drop.app.presentation.send.components.SendButton
-import dev.arkbuilders.drop.app.presentation.send.components.SendCard
 import dev.arkbuilders.drop.app.presentation.send.components.SendLoadingIndicator
 
 @Composable
 fun WaitingForReceiverPhase(
+    qrBitmap: Bitmap,
     fileCount: Int,
+    copyString: String,
     onCancel: () -> Unit,
 ) {
+    val context = LocalContext.current
+
     Column(
-        modifier = Modifier.fillMaxWidth().padding(20.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
-        SendCard {
-            Column(
-                modifier = Modifier.padding(32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Text(
-                    text = "Ready to Send",
-                    style =
-                        MaterialTheme.typography.headlineSmall.copy(
-                            fontWeight = FontWeight.Bold,
-                        ),
-                    color = MaterialTheme.colorScheme.onSurface,
-                    textAlign = TextAlign.Center,
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text =
-                        "$fileCount file${if (fileCount != 1) "s" else ""}" +
-                            " ready for transfer",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                )
-
-                Spacer(modifier = Modifier.height(32.dp))
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    SendLoadingIndicator()
-                    Text(
-                        text = "Waiting for receiver to scan...",
-                        style =
-                            MaterialTheme.typography.bodyMedium.copy(
-                                fontWeight = FontWeight.Medium,
-                            ),
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                }
-            }
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = Color.White,
+            shadowElevation = 4.dp,
+        ) {
+            Image(
+                bitmap = qrBitmap.asImageBitmap(),
+                contentDescription = "QR code for file transfer",
+                modifier =
+                    Modifier
+                        .size(220.dp)
+                        .padding(16.dp),
+            )
         }
 
+        Spacer(modifier = Modifier.height(20.dp))
+
+        Text(
+            text = "Show this QR code to the receiver",
+            style =
+                MaterialTheme.typography.bodyLarge.copy(
+                    fontWeight = FontWeight.Medium,
+                ),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = "$fileCount file${if (fileCount != 1) "s" else ""} ready to transfer",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+            textAlign = TextAlign.Center,
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
         SendButton(
-            onClick = onCancel,
+            onClick = {
+                copyToClipboard(context, copyString)
+                Toast.makeText(context, "Code copied!", Toast.LENGTH_SHORT).show()
+            },
             variant = ButtonVariant.Secondary,
-            size = ButtonSize.Large,
-            modifier = Modifier.fillMaxWidth(),
+            size = ButtonSize.Medium,
+        ) {
+            Icon(
+                TablerIcons.Copy,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                "Copy code",
+                fontWeight = FontWeight.Medium,
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            SendLoadingIndicator()
+            Text(
+                text = "Waiting for receiver to scan...",
+                style =
+                    MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = FontWeight.Medium,
+                    ),
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
+
+        TextButton(
+            onClick = onCancel,
+            shape = RoundedCornerShape(8.dp),
         ) {
             Text(
                 "Cancel Transfer",
-                style =
-                    MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Medium,
-                    ),
+                fontWeight = FontWeight.Medium,
             )
         }
     }
+}
+
+private fun copyToClipboard(
+    context: Context,
+    text: String,
+) {
+    val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+    val clipData = ClipData.newPlainText(null, text)
+    clipboardManager.setPrimaryClip(clipData)
 }

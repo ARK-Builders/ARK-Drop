@@ -32,3 +32,6 @@ trim_trailing_whitespace = false
 
 [**/test/**.kt]
 max_line_length=off
+
+[**/build/**/*.kt]
+ktlint = disabled

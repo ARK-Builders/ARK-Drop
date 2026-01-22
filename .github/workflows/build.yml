@@ -62,7 +62,7 @@ jobs:
               uses: actions/upload-artifact@v4
               with:
                   name: ark-drop-release
-                  path: ./app/build/outputs/apk/release/ark-drop-release.apk
+                  path: ./composeApp/build/outputs/apk/release/composeApp-release.apk
 
     lint:
         environment: Development
@@ -82,7 +82,7 @@ jobs:
             - uses: actions/upload-artifact@v4
               with:
                   name: lint-results
-                  path: ./app/build/reports/*.html
+                  path: ./composeApp/build/reports/*.html
 
     ktlint:
         environment: Development

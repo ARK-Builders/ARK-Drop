@@ -1,12 +1,15 @@
 import java.util.Properties
 
+rootProject.name = "ARK-Drop"
+enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
+
 pluginManagement {
     repositories {
         google {
-            content {
-                includeGroupByRegex("com\\.android.*")
-                includeGroupByRegex("com\\.google.*")
-                includeGroupByRegex("androidx.*")
+            mavenContent {
+                includeGroupAndSubgroups("androidx")
+                includeGroupAndSubgroups("com.android")
+                includeGroupAndSubgroups("com.google")
             }
         }
         mavenCentral()
@@ -20,12 +23,17 @@ if (rootProject.projectDir.resolve("local.properties").exists()) {
 }
 val githubToken = localProperties.getProperty("github.token") ?: System.getenv("GITHUB_TOKEN")
 ?: throw IllegalStateException("GITHUB_TOKEN not found")
+
 dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
-        google()
+        google {
+            mavenContent {
+                includeGroupAndSubgroups("androidx")
+                includeGroupAndSubgroups("com.android")
+                includeGroupAndSubgroups("com.google")
+            }
+        }
         mavenCentral()
-        maven { url = uri("https://jitpack.io") }
         maven {
             name = "ark-core GitHub Packages"
             url = uri("https://maven.pkg.github.com/Ark-Builders/ark-core")
@@ -35,9 +43,7 @@ dependencyResolutionManagement {
             }
         }
     }
-
 }
 
-rootProject.name = "Drop"
-include(":app")
- 
+include(":composeApp")
+include(":shared")

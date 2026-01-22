@@ -1,14 +1,19 @@
-# JNILibs
-/app/src/main/jniLibs
-
-# Development Setup
-/build
-/.idea
-/.kotlin
-/.gradle
-/captures
+*.iml
+.kotlin
+.gradle
+**/build/
+xcuserdata
+!src/**/build/
 local.properties
-.cxx
+.idea
 .DS_Store
+captures
 .externalNativeBuild
-
+.cxx
+*.xcodeproj/*
+!*.xcodeproj/project.pbxproj
+!*.xcodeproj/xcshareddata/
+!*.xcodeproj/project.xcworkspace/
+!*.xcworkspace/contents.xcworkspacedata
+**/xcshareddata/WorkspaceSettings.xcsettings
+node_modules/

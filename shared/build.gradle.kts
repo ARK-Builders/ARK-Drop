@@ -9,6 +9,7 @@ plugins {
     alias(libs.plugins.androidx.room)
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.ktlint.gradle)
+    alias(libs.plugins.skie)
 }
 
 kotlin {

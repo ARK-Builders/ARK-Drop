@@ -34,6 +34,7 @@ navigationCompose = "2.8.4"
 arkAbout = "0.2.1"
 materialIconsExtended = "1.7.8"
 ktlintGradlePlugin = "12.2.0"
+skie = "0.10.9"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -107,3 +108,4 @@ ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 androidx-room = { id = "androidx.room", version.ref = "room" }
 kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 ktlint-gradle = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlintGradlePlugin" }
+skie = { id = "co.touchlab.skie", version.ref = "skie" }

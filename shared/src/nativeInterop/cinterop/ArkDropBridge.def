@@ -1,0 +1,6 @@
+language = Objective-C
+headers = ArkDropBridge.h
+headerFilter = ArkDropBridge.h
+package = dev.arkbuilders.drop.bridge
+compilerOpts = -framework Foundation
+linkerOpts = -framework Foundation

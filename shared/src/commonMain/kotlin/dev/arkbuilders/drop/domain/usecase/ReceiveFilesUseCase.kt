@@ -30,6 +30,10 @@ class ReceiveFilesUseCase(
                         avatarB64 = profile.avatar.base64.takeIf { it.isNotEmpty() },
                     )
 
+                // Using UInt values, converted to ULong for the config
+                val chunkSize = 1024u * 512u  // UInt
+                val parallelStreams = 4u       // UInt
+                
                 val request =
                     DropReceiveFilesRequest(
                         ticket = ticket,
@@ -37,8 +41,8 @@ class ReceiveFilesUseCase(
                         profile = receiverProfile,
                         config =
                             DropReceiverConfig(
-                                chunkSize = 1024u * 512u,
-                                parallelStreams = 4u,
+                                chunkSize = chunkSize.toULong(),
+                                parallelStreams = parallelStreams.toULong(),
                             ),
                     )
 

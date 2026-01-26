@@ -50,14 +50,18 @@ class SendFilesUseCase(
                     error("No valid files to send")
                 }
 
+                // Using UInt values, converted to ULong for the config
+                val chunkSize = 1024u * 512u  // UInt
+                val parallelStreams = 4u       // UInt
+                
                 val request =
                     DropSendFilesRequest(
                         profile = senderProfile,
                         files = senderFiles,
                         config =
                             DropSenderConfig(
-                                chunkSize = 1024u * 512u,
-                                parallelStreams = 4u,
+                                chunkSize = chunkSize.toULong(),
+                                parallelStreams = parallelStreams.toULong(),
                             ),
                     )
 

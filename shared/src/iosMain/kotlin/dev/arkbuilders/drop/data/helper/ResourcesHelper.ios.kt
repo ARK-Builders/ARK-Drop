@@ -17,7 +17,9 @@ import kotlin.IllegalArgumentException
 actual class ResourcesHelper {
     actual fun getFileName(uri: String): String? {
         return try {
-            val url = NSURL.URLWithString(uri) ?: return null
+            val url = NSURL.fileURLWithPath(uri) 
+                ?: NSURL.URLWithString(uri) 
+                ?: return null
             url.lastPathComponent
         } catch (e: Exception) {
             null
@@ -46,7 +48,9 @@ actual class ResourcesHelper {
 
     actual fun getFileSize(uri: String): Long {
         return try {
-            val url = NSURL.URLWithString(uri) ?: return 0L
+            val url = NSURL.fileURLWithPath(uri) 
+                ?: NSURL.URLWithString(uri) 
+                ?: return 0L
             val resourceValues = url.resourceValuesForKeys(listOf(NSURLFileSizeKey), null)
             resourceValues?.get(NSURLFileSizeKey)?.let {
                 (it as? NSNumber)?.longValue ?: 0L

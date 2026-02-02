@@ -104,21 +104,40 @@ object ArkDropBridgeWrapper {
 
 /**
  * Adapter that wraps DropSenderFileData to implement ArkDropSenderFileData protocol
+ * CRITICAL: Must catch ALL exceptions to prevent crossing into Rust
  */
 private class ArkDropSenderFileDataAdapter(
     private val data: DropSenderFileData
 ) : NSObject(), dev.arkbuilders.drop.bridge.ArkDropSenderFileDataProtocol {
-    override fun len(): ULong = data.len()
+    override fun len(): ULong {
+        return try {
+            data.len()
+        } catch (e: Exception) {
+            println("⚠️ ArkDropSenderFileDataAdapter.len() error: $e")
+            0u
+        }
+    }
 
     override fun read(): NSNumber? {
-        val byte = data.read()
-        return byte?.let { NSNumber.numberWithUnsignedChar(it) }
+        return try {
+            val byte = data.read()
+            byte?.let { NSNumber.numberWithUnsignedChar(it) }
+        } catch (e: Exception) {
+            println("⚠️ ArkDropSenderFileDataAdapter.read() error: $e")
+            null
+        }
     }
 
     override fun readChunkWithSize(size: Int): NSData {
-        val bytes = data.readChunk(size)
-        return bytes.usePinned { pinned ->
-            NSData.dataWithBytes(pinned.addressOf(0), length = bytes.size.toULong())
+        return try {
+            val bytes = data.readChunk(size)
+            bytes.usePinned { pinned ->
+                NSData.dataWithBytes(pinned.addressOf(0), length = bytes.size.toULong())
+            }
+        } catch (e: Exception) {
+            println("⚠️ ArkDropSenderFileDataAdapter.readChunk() error: $e")
+            // Return empty NSData on error
+            NSData.data()
         }
     }
 }
@@ -245,12 +264,16 @@ private class ArkDropReceiveFilesSubscriberAdapter(
     }
 
     override fun notifyReceivingWithFileId(fileId: String, data: NSData) {
-        val length = data.length.toInt()
-        val bytes = ByteArray(length)
-        bytes.usePinned { pinned ->
-            data.getBytes(pinned.addressOf(0).reinterpret(), length.toULong())
+        try {
+            val length = data.length.toInt()
+            val bytes = ByteArray(length)
+            bytes.usePinned { pinned ->
+                data.getBytes(pinned.addressOf(0).reinterpret(), length.toULong())
+            }
+            native.appendReceivedData(fileId, bytes)
+        } catch (e: Exception) {
+            println("⚠️ ArkDropReceiveFilesSubscriberAdapter.notifyReceiving error: $e")
         }
-        native.appendReceivedData(fileId, bytes)
     }
 
     override fun notifyConnectingWithSenderName(
@@ -258,25 +281,29 @@ private class ArkDropReceiveFilesSubscriberAdapter(
         senderAvatarB64: String?,
         files: List<*>
     ) {
-        val fileInfos = files.mapNotNull { fileDict ->
-            val dict = fileDict as? Map<*, *> ?: return@mapNotNull null
-            val id = dict["id"] as? String ?: return@mapNotNull null
-            val name = dict["name"] as? String ?: return@mapNotNull null
-            val len = (dict["len"] as? Number)?.toLong()?.toULong() ?: return@mapNotNull null
+        try {
+            val fileInfos = files.mapNotNull { fileDict ->
+                val dict = fileDict as? Map<*, *> ?: return@mapNotNull null
+                val id = dict["id"] as? String ?: return@mapNotNull null
+                val name = dict["name"] as? String ?: return@mapNotNull null
+                val len = (dict["len"] as? Number)?.toLong()?.toULong() ?: return@mapNotNull null
 
-            dev.arkbuilders.drop.domain.libwrapper.receive.ReceiveFileInfo(
-                id = id,
-                name = name,
-                size = len
-            )
-        }
+                dev.arkbuilders.drop.domain.libwrapper.receive.ReceiveFileInfo(
+                    id = id,
+                    name = name,
+                    size = len
+                )
+            }
 
-        val currentProgress = native.progress.value
-        native._progress.value = currentProgress.copy(
-            isConnected = true,
-            senderName = senderName,
-            senderAvatar = senderAvatarB64,
+            val currentProgress = native.progress.value
+            native._progress.value = currentProgress.copy(
+                isConnected = true,
+                senderName = senderName,
+                senderAvatar = senderAvatarB64,
             files = fileInfos
-        )
+            )
+        } catch (e: Exception) {
+            println("⚠️ ArkDropReceiveFilesSubscriberAdapter.notifyConnecting error: $e")
+        }
     }
 }

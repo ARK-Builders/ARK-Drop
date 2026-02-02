@@ -4,5 +4,15 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Camera access is needed to scan QR codes for receiving files</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Photo library access is needed to select files for transfer</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>ARK Drop needs local network access to discover nearby devices for direct file transfer</string>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
+	<key>UISupportsDocumentBrowser</key>
+	<true/>
 </dict>
 </plist>

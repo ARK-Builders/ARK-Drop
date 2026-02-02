@@ -1,6 +1,7 @@
 import org.gradle.kotlin.dsl.implementation
 import org.gradle.kotlin.dsl.type
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -19,6 +20,8 @@ kotlin {
         }
     }
 
+    val xcf = XCFramework()
+
     listOf(
         iosX64(),
         iosArm64(),
@@ -27,6 +30,7 @@ kotlin {
         iosTarget.binaries.framework {
             baseName = "Shared"
             isStatic = true
+            xcf.add(this)
         }
 
         // Configure cinterop for ArkDrop bridge

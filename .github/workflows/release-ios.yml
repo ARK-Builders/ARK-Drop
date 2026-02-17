@@ -154,6 +154,7 @@ jobs:
       # 6️⃣ Validate iOS certificate contains private key
       - name: Validate iOS certificate contains private key
         run: |
+          set +e  # Don't exit on openssl failure - we need to show the error
           echo "🔍 Validating p12 certificate contents..."
           echo ""
           
@@ -165,7 +166,20 @@ jobs:
           
           # Test 1: Check for PRIVATE KEY in p12 structure
           echo "📋 Test 1: Checking p12 structure for private key..."
-          CERT_CONTENTS=$(openssl pkcs12 -in cert.p12 -nodes -passin pass:"$IOS_P12_PASSWORD" 2>&1)
+          CERT_CONTENTS=$(openssl pkcs12 -in cert.p12 -nodes -passin env:IOS_P12_PASSWORD 2>&1)
+          OPENSSL_EXIT=$?
+          set -e
+          
+          if [ $OPENSSL_EXIT -ne 0 ]; then
+            echo "❌ ERROR: OpenSSL failed to read p12 (exit code $OPENSSL_EXIT)"
+            echo ""
+            echo "Output: $CERT_CONTENTS"
+            echo ""
+            echo "💡 Most likely: wrong IOS_P12_PASSWORD. Ensure the secret matches the p12 password."
+            echo "   If password has special chars, try re-exporting the p12 with a simpler password."
+            exit 1
+          fi
+          
           HAS_PRIVATE_KEY=true
           
           if echo "$CERT_CONTENTS" | grep -q "PRIVATE KEY"; then

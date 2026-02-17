@@ -1,0 +1,185 @@
+# Fastfile for ARK Drop (KMP) iOS App
+
+default_platform(:ios)
+
+platform :ios do
+  # Environment variables
+  before_all do
+    setup_ci if ENV['CI']
+  end
+
+  desc "Push a new beta build to TestFlight"
+  lane :beta do
+    # Get the keychain path (setup_ci already created it)
+    keychain_name = "fastlane_tmp_keychain"
+    keychain_path = File.expand_path("~/Library/Keychains/#{keychain_name}-db")
+
+    UI.important "📥 Importing certificate manually..."
+
+    # Files are in parent directory (workflow creates them in repo root, fastlane runs from fastlane/ subdir)
+    cert_path = File.expand_path("../cert.p12")
+    profile_path = File.expand_path("../profile.mobileprovision")
+
+    # Verify cert.p12 exists
+    unless File.exist?(cert_path)
+      UI.user_error!("❌ cert.p12 file not found at: #{cert_path}")
+    end
+    UI.message "✅ cert.p12 exists (#{File.size(cert_path)} bytes)"
+
+    # Import certificate using security command directly
+    # Use -A to allow all applications to access this item
+    sh("security import '#{cert_path}' -k #{keychain_path} -P '#{ENV['IOS_P12_PASSWORD']}' -A")
+
+    # Set key partition list for the keychain (allow codesign to access without prompting)
+    sh("security set-key-partition-list -S apple-tool:,apple:,codesign: -k '' #{keychain_path}")
+
+    # Verify certificate was imported
+    UI.important "🔍 Verifying certificate import..."
+    sh("security find-identity -v -p codesigning #{keychain_path}")
+
+    # Additional debugging: Check ALL certificates and keys in keychain
+    UI.important "🔍 Checking ALL items in keychain..."
+    sh("security dump-keychain #{keychain_path} | head -50") rescue UI.message("Could not dump keychain")
+
+    # Check certificate details from the p12
+    UI.important "🔍 Certificate details from p12 file:"
+    sh("openssl pkcs12 -in '#{cert_path}' -passin pass:'#{ENV['IOS_P12_PASSWORD']}' -nokeys 2>&1 | openssl x509 -noout -subject -dates -fingerprint") rescue UI.message("Could not read p12")
+
+    # Check for private key in keychain
+    UI.important "🔍 Checking for private keys in keychain:"
+    sh("security dump-keychain #{keychain_path} | grep -A5 'class.*0x00000011' || echo 'No private keys found'") rescue nil
+
+    # Ensure keychain is in search path and unlocked
+    UI.important "🔓 Configuring keychain..."
+    sh("security list-keychains -d user -s #{keychain_path} ~/Library/Keychains/login.keychain")
+    sh("security default-keychain -s #{keychain_path}")
+    sh("security unlock-keychain -p '' #{keychain_path}")
+    sh("security set-keychain-settings -lut 3600 #{keychain_path}")
+
+    # Install provisioning profile manually
+    UI.important "📱 Installing provisioning profile..."
+
+    # Verify profile file exists
+    unless File.exist?(profile_path)
+      UI.user_error!("❌ profile.mobileprovision file not found at: #{profile_path}")
+    end
+    UI.message "✅ profile.mobileprovision exists (#{File.size(profile_path)} bytes)"
+
+    # Create directory if it doesn't exist
+    profiles_dir = File.expand_path("~/Library/MobileDevice/Provisioning Profiles")
+    sh("mkdir -p '#{profiles_dir}'")
+
+    # Get profile UUID
+    profile_uuid = sh("security cms -D -i '#{profile_path}' | plutil -extract UUID raw -").strip
+    UI.message "📋 Profile UUID: #{profile_uuid}"
+
+    # Copy profile to the correct location with UUID as filename
+    sh("cp '#{profile_path}' '#{profiles_dir}/#{profile_uuid}.mobileprovision'")
+
+    # Store profile UUID for build step
+    ENV['PROVISIONING_PROFILE_UUID'] = profile_uuid
+
+    # Verify profile was installed
+    UI.important "🔍 Verifying profile installation..."
+    sh("ls -la '#{profiles_dir}'")
+
+    # Increment build number (using timestamp to avoid conflicts)
+    increment_build_number(
+      build_number: Time.now.to_i.to_s,
+      xcodeproj: "iosApp/iosApp.xcodeproj"
+    )
+
+    # Get the App Store Connect API Key
+    api_key = app_store_connect_api_key(
+      key_id: ENV['ASC_KEY_ID'],
+      issuer_id: ENV['ASC_ISSUER_ID'],
+      key_filepath: "~/.fastlane/AuthKey.p8",
+      duration: 1200,
+      in_house: false
+    )
+
+    # Build the app (project in iosApp/ subdirectory)
+    # Use project settings for code signing (Manual for app, Automatic for SPM)
+    UI.important "🔨 Starting build with verbose logging..."
+    UI.important "Configuration: Release"
+    UI.important "Scheme: iosApp"
+    UI.important "Bundle ID: #{ENV['APP_BUNDLE_ID']}"
+    UI.important "Team ID: #{ENV['APP_TEAM_ID']}"
+
+    build_app(
+      scheme: "iosApp",
+      project: "iosApp/iosApp.xcodeproj",
+      configuration: "Release",
+      export_method: "app-store",
+      output_directory: "./build",
+      output_name: "ARK-Drop.ipa",
+      verbose: true,
+      buildlog_path: "./build/logs",
+      # Skip macro validation in CI (Swift macros not enabled) and specify profile
+      xcargs: "-skipMacroValidation PROVISIONING_PROFILE_SPECIFIER=#{ENV['PROVISIONING_PROFILE_UUID']}",
+      # Export options to specify provisioning profile for IPA export
+      export_options: {
+        method: "app-store",
+        teamID: ENV['APP_TEAM_ID'],
+        provisioningProfiles: {
+          ENV['APP_BUNDLE_ID'] => ENV['PROVISIONING_PROFILE_UUID']
+        },
+        signingCertificate: "Apple Distribution",
+        signingStyle: "manual"
+      }
+    )
+
+    UI.success "✅ Build completed successfully!"
+
+    # Upload to TestFlight
+    upload_to_testflight(
+      api_key: api_key,
+      skip_waiting_for_build_processing: true,
+      skip_submission: true,
+      distribute_external: false,
+      notify_external_testers: false,
+      ipa: "./build/ARK-Drop.ipa"
+    )
+  end
+
+  desc "Build the app for release"
+  lane :build do
+    # Increment build number
+    increment_build_number(
+      build_number: Time.now.to_i.to_s,
+      xcodeproj: "iosApp/iosApp.xcodeproj"
+    )
+
+    # Build the app
+    build_app(
+      scheme: "iosApp",
+      project: "iosApp/iosApp.xcodeproj",
+      configuration: "Release",
+      export_method: "app-store",
+      clean: true,
+      output_directory: "./build",
+      output_name: "ARK-Drop.ipa"
+    )
+  end
+
+  desc "Run tests"
+  lane :test do
+    run_tests(
+      scheme: "iosApp",
+      project: "iosApp/iosApp.xcodeproj",
+      devices: ["iPhone 15 Pro"]
+    )
+  end
+
+  # Error handling
+  error do |lane, exception|
+    UI.error("Error in lane #{lane}: #{exception.message}")
+
+    # Show the last 100 lines of the build log if it exists
+    build_log = Dir.glob("./build/logs/**/*.log").first
+    if build_log && File.exist?(build_log)
+      UI.important "📋 Last 100 lines of build log:"
+      sh("tail -100 '#{build_log}'") rescue nil
+    end
+  end
+end

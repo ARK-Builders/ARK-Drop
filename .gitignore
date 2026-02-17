@@ -17,3 +17,24 @@ captures
 !*.xcworkspace/contents.xcworkspacedata
 **/xcshareddata/WorkspaceSettings.xcsettings
 node_modules/
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+fastlane/.env*
+# Certificates and profiles (NEVER commit these)
+*.p12
+*.mobileprovision
+*.cer
+*.certSigningRequest
+*.p8
+
+# Bundler
+vendor/bundle/
+.bundle/
+Gemfile.lock
+
+# Generated docs (do not push)
+IOS_IMPLEMENTATION_PR.md

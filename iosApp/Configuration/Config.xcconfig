@@ -1,7 +1,8 @@
 TEAM_ID=
 
 PRODUCT_NAME=ARK-Drop
-PRODUCT_BUNDLE_IDENTIFIER=dev.arkbuilders.drop.ARK-Drop$(TEAM_ID)
+# com.arkbuilders.Drop - matches deprecated Drop-iOS on App Store Connect
+PRODUCT_BUNDLE_IDENTIFIER=com.arkbuilders.Drop
 
 CURRENT_PROJECT_VERSION=1
 MARKETING_VERSION=1.0

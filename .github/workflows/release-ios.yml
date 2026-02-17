@@ -1,0 +1,344 @@
+name: Release iOS App
+
+# Trigger: push tags or manual dispatch
+on:
+  push:
+    tags:
+      - 'v*'
+    branches:
+      - 'feature/kmp-ios-impl'  # TEMPORARY: Remove after testing
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14   # macOS runner with Xcode 15+
+    environment: Testflight
+
+    env:
+      APP_BUNDLE_ID: com.arkbuilders.Drop
+      APP_TEAM_ID: SQNXHTL7FT
+      IOS_P12_PASSWORD: ${{ secrets.IOS_P12_PASSWORD }}
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      # 1️⃣ Checkout code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 🔍 Diagnostic: Check all secrets availability
+      - name: Validate Secrets
+        run: |
+          echo "🔍 Checking which secrets are available..."
+          echo ""
+          
+          # Check each required secret
+          MISSING_SECRETS=()
+          
+          if [ -z "${{ secrets.IOS_P12_BASE64 }}" ]; then
+            echo "❌ IOS_P12_BASE64 - MISSING or EMPTY"
+            MISSING_SECRETS+=("IOS_P12_BASE64")
+          else
+            echo "✅ IOS_P12_BASE64 - Available (${#IOS_P12_BASE64} chars)"
+          fi
+          
+          if [ -z "${{ secrets.IOS_P12_PASSWORD }}" ]; then
+            echo "❌ IOS_P12_PASSWORD - MISSING or EMPTY"
+            MISSING_SECRETS+=("IOS_P12_PASSWORD")
+          else
+            echo "✅ IOS_P12_PASSWORD - Available"
+          fi
+          
+          if [ -z "${{ secrets.IOS_PROFILE_BASE64 }}" ]; then
+            echo "❌ IOS_PROFILE_BASE64 - MISSING or EMPTY"
+            MISSING_SECRETS+=("IOS_PROFILE_BASE64")
+          else
+            echo "✅ IOS_PROFILE_BASE64 - Available (${#IOS_PROFILE_BASE64} chars)"
+          fi
+          
+          if [ -z "${{ secrets.ASC_API_KEY_BASE64 }}" ]; then
+            echo "❌ ASC_API_KEY_BASE64 - MISSING or EMPTY"
+            MISSING_SECRETS+=("ASC_API_KEY_BASE64")
+          else
+            echo "✅ ASC_API_KEY_BASE64 - Available (${#ASC_API_KEY_BASE64} chars)"
+          fi
+          
+          if [ -z "${{ secrets.ASC_KEY_ID }}" ]; then
+            echo "❌ ASC_KEY_ID - MISSING or EMPTY"
+            MISSING_SECRETS+=("ASC_KEY_ID")
+          else
+            echo "✅ ASC_KEY_ID - Available"
+          fi
+          
+          if [ -z "${{ secrets.ASC_ISSUER_ID }}" ]; then
+            echo "❌ ASC_ISSUER_ID - MISSING or EMPTY"
+            MISSING_SECRETS+=("ASC_ISSUER_ID")
+          else
+            echo "✅ ASC_ISSUER_ID - Available"
+          fi
+          
+          echo ""
+          echo "📊 Summary: ${#MISSING_SECRETS[@]} secrets missing"
+          
+          if [ ${#MISSING_SECRETS[@]} -gt 0 ]; then
+            echo ""
+            echo "⚠️  Missing secrets need to be added to:"
+            echo "   Settings → Environments → Testflight → Environment secrets"
+            echo ""
+            echo "Current repository: ${{ github.repository }}"
+            echo "Current environment: Testflight"
+            exit 1
+          fi
+          
+          echo ""
+          echo "✅ All required secrets are available!"
+        env:
+          IOS_P12_BASE64: ${{ secrets.IOS_P12_BASE64 }}
+          IOS_PROFILE_BASE64: ${{ secrets.IOS_PROFILE_BASE64 }}
+          ASC_API_KEY_BASE64: ${{ secrets.ASC_API_KEY_BASE64 }}
+
+      # 2️⃣ Setup Ruby and Fastlane
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.2"
+          bundler-cache: true
+
+      - name: Install gems
+        run: bundle install
+
+      # 3️⃣ Setup Xcode version (prioritize Xcode 26 for iOS 26 SDK requirement)
+      - name: Select Xcode version
+        run: |
+          # Prioritize Xcode 26 (required starting April 28, 2026 for App Store submissions)
+          if [ -d "/Applications/Xcode_26.0.app" ]; then
+            sudo xcode-select -s /Applications/Xcode_26.0.app/Contents/Developer
+            echo "✅ Using Xcode 26.0 (iOS 26 SDK)"
+          elif [ -d "/Applications/Xcode_16.1.app" ]; then
+            sudo xcode-select -s /Applications/Xcode_16.1.app/Contents/Developer
+            echo "✅ Using Xcode 16.1 (iOS 18.1 SDK)"
+            echo "⚠️  Note: Xcode 26+ will be required starting April 28, 2026"
+          elif [ -d "/Applications/Xcode_16.0.app" ]; then
+            sudo xcode-select -s /Applications/Xcode_16.0.app/Contents/Developer
+            echo "✅ Using Xcode 16.0"
+          else
+            # Use the default latest Xcode
+            echo "Using default Xcode version"
+          fi
+          xcodebuild -version
+
+      # 4️⃣ Decode certificate (Fastlane will import it)
+      - name: Decode iOS certificate
+        run: |
+          # Check if the secret exists and is not empty
+          if [ -z "$IOS_P12_BASE64" ]; then
+            echo "❌ ERROR: IOS_P12_BASE64 secret is missing or empty!"
+            exit 1
+          fi
+          
+          # Decode certificate
+          echo "$IOS_P12_BASE64" | base64 --decode > cert.p12
+          
+          # Verify the .p12 file was created and has content
+          FILE_SIZE=$(stat -f%z cert.p12)
+          echo "✅ Certificate file size: $FILE_SIZE bytes"
+          
+          if [ "$FILE_SIZE" -lt 100 ]; then
+            echo "❌ ERROR: Certificate file is too small, likely corrupted"
+            exit 1
+          fi
+        env:
+          IOS_P12_BASE64: ${{ secrets.IOS_P12_BASE64 }}
+
+      # 6️⃣ Validate iOS certificate contains private key
+      - name: Validate iOS certificate contains private key
+        run: |
+          echo "🔍 Validating p12 certificate contents..."
+          echo ""
+          
+          # Check if p12 file exists
+          if [ ! -f cert.p12 ]; then
+            echo "❌ ERROR: cert.p12 file not found!"
+            exit 1
+          fi
+          
+          # Test 1: Check for PRIVATE KEY in p12 structure
+          echo "📋 Test 1: Checking p12 structure for private key..."
+          CERT_CONTENTS=$(openssl pkcs12 -in cert.p12 -nodes -passin pass:"$IOS_P12_PASSWORD" 2>&1)
+          HAS_PRIVATE_KEY=true
+          
+          if echo "$CERT_CONTENTS" | grep -q "PRIVATE KEY"; then
+            echo "✅ Private key found in p12 certificate structure"
+          else
+            echo "❌ ERROR: p12 certificate does NOT contain a private key in its structure!"
+            HAS_PRIVATE_KEY=false
+          fi
+          
+          # Test 2: Check if private key can be extracted (nocerts flag) - informational only
+          echo ""
+          echo "📋 Test 2: Attempting to extract private key only (nocerts)..."
+          if openssl pkcs12 -in cert.p12 -nocerts -passin pass:"$IOS_P12_PASSWORD" >/dev/null 2>&1; then
+            echo "✅ Private key can be extracted separately"
+          else
+            echo "⚠️  Note: nocerts extraction failed (this is OK if Test 1 passed)"
+          fi
+          
+          # Test 3: Alternative private key check using env variable - informational only
+          echo ""
+          echo "📋 Test 3: Alternative private key extraction test..."
+          if openssl pkcs12 -in cert.p12 -nocerts -passin env:IOS_P12_PASSWORD >/dev/null 2>&1; then
+            echo "✅ Alternative extraction succeeded"
+          else
+            echo "⚠️  Note: Alternative extraction failed (this is OK if Test 1 passed)"
+          fi
+          
+          # Test 4: Show certificate details
+          echo ""
+          echo "📋 Test 4: Certificate details (subject and validity):"
+          CERT_SUBJECT=$(echo "$CERT_CONTENTS" | openssl x509 -noout -subject 2>/dev/null || echo "Could not extract subject")
+          CERT_DATES=$(echo "$CERT_CONTENTS" | openssl x509 -noout -dates 2>/dev/null || echo "Could not extract dates")
+          echo "$CERT_SUBJECT"
+          echo "$CERT_DATES"
+          
+          # Check if this is the correct certificate (Apple Distribution)
+          if echo "$CERT_SUBJECT" | grep -q "Apple Distribution"; then
+            echo "✅ Certificate type confirmed: Apple Distribution"
+          else
+            echo "⚠️  WARNING: Certificate may not be 'Apple Distribution' type"
+          fi
+          
+          # Test 5: List certificate and key components (double-check private key presence)
+          echo ""
+          echo "📋 Test 5: Certificate and key components found in p12:"
+          COMPONENTS=$(echo "$CERT_CONTENTS" | grep -E "BEGIN|END")
+          echo "$COMPONENTS"
+          
+          # Final validation: Ensure private key is present in the structure
+          if echo "$COMPONENTS" | grep -q "BEGIN PRIVATE KEY"; then
+            echo ""
+            echo "✅ FINAL CHECK: Private key structure confirmed in p12"
+            HAS_PRIVATE_KEY=true
+          elif echo "$COMPONENTS" | grep -q "BEGIN RSA PRIVATE KEY"; then
+            echo ""
+            echo "✅ FINAL CHECK: RSA private key structure confirmed in p12"
+            HAS_PRIVATE_KEY=true
+          elif [ "${HAS_PRIVATE_KEY}" = "false" ]; then
+            echo ""
+            echo "❌ VALIDATION FAILED: p12 does not contain a valid private key"
+            echo ""
+            echo "⚠️  Possible issues:"
+            echo "   1. The p12 was exported without including the private key"
+            echo "   2. Wrong password is being used (IOS_P12_PASSWORD)"
+            echo "   3. The certificate file is corrupted"
+            echo ""
+            echo "💡 To fix: Export the certificate from Keychain Access ensuring:"
+            echo "   - Expand the certificate (click the triangle/arrow)"
+            echo "   - Select both the certificate AND its private key (you should see 2 items)"
+            echo "   - Right-click and choose 'Export 2 items...'"
+            echo "   - Save as .p12 format"
+            exit 1
+          fi
+          
+          echo ""
+          echo "✅ All validation tests passed - p12 contains a valid private key"
+          echo ""
+          echo "📝 Note: After Fastlane imports this certificate into the keychain,"
+          echo "   additional checks will verify:"
+          echo "   - security find-certificate (certificate in keychain)"
+          echo "   - security find-key (private key in keychain)"
+          echo "   - security find-identity (valid signing identity)"
+        env:
+          IOS_P12_PASSWORD: ${{ secrets.IOS_P12_PASSWORD }}
+
+      # 7️⃣ Decode provisioning profile (Fastlane will install it)
+      - name: Decode provisioning profile
+        run: |
+          # Check if the secret exists
+          if [ -z "$IOS_PROFILE_BASE64" ]; then
+            echo "❌ ERROR: IOS_PROFILE_BASE64 secret is missing or empty!"
+            exit 1
+          fi
+          
+          # Decode provisioning profile
+          echo "$IOS_PROFILE_BASE64" | base64 --decode > profile.mobileprovision
+          
+          FILE_SIZE=$(stat -f%z profile.mobileprovision)
+          echo "✅ Provisioning profile size: $FILE_SIZE bytes"
+        env:
+          IOS_PROFILE_BASE64: ${{ secrets.IOS_PROFILE_BASE64 }}
+
+      # 8️⃣ Setup App Store Connect API Key
+      - name: Setup App Store Connect API Key
+        run: |
+          # Check if secrets exist
+          if [ -z "$ASC_API_KEY_BASE64" ]; then
+            echo "❌ ERROR: ASC_API_KEY_BASE64 secret is missing or empty!"
+            exit 1
+          fi
+          
+          if [ -z "${{ secrets.ASC_KEY_ID }}" ] || [ -z "${{ secrets.ASC_ISSUER_ID }}" ]; then
+            echo "❌ ERROR: ASC_KEY_ID or ASC_ISSUER_ID secret is missing!"
+            exit 1
+          fi
+          
+          mkdir -p ~/.fastlane
+          echo "$ASC_API_KEY_BASE64" | base64 --decode > ~/.fastlane/AuthKey.p8
+          chmod 600 ~/.fastlane/AuthKey.p8
+          
+          # Verify the key file was created
+          if [ ! -f ~/.fastlane/AuthKey.p8 ]; then
+            echo "❌ ERROR: Failed to create AuthKey.p8"
+            exit 1
+          fi
+          
+          echo "✅ App Store Connect API key configured"
+        env:
+          ASC_API_KEY_BASE64: ${{ secrets.ASC_API_KEY_BASE64 }}
+
+      # 9️⃣ Build & Upload to TestFlight via Fastlane (includes verification inside)
+      - name: Build & Upload to TestFlight
+        run: bundle exec fastlane beta
+        env:
+          IOS_P12_PASSWORD: ${{ secrets.IOS_P12_PASSWORD }}
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          APP_STORE_CONNECT_API_KEY_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+
+      # 9️⃣ Upload build artifacts
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: ARK-Drop-${{ github.run_number }}.ipa
+          path: build/ARK-Drop.ipa
+          retention-days: 30
+      
+      # 📋 Show build errors if build failed
+      - name: Show Build Log Tail
+        if: failure()
+        run: |
+          echo "🔍 Last 200 lines of build log:"
+          find build/logs -name "*.log" -exec tail -200 {} \; 2>/dev/null || echo "No build log found"
+          
+          echo ""
+          echo "🔍 Checking for error lines:"
+          find build/logs -name "*.log" -exec grep -i "error:" {} \; 2>/dev/null || echo "No errors found in log"
+      
+      # 📋 Upload build logs for debugging
+      - name: Upload Build Logs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: xcode-build-logs
+          path: |
+            ~/Library/Logs/gym/
+            build/
+          retention-days: 7
+
+      # 🔟 Cleanup
+      - name: Cleanup
+        if: always()
+        run: |
+          # Clean up certificate and profile files
+          rm -f cert.p12 profile.mobileprovision ~/.fastlane/AuthKey.p8
+          # Fastlane's setup_ci will clean up its own keychain automatically

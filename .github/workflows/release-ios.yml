@@ -108,7 +108,13 @@ jobs:
       - name: Install gems
         run: bundle install
 
-      # 3️⃣ Setup Xcode version (prioritize Xcode 26 for iOS 26 SDK requirement)
+      # 3️⃣ Build Kotlin framework before Xcode (required for KMP - Xcode expects it at XCFrameworks/debug)
+      - name: Build Kotlin framework for Release
+        run: |
+          export JAVA_HOME=$(/usr/libexec/java_home -v 17)
+          ./gradlew :shared:assembleSharedReleaseXCFramework :shared:copyFrameworkForXcode
+
+      # 4️⃣ Setup Xcode version (prioritize Xcode 26 for iOS 26 SDK requirement)
       - name: Select Xcode version
         run: |
           # Prioritize Xcode 26 (required starting April 28, 2026 for App Store submissions)

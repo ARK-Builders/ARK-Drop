@@ -154,25 +154,11 @@ room {
 
 // Copy XCFramework to path Xcode project expects (build/XCFrameworks/debug)
 // CI builds Release but Xcode project references XCFrameworks/debug
-tasks.register("copyFrameworkForXcode") {
-    // Run after assembleSharedReleaseXCFramework (call both in CI: assembleSharedReleaseXCFramework copyFrameworkForXcode)
+// Uses Copy task for configuration-cache compatibility (avoids project ref at execution)
+tasks.register<Copy>("copyFrameworkForXcode") {
     val assembleTask = tasks.findByName("assembleSharedReleaseXCFramework")
     if (assembleTask != null) dependsOn(assembleTask)
-    doLast {
-        val buildDir = layout.buildDirectory.get().asFile
-        val xcfOutput = file("$buildDir/XCFrameworks/release/Shared.xcframework")
-            .takeIf { it.exists() } ?: file("$buildDir/XCFrameworks/Release/Shared.xcframework")
-        val xcodePath = file("$buildDir/XCFrameworks/debug")
-        if (xcfOutput.exists()) {
-            xcodePath.mkdirs()
-            project.copy {
-                from(xcfOutput)
-                into(xcodePath)
-                rename("Shared.xcframework", "shared.xcframework")
-            }
-            logger.lifecycle("Copied XCFramework to ${xcodePath}/shared.xcframework")
-        } else {
-            throw GradleException("XCFramework not found at ${xcfOutput}. Run assembleSharedReleaseXCFramework first.")
-        }
-    }
+    from(layout.buildDirectory.dir("XCFrameworks/release"))
+    into(layout.buildDirectory.dir("XCFrameworks/debug"))
+    include("shared.xcframework", "Shared.xcframework")
 }

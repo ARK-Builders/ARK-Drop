@@ -1,6 +1,6 @@
 # Appfile for ARK Drop (KMP) iOS App
 
-app_identifier(ENV['APP_BUNDLE_ID'] || "com.arkbuilders.Drop")
+app_identifier(ENV['APP_BUNDLE_ID'] || "dev.ark-builders.drop")
 apple_id(ENV['APPLE_ID'] || "") # Optional: Apple ID for the developer account
 team_id(ENV['APP_TEAM_ID'] || "SQNXHTL7FT")
 

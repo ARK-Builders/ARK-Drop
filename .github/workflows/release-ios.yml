@@ -112,7 +112,9 @@ jobs:
       - name: Build Kotlin framework for Release
         run: |
           export JAVA_HOME=$(/usr/libexec/java_home -v 17)
-          ./gradlew :shared:assembleSharedReleaseXCFramework :shared:copyFrameworkForXcode
+          ./gradlew :shared:assembleSharedReleaseXCFramework
+          mkdir -p shared/build/XCFrameworks/debug
+          cp -R shared/build/XCFrameworks/release/shared.xcframework shared/build/XCFrameworks/debug/
 
       # 3b Ensure XCFramework has Info.plist (Kotlin may not create it; Xcode requires it)
       - name: Ensure XCFramework Info.plist

@@ -11,7 +11,7 @@ on:
 
 jobs:
   build:
-    runs-on: macos-14   # macOS runner with Xcode 15+
+    runs-on: macos-26   # macOS 26 Tahoe with Xcode 26.2 (required for App Store from Apr 28, 2026 - ITMS-90725)
     environment: Testflight
 
     env:
@@ -129,25 +129,11 @@ jobs:
             echo "✅ Info.plist already exists"
           fi
 
-      # 4️⃣ Setup Xcode version (prioritize Xcode 26 for iOS 26 SDK requirement)
+      # 4️⃣ Setup Xcode 26.2 (macos-26 has it pre-installed)
       - name: Select Xcode version
-        run: |
-          # Prioritize Xcode 26 (required starting April 28, 2026 for App Store submissions)
-          if [ -d "/Applications/Xcode_26.0.app" ]; then
-            sudo xcode-select -s /Applications/Xcode_26.0.app/Contents/Developer
-            echo "✅ Using Xcode 26.0 (iOS 26 SDK)"
-          elif [ -d "/Applications/Xcode_16.1.app" ]; then
-            sudo xcode-select -s /Applications/Xcode_16.1.app/Contents/Developer
-            echo "✅ Using Xcode 16.1 (iOS 18.1 SDK)"
-            echo "⚠️  Note: Xcode 26+ will be required starting April 28, 2026"
-          elif [ -d "/Applications/Xcode_16.0.app" ]; then
-            sudo xcode-select -s /Applications/Xcode_16.0.app/Contents/Developer
-            echo "✅ Using Xcode 16.0"
-          else
-            # Use the default latest Xcode
-            echo "Using default Xcode version"
-          fi
-          xcodebuild -version
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '26.2'
 
       # 4️⃣ Decode certificate (Fastlane will import it)
       - name: Decode iOS certificate

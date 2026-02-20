@@ -331,6 +331,14 @@ jobs:
         env:
           ASC_API_KEY_BASE64: ${{ secrets.ASC_API_KEY_BASE64 }}
 
+      # 8b Set build number (Config.xcconfig overrides agvtool; must be > previous TestFlight build)
+      - name: Set build number for TestFlight
+        run: |
+          BUILD_NUM=$(date +%s)
+          sed -i.bak "s/CURRENT_PROJECT_VERSION=.*/CURRENT_PROJECT_VERSION=$BUILD_NUM/" iosApp/Configuration/Config.xcconfig
+          rm -f iosApp/Configuration/Config.xcconfig.bak
+          echo "Set CURRENT_PROJECT_VERSION to $BUILD_NUM"
+
       # 9️⃣ Build & Upload to TestFlight via Fastlane (includes verification inside)
       - name: Build & Upload to TestFlight
         run: bundle exec fastlane beta

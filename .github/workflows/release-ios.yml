@@ -172,8 +172,9 @@ jobs:
           fi
           
           # Test 1: Check for PRIVATE KEY in p12 structure
+          # -legacy: OpenSSL 3.x on macos-26 disables RC2-40-CBC; Apple p12 often uses it
           echo "📋 Test 1: Checking p12 structure for private key..."
-          CERT_CONTENTS=$(openssl pkcs12 -in cert.p12 -nodes -passin env:IOS_P12_PASSWORD 2>&1)
+          CERT_CONTENTS=$(openssl pkcs12 -in cert.p12 -legacy -nodes -passin env:IOS_P12_PASSWORD 2>&1)
           OPENSSL_EXIT=$?
           set -e
           
@@ -182,8 +183,7 @@ jobs:
             echo ""
             echo "Output: $CERT_CONTENTS"
             echo ""
-            echo "💡 Most likely: wrong IOS_P12_PASSWORD. Ensure the secret matches the p12 password."
-            echo "   If password has special chars, try re-exporting the p12 with a simpler password."
+            echo "💡 Possible causes: wrong IOS_P12_PASSWORD, or OpenSSL 3 on macos-26 (we use -legacy for Apple p12)"
             exit 1
           fi
           
@@ -199,7 +199,7 @@ jobs:
           # Test 2: Check if private key can be extracted (nocerts flag) - informational only
           echo ""
           echo "📋 Test 2: Attempting to extract private key only (nocerts)..."
-          if openssl pkcs12 -in cert.p12 -nocerts -passin pass:"$IOS_P12_PASSWORD" >/dev/null 2>&1; then
+          if openssl pkcs12 -in cert.p12 -legacy -nocerts -passin pass:"$IOS_P12_PASSWORD" >/dev/null 2>&1; then
             echo "✅ Private key can be extracted separately"
           else
             echo "⚠️  Note: nocerts extraction failed (this is OK if Test 1 passed)"
@@ -208,7 +208,7 @@ jobs:
           # Test 3: Alternative private key check using env variable - informational only
           echo ""
           echo "📋 Test 3: Alternative private key extraction test..."
-          if openssl pkcs12 -in cert.p12 -nocerts -passin env:IOS_P12_PASSWORD >/dev/null 2>&1; then
+          if openssl pkcs12 -in cert.p12 -legacy -nocerts -passin env:IOS_P12_PASSWORD >/dev/null 2>&1; then
             echo "✅ Alternative extraction succeeded"
           else
             echo "⚠️  Note: Alternative extraction failed (this is OK if Test 1 passed)"

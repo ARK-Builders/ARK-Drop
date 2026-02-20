@@ -43,7 +43,7 @@ platform :ios do
 
     # Check certificate details from the p12
     UI.important "🔍 Certificate details from p12 file:"
-    sh("openssl pkcs12 -in '#{cert_path}' -passin pass:'#{ENV['IOS_P12_PASSWORD']}' -nokeys 2>&1 | openssl x509 -noout -subject -dates -fingerprint") rescue UI.message("Could not read p12")
+    sh("openssl pkcs12 -in '#{cert_path}' -legacy -passin pass:'#{ENV['IOS_P12_PASSWORD']}' -nokeys 2>&1 | openssl x509 -noout -subject -dates -fingerprint") rescue UI.message("Could not read p12")
 
     # Check for private key in keychain
     UI.important "🔍 Checking for private keys in keychain:"

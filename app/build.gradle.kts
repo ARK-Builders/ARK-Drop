@@ -184,6 +184,7 @@ dependencies {
     implementation(libs.io.koin.core)
     implementation(libs.io.koin.android)
     implementation(libs.io.koin.compose)
+    implementation(libs.io.koin.androidx.compose)
     implementation(libs.io.koin.test)
 }
 

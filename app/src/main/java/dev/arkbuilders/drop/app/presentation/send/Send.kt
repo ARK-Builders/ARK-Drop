@@ -13,19 +13,26 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavController
 import dev.arkbuilders.drop.app.presentation.components.DropErrorCard
 import dev.arkbuilders.drop.app.presentation.components.DropTopBarBack
+import dev.arkbuilders.drop.app.presentation.receive.components.ReceiveLoadingCard
+import dev.arkbuilders.drop.app.presentation.receive.components.ReceiveQRCodeScannedCard
+import dev.arkbuilders.drop.app.presentation.receive.components.ReceiveScanningCard
 import dev.arkbuilders.drop.app.presentation.send.components.phase.FileSelectionPhase
 import dev.arkbuilders.drop.app.presentation.send.components.phase.GeneratingQRPhase
 import dev.arkbuilders.drop.app.presentation.send.components.phase.TransferCompletePhase
 import dev.arkbuilders.drop.app.presentation.send.components.phase.TransferringPhase
 import dev.arkbuilders.drop.app.presentation.send.components.phase.WaitingForReceiverPhase
-import org.koin.compose.koinInject
+import org.koin.androidx.compose.koinViewModel
+import org.koin.core.parameter.parametersOf
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Send(navController: NavController) {
-    val viewModel: SendViewModel = koinInject()
+    val viewModel: SendViewModel =
+        koinViewModel {
+            parametersOf(true)
+        }
 
     val state by viewModel.collectAsState()
 
@@ -76,6 +83,32 @@ fun Send(navController: NavController) {
                     },
                     canStartTransfer = sendScreenState.canStartTransfer,
                 )
+            }
+
+            is SendScreenState.Scanning -> {
+                ReceiveScanningCard(
+                    onQRCodeScanned = { ticket, confirmation ->
+                        viewModel.onQrCodeScanned(ticket, confirmation)
+                    },
+                    onError = { error ->
+                    },
+                    onStopScanning = { },
+                    onEnterManually = { },
+                )
+            }
+
+            is SendScreenState.QRCodeScanned -> {
+                ReceiveQRCodeScannedCard(
+                    onAccept = {
+                        viewModel.onAccept()
+                    },
+                    onScanAgain = {
+                    },
+                )
+            }
+
+            is SendScreenState.Connecting -> {
+                ReceiveLoadingCard(message = "Connecting to receiver...")
             }
 
             is SendScreenState.GeneratingQR -> {

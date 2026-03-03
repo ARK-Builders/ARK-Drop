@@ -2,11 +2,15 @@ package dev.arkbuilders.drop.app.data.repository
 
 import android.net.Uri
 import dev.arkbuilders.drop.app.data.SendFilesSubscriberImpl
+import dev.arkbuilders.drop.app.data.SendFilesToSubscriberImpl
 import dev.arkbuilders.drop.app.domain.ResourcesHelper
 import dev.arkbuilders.drop.app.domain.model.DropFileInfo
+import dev.arkbuilders.drop.app.domain.model.ISendSession
 import dev.arkbuilders.drop.app.domain.model.SendSession
+import dev.arkbuilders.drop.app.domain.model.SendToSession
 import dev.arkbuilders.drop.app.domain.model.TransferStatus
 import dev.arkbuilders.drop.app.domain.repository.TransferSessionRepo
+import dev.arkbuilders.drop.app.domain.usecase.SendFilesToUseCase
 import dev.arkbuilders.drop.app.domain.usecase.SendFilesUseCase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -19,15 +23,16 @@ import timber.log.Timber
 
 class SendSessionRepo(
     private val sendUseCase: SendFilesUseCase,
+    private val sendFilesToUseCase: SendFilesToUseCase,
     private val resourcesHelper: ResourcesHelper,
     private val transferSessionRepository: TransferSessionRepo,
 ) {
     // Keep references to active sessions here so file transfers continue even if the ViewModel dies
-    private val activeSessions = mutableListOf<SendSession>()
+    private val activeSessions = mutableListOf<ISendSession>()
     private val activeSessionsMutex = Mutex()
     private val cancelScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    suspend fun sendFiles(fileUris: List<Uri>): SendSession? =
+    suspend fun sendFiles(fileUris: List<Uri>): ISendSession? =
         withContext(Dispatchers.IO) {
             cleanupFinishedSessions()
 
@@ -50,13 +55,42 @@ class SendSessionRepo(
             )
         }
 
+    suspend fun sendFilesTo(
+        ticket: String,
+        confirmation: UByte,
+        fileUris: List<Uri>,
+    ): ISendSession? =
+        withContext(Dispatchers.IO) {
+            cleanupFinishedSessions()
+
+            sendFilesToUseCase.invoke(ticket, confirmation, fileUris).fold(
+                onSuccess = { bubble ->
+                    val subscriber =
+                        SendFilesToSubscriberImpl().also { subscriber ->
+                            bubble.subscribe(subscriber)
+                        }
+
+                    val session = SendToSession(bubble, subscriber)
+                    activeSessionsMutex.withLock {
+                        activeSessions.add(session)
+                    }
+
+                    bubble.start()
+                    return@withContext session
+                },
+                onFailure = {
+                    return@withContext null
+                },
+            )
+        }
+
     suspend fun recordSendCompletion(
         fileUris: List<Uri>,
-        session: SendSession,
+        session: ISendSession,
     ) {
         try {
             cleanupFinishedSessions()
-            val progress = session.subscriber.progress.value
+            val progress = session.progress.value
             val receiverName = progress.receiverName
             val receiverAvatar = progress.receiverAvatar
 
@@ -79,14 +113,13 @@ class SendSessionRepo(
         }
     }
 
-    fun cancelSend(session: SendSession) {
+    fun cancelSend(session: ISendSession) {
         cancelScope.launch {
             try {
                 activeSessionsMutex.withLock {
                     activeSessions.remove(session)
                 }
-                session.bubble.unsubscribe(session.subscriber)
-                session.bubble.cancel()
+                session.cancel()
             } catch (e: Throwable) {
                 Timber.e("Error cancelling send ${e.message}")
             }
@@ -95,6 +128,6 @@ class SendSessionRepo(
 
     private suspend fun cleanupFinishedSessions() =
         activeSessionsMutex.withLock {
-            activeSessions.removeAll { it.bubble.isFinished() }
+            activeSessions.removeAll { it.isFinished() }
         }
 }

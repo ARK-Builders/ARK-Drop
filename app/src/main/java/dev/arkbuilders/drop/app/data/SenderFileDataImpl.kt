@@ -42,6 +42,10 @@ class SenderFileDataImpl(
         }
     }
 
+    override fun isEmpty(): Boolean {
+        return false
+    }
+
     override fun len(): ULong {
         initialize()
         return totalLength

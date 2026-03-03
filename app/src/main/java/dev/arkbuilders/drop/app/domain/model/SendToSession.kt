@@ -1,13 +1,13 @@
 package dev.arkbuilders.drop.app.domain.model
 
-import dev.arkbuilders.drop.SendFilesBubble
-import dev.arkbuilders.drop.app.data.SendFilesSubscriberImpl
+import dev.arkbuilders.drop.SendFilesToBubble
+import dev.arkbuilders.drop.app.data.SendFilesToSubscriberImpl
 import dev.arkbuilders.drop.app.data.SendingProgress
 import kotlinx.coroutines.flow.StateFlow
 
-class SendSession(
-    private val bubble: SendFilesBubble,
-    private val subscriber: SendFilesSubscriberImpl,
+class SendToSession(
+    private val bubble: SendFilesToBubble,
+    private val subscriber: SendFilesToSubscriberImpl,
 ) : ISendSession {
     override fun isFinished(): Boolean = bubble.isFinished()
 
@@ -16,9 +16,9 @@ class SendSession(
         bubble.unsubscribe(subscriber)
     }
 
-    override fun ticket(): String? = bubble.getTicket()
+    override fun ticket(): String? = null
 
-    override fun confirmation(): UByte? = bubble.getConfirmation()
+    override fun confirmation(): UByte? = null
 
     override val progress: StateFlow<SendingProgress> = subscriber.progress
 }

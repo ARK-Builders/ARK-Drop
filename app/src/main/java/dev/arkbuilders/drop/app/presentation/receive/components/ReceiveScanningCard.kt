@@ -202,58 +202,79 @@ private fun processImageProxy(
     onQRCodeScanned: (String, UByte) -> Unit,
     onError: (ReceiveError) -> Unit,
 ) {
-    val mediaImage = imageProxy.image
-    if (mediaImage != null) {
-        val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
-        val scanner = BarcodeScanning.getClient()
+    val mediaImage =
+        imageProxy.image ?: run {
+            imageProxy.close()
+            return
+        }
 
-        scanner.process(image)
-            .addOnSuccessListener { barcodes ->
-                for (barcode in barcodes) {
-                    when (barcode.valueType) {
-                        Barcode.TYPE_TEXT, Barcode.TYPE_URL -> {
-                            barcode.rawValue?.let { value ->
-                                // Parse Drop QR code format: drop://receive?ticket=...&confirmation=...
-                                if (value.startsWith("drop://receive?")) {
-                                    try {
-                                        val uri = value.toUri()
-                                        val ticket = uri.getQueryParameter("ticket")
-                                        val confirmationStr = uri.getQueryParameter("confirmation")
+    val image =
+        InputImage.fromMediaImage(
+            mediaImage,
+            imageProxy.imageInfo.rotationDegrees,
+        )
 
-                                        if (ticket != null && confirmationStr != null) {
-                                            val confirmation = confirmationStr.toUByte()
-                                            onQRCodeScanned(ticket, confirmation)
-                                            return@addOnSuccessListener
-                                        }
-                                    } catch (_: Exception) {
-                                        onError(ReceiveError.InvalidQRCode)
-                                        return@addOnSuccessListener
-                                    }
-                                } else {
-                                    onError(ReceiveError.InvalidQRCode)
-                                    return@addOnSuccessListener
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            .addOnFailureListener { exception ->
-                onError(
-                    when {
-                        exception.message?.contains(
-                            "camera",
-                            ignoreCase = true,
-                        ) == true -> ReceiveError.CameraInitializationFailed
+    BarcodeScanning.getClient()
+        .process(image)
+        .addOnSuccessListener { barcodes ->
+            handleBarcodes(barcodes, onQRCodeScanned)
+        }
+        .addOnFailureListener { exception ->
+            onError(mapScannerError(exception))
+        }
+        .addOnCompleteListener {
+            imageProxy.close()
+        }
+}
 
-                        else -> ReceiveError.UnknownError
-                    },
-                )
-            }
-            .addOnCompleteListener {
-                imageProxy.close()
-            }
+private fun handleBarcodes(
+    barcodes: List<Barcode>,
+    onQRCodeScanned: (String, UByte) -> Unit,
+) {
+    barcodes.firstNotNullOfOrNull { barcode ->
+        if (barcode.valueType == Barcode.TYPE_TEXT ||
+            barcode.valueType == Barcode.TYPE_URL
+        ) {
+            barcode.rawValue?.let { parseDropQr(it) }
+        } else {
+            null
+        }
+    }?.let { (ticket, confirmation) ->
+        onQRCodeScanned(ticket, confirmation)
+    }
+}
+
+/**
+ * Parses Drop QR format:
+ * drop://{action}?ticket=...&confirmation=...
+ *
+ * Supported actions: receive, send
+ *
+ * @return Pair(ticket, confirmation) or null if invalid
+ */
+private fun parseDropQr(value: String): Pair<String, UByte>? {
+    if (!value.startsWith("drop://")) return null
+
+    return try {
+        val uri = value.toUri()
+
+        val ticket = uri.getQueryParameter("ticket")
+        val confirmation = uri.getQueryParameter("confirmation")?.toUByte()
+
+        if (ticket != null && confirmation != null) {
+            ticket to confirmation
+        } else {
+            null
+        }
+    } catch (_: Exception) {
+        null
+    }
+}
+
+private fun mapScannerError(exception: Exception): ReceiveError {
+    return if (exception.message?.contains("camera", ignoreCase = true) == true) {
+        ReceiveError.CameraInitializationFailed
     } else {
-        imageProxy.close()
+        ReceiveError.UnknownError
     }
 }

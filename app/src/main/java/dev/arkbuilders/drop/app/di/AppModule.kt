@@ -19,6 +19,7 @@ import dev.arkbuilders.drop.app.domain.repository.NetworkStatus
 import dev.arkbuilders.drop.app.domain.repository.ProfileRepo
 import dev.arkbuilders.drop.app.domain.repository.TransferSessionRepo
 import dev.arkbuilders.drop.app.domain.usecase.ReceiveFilesUseCase
+import dev.arkbuilders.drop.app.domain.usecase.SendFilesToUseCase
 import dev.arkbuilders.drop.app.domain.usecase.SendFilesUseCase
 import org.koin.dsl.module
 
@@ -33,7 +34,7 @@ val appModule =
         single<AvatarHelper> { AvatarHelperImpl(get()) }
         single { ProfileLocalDataSource(get(), get()) }
         single { TransferSessionLocalDataSource(get()) }
-        single { SendSessionRepo(get(), get(), get()) }
+        single { SendSessionRepo(get(), get(), get(), get()) }
         single { ReceiveSessionRepo(get(), get(), get()) }
         factory<TransferSessionDao> {
             val db: Database = get()
@@ -41,4 +42,5 @@ val appModule =
         }
         factory<SendFilesUseCase> { SendFilesUseCase(get(), get(), get()) }
         factory<ReceiveFilesUseCase> { ReceiveFilesUseCase(get()) }
+        factory { SendFilesToUseCase(get(), get(), get()) }
     }

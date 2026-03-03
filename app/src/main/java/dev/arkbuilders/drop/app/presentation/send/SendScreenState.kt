@@ -1,7 +1,7 @@
 package dev.arkbuilders.drop.app.presentation.send
 
 import android.graphics.Bitmap
-import dev.arkbuilders.drop.app.domain.model.SendSession
+import dev.arkbuilders.drop.app.domain.model.ISendSession
 
 sealed class SendScreenState {
     data class FileSelection(
@@ -14,15 +14,28 @@ sealed class SendScreenState {
         val files: List<String>,
     ) : SendScreenState()
 
+    data class Scanning(val files: List<String>) : SendScreenState()
+
+    data class QRCodeScanned(
+        val ticket: String,
+        val confirmation: UByte,
+        val files: List<String>,
+    ) : SendScreenState()
+
+    data class Connecting(
+        val session: ISendSession,
+        val files: List<String>,
+    ) : SendScreenState()
+
     data class WaitingForReceiver(
-        val session: SendSession,
+        val session: ISendSession,
         val files: List<String>,
         val qrBitmap: Bitmap,
         val copyString: String,
     ) : SendScreenState()
 
     data class Transfer(
-        val session: SendSession,
+        val session: ISendSession,
         val files: List<String>,
         val isConnected: Boolean = false,
         val receiverName: String = "",
@@ -37,12 +50,12 @@ sealed class SendScreenState {
     ) : SendScreenState()
 
     data class Complete(
-        val session: SendSession,
+        val session: ISendSession,
         val files: List<String>,
     ) : SendScreenState()
 
     data class Error(
-        val session: SendSession? = null,
+        val session: ISendSession? = null,
         val files: List<String>? = null,
         val error: SendException,
     ) : SendScreenState()

@@ -6,6 +6,7 @@ import dev.arkbuilders.drop.app.presentation.profile.EditProfileViewModel
 import dev.arkbuilders.drop.app.presentation.receive.ReceiveViewModel
 import dev.arkbuilders.drop.app.presentation.send.SendViewModel
 import org.koin.core.module.dsl.viewModel
+import org.koin.core.parameter.parametersOf
 import org.koin.dsl.module
 
 val viewModelsModule =
@@ -14,5 +15,12 @@ val viewModelsModule =
         viewModel { HomeViewModel(get(), get(), get()) }
         viewModel { EditProfileViewModel(get(), get()) }
         viewModel { ReceiveViewModel(get(), get()) }
-        viewModel { SendViewModel(get(), get(), get()) }
+        viewModel { (isScanToSend: Boolean) ->
+            SendViewModel(
+                get { parametersOf(isScanToSend) },
+                get(),
+                get(),
+                get(),
+            )
+        }
     }

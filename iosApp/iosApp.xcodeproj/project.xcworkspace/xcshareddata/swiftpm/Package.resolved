@@ -1,10 +1,10 @@
 {
-  "originHash" : "9b6e00af134feb04aa30dbdc0edc3d81a5c499c748b5882d3399dbb3510e5018",
+  "originHash" : "9f16321347f03f49a36fc97e9dd599134b60317bb02cf8d52607a05cc7df5ba1",
   "pins" : [
     {
       "identity" : "arkdrop-swift-binaries",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/phuhk/arkdrop-swift-binaries",
+      "location" : "https://github.com/oluiscabral/arkdrop-swift-binaries",
       "state" : {
         "branch" : "main",
         "revision" : "4de2831b902f005906a28cf0e33a7d311e6c83b0"

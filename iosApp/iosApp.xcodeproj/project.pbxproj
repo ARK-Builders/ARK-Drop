@@ -407,7 +407,7 @@
 /* Begin XCRemoteSwiftPackageReference section */
 		87961AEC2F239F6600972E0D /* XCRemoteSwiftPackageReference "arkdrop-swift-binaries" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/phuhk/arkdrop-swift-binaries";
+			repositoryURL = "https://github.com/oluiscabral/arkdrop-swift-binaries";
 			requirement = {
 				branch = main;
 				kind = branch;

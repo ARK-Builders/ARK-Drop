@@ -6,7 +6,9 @@ on:
     tags:
       - 'v*'
     branches:
-      - 'feature/kmp-ios-impl'  # TEMPORARY: Remove after testing
+      # TEMPORARY: Remove after testing
+      - 'feature/kmp-ios-impl'
+      - 'fix/kmp-ios-impl'
   workflow_dispatch:
 
 jobs:

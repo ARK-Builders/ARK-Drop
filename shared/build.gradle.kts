@@ -109,7 +109,7 @@ kotlin {
                 implementation(libs.arkbuilders.drop)
                 implementation(libs.timber)
                 implementation(project.dependencies.platform(libs.firebase.bom))
-                implementation(libs.firebase.crashlytics.ktx)
+                implementation(libs.firebase.crashlytics)
             }
         }
 

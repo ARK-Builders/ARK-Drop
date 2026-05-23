@@ -47,7 +47,7 @@ kotlin {
 
             implementation(libs.kotlinx.datetime)
 
-            implementation(libs.firebase.bom)
+            implementation(project.dependencies.platform(libs.firebase.bom))
             implementation(libs.firebase.crashlytics.ktx)
             implementation(libs.firebase.analytics)
         }

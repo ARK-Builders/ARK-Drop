@@ -10,6 +10,7 @@ import dev.arkbuilders.drop.domain.repository.ProfileRepo
 import dev.arkbuilders.drop.domain.repository.ReceiveSessionRepo
 import dev.arkbuilders.drop.domain.repository.SendSessionRepo
 import dev.arkbuilders.drop.domain.repository.TransferSessionRepo
+import dev.arkbuilders.drop.instrumentation.FirebaseReporter
 import org.koin.dsl.module
 
 val repositoriesModule =
@@ -18,7 +19,7 @@ val repositoriesModule =
         single { TransferSessionLocalDataSource(get()) }
 
         single<ProfileRepo> { ProfileRepoImpl(get()) }
-        single<SendSessionRepo> { SendSessionRepoImpl(get(), get(), get()) }
-        single<ReceiveSessionRepo> { ReceiveSessionRepoImpl(get(), get(), get()) }
+        single<SendSessionRepo> { SendSessionRepoImpl(get(), get(), get(), get<FirebaseReporter>()) }
+        single<ReceiveSessionRepo> { ReceiveSessionRepoImpl(get(), get(), get(), get<FirebaseReporter>()) }
         single<TransferSessionRepo> { TransferSessionRepoImpl(get()) }
     }

@@ -1,5 +1,6 @@
 package dev.arkbuilders.drop.di
 
+import dev.arkbuilders.drop.instrumentation.FirebaseReporter
 import dev.arkbuilders.drop.presentation.edit.EditProfileViewModel
 import dev.arkbuilders.drop.presentation.history.HistoryViewModel
 import dev.arkbuilders.drop.presentation.home.HomeViewModel
@@ -36,5 +37,10 @@ object KoinHelper : KoinComponent {
     fun getHistoryViewModel(): HistoryViewModel {
         val viewModel: HistoryViewModel by inject()
         return viewModel
+    }
+
+    fun getFirebaseReporter(): FirebaseReporter {
+        val reporter: FirebaseReporter by inject()
+        return reporter
     }
 }

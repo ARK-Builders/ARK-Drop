@@ -33,27 +33,34 @@ kotlin {
             xcf.add(this)
         }
 
-        // Configure cinterop for ArkDrop bridge
+        // Configure cinterops
         iosTarget.compilations.getByName("main") {
+            val iosAppPath = rootProject.projectDir.resolve("iosApp/iosApp")
+
             val arkDropBridgeCinterop = cinterops.create("ArkDropBridge") {
                 defFile(project.file("src/nativeInterop/cinterop/ArkDropBridge.def"))
                 packageName("dev.arkbuilders.drop.bridge")
-
-                // Add include paths - use File objects for proper resolution
-                val iosAppPath = rootProject.projectDir.resolve("iosApp/iosApp")
                 compilerOpts(
                     "-framework", "Foundation",
                     "-I${iosAppPath.absolutePath}"
                 )
+                includeDirs(iosAppPath.absolutePath)
+            }
 
-                // Specify where to find headers
+            val crashlyticsBridgeCinterop = cinterops.create("CrashlyticsBridge") {
+                defFile(project.file("src/nativeInterop/cinterop/CrashlyticsBridge.def"))
+                packageName("dev.arkbuilders.drop.bridge")
+                compilerOpts(
+                    "-framework", "Foundation",
+                    "-I${iosAppPath.absolutePath}"
+                )
                 includeDirs(iosAppPath.absolutePath)
             }
 
             // Ensure cinterop runs before Kotlin compilation
             compileTaskProvider.configure {
-                val cinteropTaskName = "cinteropArkDropBridge${iosTarget.name.replaceFirstChar { it.uppercase() }}"
-                dependsOn(cinteropTaskName)
+                dependsOn("cinteropArkDropBridge${iosTarget.name.replaceFirstChar { it.uppercase() }}")
+                dependsOn("cinteropCrashlyticsBridge${iosTarget.name.replaceFirstChar { it.uppercase() }}")
             }
         }
 
@@ -78,6 +85,7 @@ kotlin {
                 implementation(libs.androidx.room.runtime)
                 implementation(libs.androidx.sqlite.bundled)
                 implementation(libs.kotlinx.serialization.json)
+                implementation(libs.kotlinx.datetime)
             }
         }
         val commonTest by getting {
@@ -100,6 +108,8 @@ kotlin {
                 }
                 implementation(libs.arkbuilders.drop)
                 implementation(libs.timber)
+                implementation(libs.firebase.bom)
+                implementation(libs.firebase.crashlytics.ktx)
             }
         }
 

@@ -1,7 +1,10 @@
 
 @file:OptIn(ExperimentalForeignApi::class)
+
 package dev.arkbuilders.drop.domain.libwrapper.send
 
+import dev.arkbuilders.drop.bridge.crashlytics_log
+import dev.arkbuilders.drop.bridge.crashlytics_recordError
 import dev.arkbuilders.drop.domain.libwrapper.send.request.DropSenderFileData
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.usePinned
@@ -23,14 +26,16 @@ class SenderFileDataImpl(
     private fun initialize() {
         if (isInitialized) return
 
+        println("📁 SenderFileDataImpl: Initializing file: $uri")
+        crashlytics_log("SenderFileDataImpl: initializing file: $uri")
+
         try {
-            println("📁 SenderFileDataImpl: Initializing file: $uri")
-            
             // Try as file path first, then as URL string
-            val url = NSURL.fileURLWithPath(uri) 
-                ?: NSURL.URLWithString(uri) 
+            val url = NSURL.fileURLWithPath(uri)
+                ?: NSURL.URLWithString(uri)
                 ?: run {
                     println("⚠️ SenderFileDataImpl: Failed to create URL from: $uri")
+                    crashlytics_recordError("SenderFileDataImpl: failed to create URL from: $uri", null)
                     return
                 }
 
@@ -41,29 +46,37 @@ class SenderFileDataImpl(
             resourceValues?.get(NSURLFileSizeKey)?.let {
                 totalLength = ((it as? NSNumber)?.longValue ?: 0L).toULong()
                 println("📁 SenderFileDataImpl: File size: $totalLength bytes")
-            } ?: println("⚠️ SenderFileDataImpl: Could not get file size")
+                crashlytics_log("SenderFileDataImpl: file: $uri, size: $totalLength bytes")
+            } ?: println("⚠️ SenderFileDataImpl: Could not get file size").also {
+                crashlytics_log("SenderFileDataImpl: could not get file size for: $uri")
+            }
 
             // Open input stream
             inputStream = NSInputStream.inputStreamWithURL(url)
             inputStream?.open()
-            
+
             val status = inputStream?.streamStatus
             println("📁 SenderFileDataImpl: Stream status: $status")
-            
+
             if (inputStream?.streamError != null) {
-                println("⚠️ SenderFileDataImpl: Stream error: ${inputStream?.streamError?.localizedDescription}")
+                val errorDesc = inputStream?.streamError?.localizedDescription ?: "unknown"
+                println("⚠️ SenderFileDataImpl: Stream error: $errorDesc")
+                crashlytics_recordError("SenderFileDataImpl: stream error for: $uri - $errorDesc", null)
                 return
             }
-            
+
             isInitialized = true
             println("✅ SenderFileDataImpl: Successfully initialized")
+            crashlytics_log("SenderFileDataImpl: successfully initialized: $uri")
         } catch (e: Exception) {
             println("❌ SenderFileDataImpl: Failed to initialize file: $uri, error: $e")
+            crashlytics_recordError("SenderFileDataImpl: failed to initialize: $uri", e.message)
         }
     }
 
     override fun len(): ULong {
         initialize()
+        crashlytics_log("SenderFileDataImpl: len() called for: $uri, returning: $totalLength")
         return totalLength
     }
 
@@ -71,6 +84,7 @@ class SenderFileDataImpl(
         initialize()
         if (!isInitialized) {
             println("⚠️ SenderFileDataImpl.read() - not initialized for $uri")
+            crashlytics_recordError("SenderFileDataImpl.read() - not initialized for: $uri", null)
             return null
         }
         return try {
@@ -80,12 +94,14 @@ class SenderFileDataImpl(
             }
             if (bytesRead == 0L) {
                 inputStream?.close()
+                crashlytics_log("SenderFileDataImpl: read() reached end of file, stream closed: $uri")
                 null
             } else {
                 buffer[0]
             }
         } catch (e: Exception) {
             println("⚠️ SenderFileDataImpl.read() error for $uri: $e")
+            crashlytics_recordError("SenderFileDataImpl.read() error for: $uri", e.message)
             null
         }
     }
@@ -94,6 +110,7 @@ class SenderFileDataImpl(
         initialize()
         if (!isInitialized) {
             println("⚠️ SenderFileDataImpl.readChunk() - not initialized for $uri")
+            crashlytics_recordError("SenderFileDataImpl.readChunk() - not initialized for: $uri", null)
             return ByteArray(0)
         }
         return try {
@@ -103,12 +120,16 @@ class SenderFileDataImpl(
             }
             if (bytesRead == 0L) {
                 inputStream?.close()
+                crashlytics_log("SenderFileDataImpl: readChunk() reached end of file, stream closed: $uri")
                 ByteArray(0)
             } else {
-                buffer.asByteArray().copyOf(bytesRead.toInt())
+                val result = buffer.asByteArray().copyOf(bytesRead.toInt())
+                crashlytics_log("SenderFileDataImpl: readChunk() - requested: $size, read: $bytesRead bytes for: $uri")
+                result
             }
         } catch (e: Exception) {
             println("⚠️ SenderFileDataImpl.readChunk() error for $uri: $e")
+            crashlytics_recordError("SenderFileDataImpl.readChunk() error for: $uri, size: $size", e.message)
             ByteArray(0)
         }
     }

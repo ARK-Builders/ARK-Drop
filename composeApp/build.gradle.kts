@@ -8,6 +8,8 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.ktlint.gradle)
+    alias(libs.plugins.google.services)
+    alias(libs.plugins.firebase.crashlytics)
 }
 
 kotlin {
@@ -44,6 +46,10 @@ kotlin {
             implementation(libs.material.icons.extended)
 
             implementation(libs.kotlinx.datetime)
+
+            implementation(libs.firebase.bom)
+            implementation(libs.firebase.crashlytics.ktx)
+            implementation(libs.firebase.analytics)
         }
         commonMain.dependencies {
             implementation(compose.runtime)

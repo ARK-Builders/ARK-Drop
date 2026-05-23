@@ -1,10 +1,12 @@
 import SwiftUI
 import Shared
+import FirebaseCore
 
 @main
 struct iOSApp: App {
     init() {
-        // Initialize app configuration and DI
+        // Initialize Firebase, app configuration and DI
+        FirebaseApp.configure()
         AppConfiguration.shared.initialize()
     }
     

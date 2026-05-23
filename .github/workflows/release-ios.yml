@@ -80,6 +80,13 @@ jobs:
             echo "✅ ASC_ISSUER_ID - Available"
           fi
           
+          if [ -z "${{ secrets.GOOGLE_SERVICE_INFO_BASE64 }}" ]; then
+            echo "❌ GOOGLE_SERVICE_INFO_BASE64 - MISSING or EMPTY"
+            MISSING_SECRETS+=("GOOGLE_SERVICE_INFO_BASE64")
+          else
+            echo "✅ GOOGLE_SERVICE_INFO_BASE64 - Available"
+          fi
+          
           echo ""
           echo "📊 Summary: ${#MISSING_SECRETS[@]} secrets missing"
           
@@ -290,6 +297,19 @@ jobs:
           echo "✅ Provisioning profile size: $FILE_SIZE bytes"
         env:
           IOS_PROFILE_BASE64: ${{ secrets.IOS_PROFILE_BASE64 }}
+
+      # 7️⃣b Decode GoogleService-Info.plist (Firebase config)
+      - name: Decode GoogleService-Info.plist
+        run: |
+          if [ -z "$GOOGLE_SERVICE_INFO_BASE64" ]; then
+            echo "❌ ERROR: GOOGLE_SERVICE_INFO_BASE64 secret is missing or empty!"
+            exit 1
+          fi
+          echo "$GOOGLE_SERVICE_INFO_BASE64" | base64 --decode > iosApp/iosApp/GoogleService-Info.plist
+          FILE_SIZE=$(stat -f%z iosApp/iosApp/GoogleService-Info.plist)
+          echo "✅ GoogleService-Info.plist created ($FILE_SIZE bytes)"
+        env:
+          GOOGLE_SERVICE_INFO_BASE64: ${{ secrets.GOOGLE_SERVICE_INFO_BASE64 }}
 
       # 8️⃣ Setup App Store Connect API Key
       - name: Setup App Store Connect API Key

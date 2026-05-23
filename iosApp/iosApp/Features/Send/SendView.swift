@@ -7,6 +7,7 @@ struct SendView: View {
     @StateObject private var viewModel = SendViewModelWrapper()
     @EnvironmentObject private var coordinator: NavigationCoordinator
     @State private var showFilePicker = false
+    private let reporter = KoinHelper.shared.getFirebaseReporter()
     
     var body: some View {
         ZStack {
@@ -22,6 +23,9 @@ struct SendView: View {
                         onRemoveFile: viewModel.onFileRemove,
                         onStartTransfer: viewModel.onStartTransfer
                     )
+                    .onAppear {
+                        reporter.log(message: "SendView: state=FileSelection files=\(state.files.count) canStart=\(state.canStartTransfer)")
+                    }
                     
                 case let state as SendScreenState.GeneratingQR:
                     LoadingView(
@@ -29,18 +33,27 @@ struct SendView: View {
                         canCancel: true,
                         onCancel: viewModel.onCancelQrGeneration
                     )
+                    .onAppear {
+                        reporter.log(message: "SendView: state=GeneratingQR files=\(state.files.count)")
+                    }
                     
                 case let state as SendScreenState.WaitingForReceiver:
                     WaitingForReceiverView(
                         state: state,
                         onCancel: viewModel.onCancelTransfer
                     )
+                    .onAppear {
+                        reporter.log(message: "SendView: state=WaitingForReceiver ticket=\(state.session.bubble.getTicket())")
+                    }
                     
                 case let state as SendScreenState.Transfer:
                     TransferringView(
                         state: state,
                         onCancel: viewModel.onCancelTransfer
                     )
+                    .onAppear {
+                        reporter.log(message: "SendView: state=Transfer receiver=\(state.receiverName) file=\(state.currentFileName) progress=\(state.bytesTransferred)/\(state.totalBytes)")
+                    }
                     
                 case let state as SendScreenState.Complete:
                     TransferCompleteView(
@@ -48,6 +61,9 @@ struct SendView: View {
                         onSendMore: viewModel.onSendMore,
                         onDone: viewModel.onDone
                     )
+                    .onAppear {
+                        reporter.log(message: "SendView: state=Complete files=\(state.files.count)")
+                    }
                     
                 case let state as SendScreenState.Error:
                     SendErrorView(
@@ -55,6 +71,9 @@ struct SendView: View {
                         onRetry: viewModel.onErrorRetry,
                         onDismiss: viewModel.onErrorDismiss
                     )
+                    .onAppear {
+                        reporter.recordError(message: "SendView: state=Error error=\(state.error.name)", throwable: nil)
+                    }
                     
                 default:
                     EmptyView()
@@ -71,15 +90,21 @@ struct SendView: View {
             switch result {
             case .success(let urls):
                 // Start accessing security-scoped resources and use file paths
+                reporter.log(message: "SendView: file picker returned \(urls.count) URLs")
                 var accessiblePaths: [String] = []
                 for url in urls {
                     if url.startAccessingSecurityScopedResource() {
                         accessiblePaths.append(url.path)
                         viewModel.trackAccessedURL(url)
+                        reporter.log(message: "SendView: accessed file - \(url.lastPathComponent), size: \(url.fileSize) bytes")
+                    } else {
+                        reporter.log(message: "SendView: failed to access security-scoped resource - \(url.lastPathComponent)")
                     }
                 }
+                reporter.log(message: "SendView: added \(accessiblePaths.count) accessible files to viewModel")
                 viewModel.onFilesAdded(accessiblePaths)
             case .failure(let error):
+                reporter.recordError(message: "SendView: file picker error - \(error.localizedDescription)", throwable: nil)
                 print("File picker error: \(error)")
             }
         }
@@ -479,6 +504,7 @@ class SendViewModelWrapper: ObservableObject {
     @Published var effectPublisher = PassthroughSubject<SendScreenEffect, Never>()
     
     private let viewModel: SendViewModel
+    private let reporter = KoinHelper.shared.getFirebaseReporter()
     private var stateTask: Task<Void, Never>?
     private var effectTask: Task<Void, Never>?
     private var accessedURLs: [URL] = []
@@ -486,6 +512,7 @@ class SendViewModelWrapper: ObservableObject {
     init() {
         self.viewModel = DIContainer.shared.makeSendViewModel()
         self.state = SendScreenState.FileSelection(files: [], size: 0, canStartTransfer: false)
+        reporter.log(message: "SendViewModelWrapper: initialized")
         observeState()
         observeEffects()
     }
@@ -500,9 +527,15 @@ class SendViewModelWrapper: ObservableObject {
             
             do {
                 for try await newState in viewModel.container.stateFlow {
+                    let previousType = String(describing: type(of: self.state))
+                    let newType = String(describing: type(of: newState))
+                    if previousType != newType {
+                        reporter.log(message: "SendViewModelWrapper: state changed - \(previousType) -> \(newType)")
+                    }
                     self.state = newState as! SendScreenState
                 }
             } catch {
+                reporter.recordError(message: "SendViewModelWrapper: state observation error - \(error.localizedDescription)", throwable: nil)
                 print("SendViewModel state error: \(error)")
             }
         }
@@ -515,48 +548,59 @@ class SendViewModelWrapper: ObservableObject {
             do {
                 for try await effect in viewModel.container.sideEffectFlow {
                     if let typedEffect = effect as? SendScreenEffect {
+                        reporter.log(message: "SendViewModelWrapper: effect - \(String(describing: typedEffect))")
                         self.effectPublisher.send(typedEffect)
                     }
                 }
             } catch {
+                reporter.recordError(message: "SendViewModelWrapper: effect observation error - \(error.localizedDescription)", throwable: nil)
                 print("SendViewModel effect error: \(error)")
             }
         }
     }
     
     func onFilesAdded(_ files: [String]) {
+        reporter.log(message: "SendViewModelWrapper: onFilesAdded - count: \(files.count)")
         viewModel.onFilesAdded(newFiles: files)
     }
     
     func onFileRemove(_ file: String) {
+        reporter.log(message: "SendViewModelWrapper: onFileRemove - path: \(file)")
         viewModel.onFileRemove(file: file)
     }
     
     func onStartTransfer() {
+        reporter.log(message: "SendViewModelWrapper: onStartTransfer")
         viewModel.onStartTransfer()
     }
     
     func onCancelTransfer() {
+        reporter.log(message: "SendViewModelWrapper: onCancelTransfer")
         viewModel.onCancelTransfer()
     }
     
     func onCancelQrGeneration() {
+        reporter.log(message: "SendViewModelWrapper: onCancelQrGeneration")
         viewModel.onCancelQrGeneration()
     }
     
     func onSendMore() {
+        reporter.log(message: "SendViewModelWrapper: onSendMore")
         viewModel.onSendMore()
     }
     
     func onDone() {
+        reporter.log(message: "SendViewModelWrapper: onDone")
         viewModel.onDone()
     }
     
     func onErrorRetry() {
+        reporter.log(message: "SendViewModelWrapper: onErrorRetry")
         viewModel.onErrorRetry()
     }
     
     func onErrorDismiss() {
+        reporter.log(message: "SendViewModelWrapper: onErrorDismiss")
         viewModel.onErrorDismiss()
     }
     
@@ -567,9 +611,10 @@ class SendViewModelWrapper: ObservableObject {
         
         stateTask?.cancel()
         effectTask?.cancel()
+        reporter.log(message: "SendViewModelWrapper: deinitialized")
     }
 }
-
+    
 #Preview {
     NavigationStack {
         SendView()

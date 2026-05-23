@@ -7,6 +7,8 @@ struct ReceiveView: View {
     @StateObject private var viewModel = ReceiveViewModelWrapper()
     @EnvironmentObject private var coordinator: NavigationCoordinator
     
+    private let reporter = KoinHelper.shared.getFirebaseReporter()
+    
     var body: some View {
         ZStack {
             Color.dropBackground
@@ -21,15 +23,24 @@ struct ReceiveView: View {
                         onEnterManually: viewModel.onEnterManually,
                         onRequestPermission: viewModel.onRequestCameraPermission
                     )
+                    .onAppear {
+                        reporter.log(message: "ReceiveView: state=Initial cameraGranted=\(state.cameraPermissionGranted)")
+                    }
                     
                 case is ReceiveScreenState.RequestingPermission:
                     LoadingView(message: "Requesting camera permission...")
+                        .onAppear {
+                            reporter.log(message: "ReceiveView: state=RequestingPermission")
+                        }
                     
                 case is ReceiveScreenState.Scanning:
                     QRScannerView(
                         onCodeScanned: viewModel.onQrCodeScanned,
                         onCancel: viewModel.onStopScanning
                     )
+                    .onAppear {
+                        reporter.log(message: "ReceiveView: state=Scanning")
+                    }
                     
                 case let state as ReceiveScreenState.ManualInput:
                     ManualInputView(
@@ -40,6 +51,9 @@ struct ReceiveView: View {
                         onCancel: viewModel.onCancelManualInput,
                         onPaste: viewModel.onPasteFromClipboard
                     )
+                    .onAppear {
+                        reporter.log(message: "ReceiveView: state=ManualInput")
+                    }
                     
                 case let state as ReceiveScreenState.QRCodeScanned:
                     QRScannedView(
@@ -48,9 +62,15 @@ struct ReceiveView: View {
                         onAccept: viewModel.onAccept,
                         onCancel: viewModel.onScanAgain
                     )
+                    .onAppear {
+                        reporter.log(message: "ReceiveView: state=QRCodeScanned ticket=\(state.ticket)")
+                    }
                     
                 case is ReceiveScreenState.Connecting:
                     LoadingView(message: "Connecting to sender...")
+                        .onAppear {
+                            reporter.log(message: "ReceiveView: state=Connecting")
+                        }
                     
                 case let state as ReceiveScreenState.Receiving:
                     ReceivingView(
@@ -64,6 +84,9 @@ struct ReceiveView: View {
                         onReceiveMore: viewModel.onReceiveMore,
                         onDone: viewModel.onDone
                     )
+                    .onAppear {
+                        reporter.log(message: "ReceiveView: state=Success files=\(state.receivedFiles.count)")
+                    }
                     
                 case let state as ReceiveScreenState.Error:
                     ReceiveErrorView(
@@ -71,6 +94,9 @@ struct ReceiveView: View {
                         onRetry: viewModel.onErrorRetry,
                         onDismiss: viewModel.onErrorDismiss
                     )
+                    .onAppear {
+                        reporter.recordError(message: "ReceiveView: state=Error error=\(state.error.name)", throwable: nil)
+                    }
                     
                 default:
                     EmptyView()
@@ -87,9 +113,11 @@ struct ReceiveView: View {
     private func handleEffect(_ effect: ReceiveScreenEffect) {
         switch effect {
         case is ReceiveScreenEffect.RequestCameraPermission:
+            reporter.log(message: "ReceiveView: requesting camera permission")
             requestCameraPermission()
             
         case is ReceiveScreenEffect.NavigateBack:
+            reporter.log(message: "ReceiveView: navigating back")
             coordinator.navigateBack()
             
         case is ReceiveScreenEffect.HideKeyboard:
@@ -101,8 +129,10 @@ struct ReceiveView: View {
     }
     
     private func requestCameraPermission() {
+        reporter.log(message: "ReceiveView: AVCaptureDevice.requestAccess for video")
         AVCaptureDevice.requestAccess(for: .video) { granted in
             Task { @MainActor in
+                self.reporter.log(message: "ReceiveView: camera permission result=\(granted)")
                 viewModel.onCameraPermissionGranted(granted)
             }
         }
@@ -245,6 +275,8 @@ struct QRScannedView: View {
     let onAccept: () -> Void
     let onCancel: () -> Void
     
+    private let reporter = KoinHelper.shared.getFirebaseReporter()
+    
     var body: some View {
         VStack(spacing: Spacing.xl) {
             Spacer()
@@ -271,13 +303,19 @@ struct QRScannedView: View {
             VStack(spacing: Spacing.sm) {
                 DropButton(
                     title: "Accept Transfer",
-                    action: onAccept,
+                    action: {
+                        reporter.log(message: "QRScannedView: accept tapped ticket=\(ticket)")
+                        onAccept()
+                    },
                     style: .primary
                 )
                 
                 DropButton(
                     title: "Scan Again",
-                    action: onCancel,
+                    action: {
+                        reporter.log(message: "QRScannedView: scan again tapped")
+                        onCancel()
+                    },
                     style: .outline
                 )
             }
@@ -292,6 +330,8 @@ struct QRScannedView: View {
 struct ReceivingView: View {
     let state: ReceiveScreenState.Receiving
     let onCancel: () -> Void
+    
+    private let reporter = KoinHelper.shared.getFirebaseReporter()
     
     var body: some View {
         VStack(spacing: Spacing.xl) {
@@ -308,18 +348,26 @@ struct ReceivingView: View {
                     Text("Receiving from \(state.progress.senderName)")
                         .font(AppTypography.titleLarge)
                 }
+                .onAppear {
+                    reporter.log(message: "ReceivingView: connected to sender=\(state.progress.senderName) files=\(state.progress.files.count)")
+                }
             }
             
             // Files Progress
             if !state.progress.files.isEmpty {
                 VStack(spacing: Spacing.md) {
                     ForEach(state.progress.files, id: \.id) { file in
+                        let receivedBytes = state.progress.fileProgress[file.id]?.receivedBytes ?? 0
+                        let isComplete = state.progress.fileProgress[file.id]?.isComplete ?? false
                         FileProgressRow(
                             fileName: file.name,
                             totalSize: Int64(file.size),
-                            receivedBytes: state.progress.fileProgress[file.id]?.receivedBytes ?? 0,
-                            isComplete: state.progress.fileProgress[file.id]?.isComplete ?? false
+                            receivedBytes: receivedBytes,
+                            isComplete: isComplete
                         )
+                        .onAppear {
+                            reporter.log(message: "ReceivingView: file name=\(file.name) size=\(file.size) received=\(receivedBytes) complete=\(isComplete)")
+                        }
                     }
                 }
                 .padding(.horizontal, Spacing.lg)
@@ -337,7 +385,10 @@ struct ReceivingView: View {
             
             DropButton(
                 title: "Cancel",
-                action: onCancel,
+                action: {
+                    reporter.log(message: "ReceivingView: cancel tapped")
+                    onCancel()
+                },
                 style: .destructive
             )
             .frame(maxWidth: 280)
@@ -402,6 +453,8 @@ struct ReceiveSuccessView: View {
     let onReceiveMore: () -> Void
     let onDone: () -> Void
     
+    private let reporter = KoinHelper.shared.getFirebaseReporter()
+    
     var body: some View {
         VStack(spacing: Spacing.xl) {
             Spacer()
@@ -424,17 +477,26 @@ struct ReceiveSuccessView: View {
             VStack(spacing: Spacing.sm) {
                 DropButton(
                     title: "Receive More Files",
-                    action: onReceiveMore,
+                    action: {
+                        reporter.log(message: "ReceiveSuccessView: receive more tapped")
+                        onReceiveMore()
+                    },
                     style: .primary
                 )
                 
                 DropButton(
                     title: "Done",
-                    action: onDone,
+                    action: {
+                        reporter.log(message: "ReceiveSuccessView: done tapped")
+                        onDone()
+                    },
                     style: .outline
                 )
             }
             .frame(maxWidth: 280)
+        }
+        .onAppear {
+            reporter.log(message: "ReceiveSuccessView: displayed fileCount=\(fileCount)")
         }
         .padding(Spacing.lg)
     }
@@ -447,13 +509,24 @@ struct ReceiveErrorView: View {
     let onRetry: () -> Void
     let onDismiss: () -> Void
     
+    private let reporter = KoinHelper.shared.getFirebaseReporter()
+    
     var body: some View {
         ErrorView(
             title: errorTitle,
             message: errorMessage,
-            onRetry: onRetry,
-            onDismiss: onDismiss
+            onRetry: {
+                reporter.log(message: "ReceiveErrorView: retry tapped error=\(error.name)")
+                onRetry()
+            },
+            onDismiss: {
+                reporter.log(message: "ReceiveErrorView: dismiss tapped error=\(error.name)")
+                onDismiss()
+            }
         )
+        .onAppear {
+            reporter.recordError(message: "ReceiveErrorView: displayed error=\(error.name)", throwable: nil)
+        }
     }
     
     private var errorTitle: String {
@@ -495,12 +568,14 @@ class ReceiveViewModelWrapper: ObservableObject {
     let effectPublisher = PassthroughSubject<ReceiveScreenEffect, Never>()
     
     private let viewModel: ReceiveViewModel
+    private let reporter = KoinHelper.shared.getFirebaseReporter()
     private var stateTask: Task<Void, Never>?
     private var effectTask: Task<Void, Never>?
     
     init() {
         self.viewModel = DIContainer.shared.makeReceiveViewModel()
         self.state = ReceiveScreenState.Initial(cameraPermissionGranted: false)
+        reporter.log(message: "ReceiveViewModelWrapper: initialized")
         observeState()
         observeEffects()
     }
@@ -511,11 +586,14 @@ class ReceiveViewModelWrapper: ObservableObject {
             
             do {
                 for try await newState in viewModel.container.stateFlow {
-                    print("📡 ReceiveViewModel state changed: \(type(of: newState))")
+                    let stateType = "\(type(of: newState))"
+                    print("📡 ReceiveViewModel state changed: \(stateType)")
+                    self.reporter.log(message: "ReceiveViewModelWrapper: state changed to \(stateType)")
                     self.state = newState as! ReceiveScreenState
                 }
             } catch {
                 print("❌ ReceiveViewModel state error: \(error)")
+                self.reporter.recordError(message: "ReceiveViewModelWrapper: state observation error", throwable: error as? KotlinThrowable)
             }
         }
     }
@@ -532,32 +610,39 @@ class ReceiveViewModelWrapper: ObservableObject {
                 }
             } catch {
                 print("ReceiveViewModel effect error: \(error)")
+                self.reporter.recordError(message: "ReceiveViewModelWrapper: effect observation error", throwable: error as? KotlinThrowable)
             }
         }
     }
     
     func onStartScanning() {
+        reporter.log(message: "ReceiveViewModelWrapper: onStartScanning")
         viewModel.onStartScanning()
     }
     
     func onStopScanning() {
+        reporter.log(message: "ReceiveViewModelWrapper: onStopScanning")
         viewModel.onStopScanning()
     }
     
     func onEnterManually() {
+        reporter.log(message: "ReceiveViewModelWrapper: onEnterManually")
         viewModel.onEnterManually()
     }
     
     func onRequestCameraPermission() {
+        reporter.log(message: "ReceiveViewModelWrapper: onRequestCameraPermission")
         viewModel.onRequestCameraPermission()
     }
     
     func onCameraPermissionGranted(_ granted: Bool) {
+        reporter.log(message: "ReceiveViewModelWrapper: onCameraPermissionGranted granted=\(granted)")
         viewModel.onCameraPermissionGranted(isGranted: granted)
     }
     
     func onQrCodeScanned(ticket: String, confirmation: UInt8) {
         print("🔄 ReceiveViewModelWrapper.onQrCodeScanned: ticket=\(ticket), confirmation=\(confirmation)")
+        reporter.log(message: "ReceiveViewModelWrapper: onQrCodeScanned ticket=\(ticket) confirmation=\(confirmation)")
         viewModel.onQrCodeScanned(ticket: ticket, confirmation: confirmation)
         print("✅ Called viewModel.onQrCodeScanned")
     }
@@ -567,46 +652,58 @@ class ReceiveViewModelWrapper: ObservableObject {
     }
     
     func handleManualInputSubmit() {
+        reporter.log(message: "ReceiveViewModelWrapper: handleManualInputSubmit")
         viewModel.handleManualInputSubmit()
     }
     
     func onPasteFromClipboard(_ text: String?) {
+        let hasText = text != nil ? "yes" : "no"
+        reporter.log(message: "ReceiveViewModelWrapper: onPasteFromClipboard hasText=\(hasText)")
         viewModel.onPasteFromClipboard(clipText: text)
     }
     
     func onAccept() {
+        reporter.log(message: "ReceiveViewModelWrapper: onAccept")
         viewModel.onAccept()
     }
     
     func onCancelReceiving() {
+        reporter.log(message: "ReceiveViewModelWrapper: onCancelReceiving")
         viewModel.onCancelReceiving()
     }
     
     func onCancelManualInput() {
+        reporter.log(message: "ReceiveViewModelWrapper: onCancelManualInput")
         viewModel.onCancelManualInput()
     }
     
     func onScanAgain() {
+        reporter.log(message: "ReceiveViewModelWrapper: onScanAgain")
         viewModel.onScanAgain()
     }
     
     func onReceiveMore() {
+        reporter.log(message: "ReceiveViewModelWrapper: onReceiveMore")
         viewModel.onReceiveMore()
     }
     
     func onDone() {
+        reporter.log(message: "ReceiveViewModelWrapper: onDone")
         viewModel.onDone()
     }
     
     func onErrorRetry() {
+        reporter.log(message: "ReceiveViewModelWrapper: onErrorRetry")
         viewModel.onErrorRetry()
     }
     
     func onErrorDismiss() {
+        reporter.log(message: "ReceiveViewModelWrapper: onErrorDismiss")
         viewModel.onErrorDismiss()
     }
     
     deinit {
+        reporter.log(message: "ReceiveViewModelWrapper: deinit")
         stateTask?.cancel()
         effectTask?.cancel()
     }

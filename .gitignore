@@ -18,6 +18,10 @@ captures
 **/xcshareddata/WorkspaceSettings.xcsettings
 node_modules/
 
+# Firebase (contains API keys — never commit)
+GoogleService-Info.plist
+google-services.json
+
 # Fastlane
 fastlane/report.xml
 fastlane/Preview.html

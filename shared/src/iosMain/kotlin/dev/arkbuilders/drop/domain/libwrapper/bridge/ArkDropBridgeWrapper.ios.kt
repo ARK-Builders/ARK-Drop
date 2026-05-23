@@ -3,6 +3,8 @@
 package dev.arkbuilders.drop.domain.libwrapper.bridge
 
 import dev.arkbuilders.drop.bridge.*
+import dev.arkbuilders.drop.bridge.crashlytics_log
+import dev.arkbuilders.drop.bridge.crashlytics_recordError
 import dev.arkbuilders.drop.domain.libwrapper.receive.DropReceiveFilesBubble
 import dev.arkbuilders.drop.domain.libwrapper.receive.DropReceiveFilesSubscriber
 import dev.arkbuilders.drop.domain.libwrapper.receive.request.DropReceiveFilesRequest
@@ -21,6 +23,10 @@ import platform.darwin.NSObject
 object ArkDropBridgeWrapper {
 
     suspend fun sendFiles(request: DropSendFilesRequest): DropSendFilesBubble {
+        val fileNames = request.files.map { it.name }
+        crashlytics_log("ArkDropBridgeWrapper: sendFiles - profile: ${request.profile.name}, files: ${fileNames}, fileCount: ${request.files.size}")
+        crashlytics_log("ArkDropBridgeWrapper: sendFiles - config chunkSize: ${request.config?.chunkSize}, parallelStreams: ${request.config?.parallelStreams}")
+
         val profile = ArkDropSenderProfile().apply {
             this.name = request.profile.name
             this.avatarB64 = request.profile.avatarB64
@@ -28,6 +34,7 @@ object ArkDropBridgeWrapper {
 
         val files = request.files.map { file ->
             val fileData = ArkDropSenderFileDataAdapter(file.data)
+            crashlytics_log("ArkDropBridgeWrapper: bridging file - name: ${file.name}, dataLen: ${file.data.len()}")
             ArkDropSenderFile().apply {
                 this.name = file.name
                 this.data = fileData
@@ -52,20 +59,26 @@ object ArkDropBridgeWrapper {
                 val bubblePtr = alloc<ObjCObjectVar<dev.arkbuilders.drop.bridge.ArkDropSendFilesBubbleProtocol?>>()
                 val errorPtr = alloc<ObjCObjectVar<NSError?>>()
 
+                crashlytics_log("ArkDropBridgeWrapper: calling native ArkDropBridge.sendFilesWithRequest")
                 dev.arkbuilders.drop.bridge.ArkDropBridge.sendFilesWithRequest(bridgeRequest, bubble = bubblePtr.ptr, error = errorPtr.ptr)
 
                 val error = errorPtr.value
                 if (error != null) {
-                    throw Exception("Failed to send files: ${error.localizedDescription}")
+                    val errorMsg = "Failed to send files (native bridge error): ${error.localizedDescription}"
+                    crashlytics_recordError("ArkDropBridgeWrapper: $errorMsg", null)
+                    throw Exception(errorMsg)
                 }
 
                 val bubble = bubblePtr.value ?: throw Exception("Failed to create send bubble")
+                crashlytics_log("ArkDropBridgeWrapper: bridge returned bubble successfully - ticket: ${bubble.getTicket()}, confirmation: ${bubble.getConfirmation()}")
                 ArkDropSendFilesBubbleWrapper(bubble)
             }
         }
     }
 
     suspend fun receiveFiles(request: DropReceiveFilesRequest): DropReceiveFilesBubble {
+        crashlytics_log("ArkDropBridgeWrapper: receiveFiles - ticket: ${request.ticket}, confirmation: ${request.confirmation}, profile: ${request.profile.name}, chunkSize: ${request.config.chunkSize}, parallelStreams: ${request.config.parallelStreams}")
+
         val profile = ArkDropReceiverProfile().apply {
             this.name = request.profile.name
             this.avatarB64 = request.profile.avatarB64
@@ -88,14 +101,18 @@ object ArkDropBridgeWrapper {
                 val bubblePtr = alloc<ObjCObjectVar<dev.arkbuilders.drop.bridge.ArkDropReceiveFilesBubbleProtocol?>>()
                 val errorPtr = alloc<ObjCObjectVar<NSError?>>()
 
+                crashlytics_log("ArkDropBridgeWrapper: calling native ArkDropBridge.receiveFilesWithRequest")
                 dev.arkbuilders.drop.bridge.ArkDropBridge.receiveFilesWithRequest(bridgeRequest, bubble = bubblePtr.ptr, error = errorPtr.ptr)
 
                 val error = errorPtr.value
                 if (error != null) {
-                    throw Exception("Failed to receive files: ${error.localizedDescription}")
+                    val errorMsg = "Failed to receive files (native bridge error): ${error.localizedDescription}"
+                    crashlytics_recordError("ArkDropBridgeWrapper: $errorMsg", null)
+                    throw Exception(errorMsg)
                 }
 
                 val bubble = bubblePtr.value ?: throw Exception("Failed to create receive bubble")
+                crashlytics_log("ArkDropBridgeWrapper: bridge returned receive bubble successfully")
                 ArkDropReceiveFilesBubbleWrapper(bubble)
             }
         }

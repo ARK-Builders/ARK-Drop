@@ -17,6 +17,15 @@ extension String {
     }
 }
 
+// MARK: - URL Extensions
+
+extension URL {
+    var fileSize: UInt64 {
+        let attributes = try? FileManager.default.attributesOfItem(atPath: path)
+        return attributes?[.size] as? UInt64 ?? 0
+    }
+}
+
 // MARK: - View Extensions
 
 import SwiftUI

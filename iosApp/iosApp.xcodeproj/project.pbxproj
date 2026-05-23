@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		2B1B97902FC2089900B54BD3 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1B978F2FC2089900B54BD3 /* FirebaseAnalytics */; };
+		2B1B97922FC2094E00B54BD3 /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1B97912FC2094E00B54BD3 /* FirebaseCrashlytics */; };
+		2B1B97942FC2095A00B54BD3 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 2B1B97932FC2095A00B54BD3 /* FirebaseCore */; };
 		87961AEE2F239F6600972E0D /* ArkDrop in Frameworks */ = {isa = PBXBuildFile; productRef = 87961AED2F239F6600972E0D /* ArkDrop */; };
 		87A139FB2F2824560011ECBC /* shared.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 87A139FA2F2824560011ECBC /* shared.xcframework */; };
 /* End PBXBuildFile section */
@@ -48,7 +51,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				87A139FB2F2824560011ECBC /* shared.xcframework in Frameworks */,
+				2B1B97942FC2095A00B54BD3 /* FirebaseCore in Frameworks */,
+				2B1B97922FC2094E00B54BD3 /* FirebaseCrashlytics in Frameworks */,
 				87961AEE2F239F6600972E0D /* ArkDrop in Frameworks */,
+				2B1B97902FC2089900B54BD3 /* FirebaseAnalytics in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -103,6 +109,9 @@
 			name = iosApp;
 			packageProductDependencies = (
 				87961AED2F239F6600972E0D /* ArkDrop */,
+				2B1B978F2FC2089900B54BD3 /* FirebaseAnalytics */,
+				2B1B97912FC2094E00B54BD3 /* FirebaseCrashlytics */,
+				2B1B97932FC2095A00B54BD3 /* FirebaseCore */,
 			);
 			productName = iosApp;
 			productReference = 19D5789066F6284BA1F79245 /* ARK-Drop.app */;
@@ -134,6 +143,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				87961AEC2F239F6600972E0D /* XCRemoteSwiftPackageReference "arkdrop-swift-binaries" */,
+				2B1B978E2FC2089900B54BD3 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 7BA83B6A3A88D023B32D48A4 /* Products */;
@@ -405,6 +415,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		2B1B978E2FC2089900B54BD3 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = exactVersion;
+				version = 12.11.0;
+			};
+		};
 		87961AEC2F239F6600972E0D /* XCRemoteSwiftPackageReference "arkdrop-swift-binaries" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/oluiscabral/arkdrop-swift-binaries";
@@ -416,6 +434,21 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		2B1B978F2FC2089900B54BD3 /* FirebaseAnalytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2B1B978E2FC2089900B54BD3 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalytics;
+		};
+		2B1B97912FC2094E00B54BD3 /* FirebaseCrashlytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2B1B978E2FC2089900B54BD3 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCrashlytics;
+		};
+		2B1B97932FC2095A00B54BD3 /* FirebaseCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2B1B978E2FC2089900B54BD3 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCore;
+		};
 		87961AED2F239F6600972E0D /* ArkDrop */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 87961AEC2F239F6600972E0D /* XCRemoteSwiftPackageReference "arkdrop-swift-binaries" */;

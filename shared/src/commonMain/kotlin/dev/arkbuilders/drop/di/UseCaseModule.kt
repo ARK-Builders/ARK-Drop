@@ -6,6 +6,6 @@ import org.koin.dsl.module
 
 val useCaseModule =
     module {
-        factory<SendFilesUseCase> { SendFilesUseCase(get(), get()) }
-        factory<ReceiveFilesUseCase> { ReceiveFilesUseCase(get()) }
+        factory<SendFilesUseCase> { SendFilesUseCase(get(), get(), get()) }
+        factory<ReceiveFilesUseCase> { ReceiveFilesUseCase(get(), get()) }
     }

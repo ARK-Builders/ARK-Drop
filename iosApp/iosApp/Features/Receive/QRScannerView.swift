@@ -1,5 +1,6 @@
 import SwiftUI
 import AVFoundation
+import Shared
 
 struct QRScannerView: View {
     let onCodeScanned: (String, UInt8) -> Void
@@ -58,6 +59,8 @@ struct QRScannerView: View {
     
     private func handleScannedCode(_ code: String) {
         print("📷 QR Code scanned: \(code)")
+        let reporter = KoinHelper.shared.getFirebaseReporter()
+        reporter.log(message: "QRScanner: code scanned length=\(code.count)")
         
         // Parse URL format: drop://receive?ticket=ABC123&confirmation=1
         guard let url = URL(string: code),
@@ -66,6 +69,7 @@ struct QRScannerView: View {
               let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
               let queryItems = components.queryItems else {
             print("⚠️ Invalid QR code format: \(code)")
+            reporter.log(message: "QRScanner: invalid QR code format")
             return
         }
         
@@ -75,10 +79,12 @@ struct QRScannerView: View {
               let confirmationString = confirmationItem.value,
               let confirmation = UInt8(confirmationString) else {
             print("⚠️ Missing ticket or confirmation in QR code")
+            reporter.recordError(message: "QRScanner: missing ticket or confirmation in QR code", throwable: nil)
             return
         }
         
         print("✅ Parsed QR: ticket=\(ticket), confirmation=\(confirmation)")
+        reporter.log(message: "QRScanner: parsed ticket=\(ticket) confirmation=\(confirmation)")
         onCodeScanned(ticket, confirmation)
         scanner.stopScanning()
     }
@@ -137,10 +143,14 @@ class QRScanner: NSObject, ObservableObject, AVCaptureMetadataOutputObjectsDeleg
             guard let self = self else { return }
             
             guard let videoCaptureDevice = AVCaptureDevice.default(for: .video) else {
+                let reporter = KoinHelper.shared.getFirebaseReporter()
+                reporter.recordError(message: "QRScanner: no video capture device available", throwable: nil)
                 return
             }
             
             guard let videoInput = try? AVCaptureDeviceInput(device: videoCaptureDevice) else {
+                let reporter = KoinHelper.shared.getFirebaseReporter()
+                reporter.recordError(message: "QRScanner: failed to create video input", throwable: nil)
                 return
             }
             
@@ -150,7 +160,7 @@ class QRScanner: NSObject, ObservableObject, AVCaptureMetadataOutputObjectsDeleg
             
             if self.session.canAddOutput(self.metadataOutput) {
                 self.session.addOutput(self.metadataOutput)
-                
+
                 self.metadataOutput.setMetadataObjectsDelegate(self, queue: DispatchQueue.main)
                 self.metadataOutput.metadataObjectTypes = [.qr]
             }
@@ -159,12 +169,16 @@ class QRScanner: NSObject, ObservableObject, AVCaptureMetadataOutputObjectsDeleg
     
     func startScanning() {
         sessionQueue.async { [weak self] in
+            let reporter = KoinHelper.shared.getFirebaseReporter()
+            reporter.log(message: "QRScanner: start scanning")
             self?.session.startRunning()
         }
     }
     
     func stopScanning() {
         sessionQueue.async { [weak self] in
+            let reporter = KoinHelper.shared.getFirebaseReporter()
+            reporter.log(message: "QRScanner: stop scanning")
             self?.session.stopRunning()
         }
     }

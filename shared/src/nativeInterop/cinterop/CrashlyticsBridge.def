@@ -1,0 +1,6 @@
+language = Objective-C
+headers = CrashlyticsBridge.h
+headerFilter = CrashlyticsBridge.h
+package = dev.arkbuilders.drop.bridge
+compilerOpts = -framework Foundation
+linkerOpts = -framework Foundation

@@ -35,6 +35,9 @@ arkAbout = "0.2.1"
 materialIconsExtended = "1.7.8"
 ktlintGradlePlugin = "12.2.0"
 skie = "0.10.9"
+firebaseCrashlyticsGradle = "3.0.7"
+googleServicesGradle = "4.4.4"
+firebaseBom = "34.13.0"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -98,6 +101,10 @@ ark-about = { module = "dev.arkbuilders.components:about", version.ref = "arkAbo
 
 material-icons-extended = { module = "androidx.compose.material:material-icons-extended", version.ref = "materialIconsExtended"}
 
+firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
+firebase-crashlytics-ktx = { module = "com.google.firebase:firebase-crashlytics-ktx" }
+firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
+
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
 androidLibrary = { id = "com.android.library", version.ref = "agp" }
@@ -109,3 +116,5 @@ androidx-room = { id = "androidx.room", version.ref = "room" }
 kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 ktlint-gradle = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlintGradlePlugin" }
 skie = { id = "co.touchlab.skie", version.ref = "skie" }
+google-services = { id = "com.google.gms.google-services", version.ref = "googleServicesGradle" }
+firebase-crashlytics = { id = "com.google.firebase.crashlytics", version.ref = "firebaseCrashlyticsGradle" }

@@ -6,6 +6,7 @@ import co.touchlab.kermit.Logger
 import dev.arkbuilders.drop.data.helper.PermissionsHelper
 import dev.arkbuilders.drop.domain.model.ReceiveSession
 import dev.arkbuilders.drop.domain.repository.ReceiveSessionRepo
+import dev.arkbuilders.drop.instrumentation.FirebaseReporter
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -17,20 +18,25 @@ import org.orbitmvi.orbit.viewmodel.container
 class ReceiveViewModel(
     private val receiveSessionRepo: ReceiveSessionRepo,
     private val permissionsHelper: PermissionsHelper,
+    private val firebaseReporter: FirebaseReporter,
 ) : ViewModel(), ContainerHost<ReceiveScreenState, ReceiveScreenEffect> {
     override val container: Container<ReceiveScreenState, ReceiveScreenEffect> =
         container(ReceiveScreenState.Initial(false))
 
     init {
+        firebaseReporter.log("ReceiveViewModel: initialized")
         intent {
+            val granted = permissionsHelper.isCameraGranted()
+            firebaseReporter.log("ReceiveViewModel: initial camera permission granted=$granted")
             reduce {
-                ReceiveScreenState.Initial(permissionsHelper.isCameraGranted())
+                ReceiveScreenState.Initial(granted)
             }
         }
     }
 
     fun onRequestCameraPermission() =
         intent {
+            firebaseReporter.log("ReceiveViewModel: requesting camera permission")
             reduce {
                 ReceiveScreenState.RequestingPermission
             }
@@ -39,6 +45,7 @@ class ReceiveViewModel(
 
     fun onEnterManually() =
         intent {
+            firebaseReporter.log("ReceiveViewModel: entering manual input mode")
             reduce {
                 ReceiveScreenState.ManualInput(inputText = "", inputError = null)
             }
@@ -46,6 +53,7 @@ class ReceiveViewModel(
 
     fun onStartScanning() =
         intent {
+            firebaseReporter.log("ReceiveViewModel: starting QR scanner")
             reduce {
                 ReceiveScreenState.Scanning
             }
@@ -53,6 +61,7 @@ class ReceiveViewModel(
 
     fun onStopScanning() =
         intent {
+            firebaseReporter.log("ReceiveViewModel: stopping QR scanner")
             reduce {
                 ReceiveScreenState.Initial(permissionsHelper.isCameraGranted())
             }
@@ -60,6 +69,7 @@ class ReceiveViewModel(
 
     fun onError(error: ReceiveError) =
         intent {
+            firebaseReporter.recordError("ReceiveViewModel: error state error=${error.name}", null)
             reduce {
                 ReceiveScreenState.Error(error = error)
             }
@@ -70,18 +80,23 @@ class ReceiveViewModel(
             try {
                 val s = state
                 if (s !is ReceiveScreenState.QRCodeScanned) {
+                    firebaseReporter.log("ReceiveViewModel: onAccept ignored - not in QRCodeScanned state")
                     return@intent
                 }
                 val ticket = s.ticket
                 val confirmation = s.confirmation
 
+                firebaseReporter.log("ReceiveViewModel: accept triggered ticket=$ticket confirmation=$confirmation")
+
                 reduce {
                     ReceiveScreenState.Connecting
                 }
 
+                firebaseReporter.log("ReceiveViewModel: calling receiveFiles")
                 val session =
                     receiveSessionRepo.receiveFiles(ticket, confirmation)
                 if (session != null) {
+                    firebaseReporter.log("ReceiveViewModel: session created successfully, transitioning to Receiving")
                     reduce {
                         ReceiveScreenState.Receiving(
                             session,
@@ -90,11 +105,13 @@ class ReceiveViewModel(
                     }
                     listenToProgress(session)
                 } else {
+                    firebaseReporter.recordError("ReceiveViewModel: receiveFiles returned null session", null)
                     reduce {
                         ReceiveScreenState.Error(error = ReceiveError.ConnectionFailed)
                     }
                 }
             } catch (e: Exception) {
+                firebaseReporter.recordError("ReceiveViewModel: onAccept exception", e)
                 val error =
                     when {
                         e.message?.contains(
@@ -113,6 +130,7 @@ class ReceiveViewModel(
 
     fun onCameraPermissionGranted(isGranted: Boolean) =
         intent {
+            firebaseReporter.log("ReceiveViewModel: camera permission result granted=$isGranted")
             val state =
                 if (isGranted) {
                     ReceiveScreenState.Scanning
@@ -126,6 +144,7 @@ class ReceiveViewModel(
 
     fun onScanAgain() =
         intent {
+            firebaseReporter.log("ReceiveViewModel: scan again")
             val state =
                 if (permissionsHelper.isCameraGranted()) {
                     ReceiveScreenState.Scanning
@@ -139,6 +158,7 @@ class ReceiveViewModel(
 
     fun onReceiveMore() =
         intent {
+            firebaseReporter.log("ReceiveViewModel: receive more")
             val s = state
             if (s is ReceiveScreenState.Success) {
                 receiveSessionRepo.cancelReceive(s.session)
@@ -150,6 +170,7 @@ class ReceiveViewModel(
 
     fun onDone() =
         intent {
+            firebaseReporter.log("ReceiveViewModel: done - navigating back")
             val s = state
             if (s is ReceiveScreenState.Success) {
                 receiveSessionRepo.cancelReceive(s.session)
@@ -164,6 +185,7 @@ class ReceiveViewModel(
                 return@intent
 
             if (!clipText.isNullOrEmpty()) {
+                firebaseReporter.log("ReceiveViewModel: pasting from clipboard length=${clipText.length}")
                 reduce {
                     s.copy(
                         inputText = clipText,
@@ -175,6 +197,7 @@ class ReceiveViewModel(
 
     fun onErrorRetry() =
         intent {
+            firebaseReporter.log("ReceiveViewModel: error retry")
             reduce {
                 ReceiveScreenState.Initial(permissionsHelper.isCameraGranted())
             }
@@ -184,6 +207,7 @@ class ReceiveViewModel(
         intent {
             val s = state
             if (s is ReceiveScreenState.Error) {
+                firebaseReporter.log("ReceiveViewModel: error dismissed error=${s.error.name}")
                 s.session?.let {
                     receiveSessionRepo.cancelReceive(it)
                 }
@@ -195,6 +219,7 @@ class ReceiveViewModel(
         ticket: String,
         confirmation: UByte,
     ) = intent {
+        firebaseReporter.log("ReceiveViewModel: QR code scanned ticket=$ticket confirmation=$confirmation")
         reduce {
             ReceiveScreenState.QRCodeScanned(ticket, confirmation)
         }
@@ -216,6 +241,7 @@ class ReceiveViewModel(
 
     fun onCancelReceiving() =
         intent {
+            firebaseReporter.log("ReceiveViewModel: cancelling receiving")
             val s = state
             if (s is ReceiveScreenState.Receiving) {
                 receiveSessionRepo.cancelReceive(s.session)
@@ -228,6 +254,7 @@ class ReceiveViewModel(
 
     fun onCancelManualInput() =
         intent {
+            firebaseReporter.log("ReceiveViewModel: cancelling manual input")
             reduce {
                 ReceiveScreenState.Initial(permissionsHelper.isCameraGranted())
             }
@@ -240,8 +267,10 @@ class ReceiveViewModel(
             if (s !is ReceiveScreenState.ManualInput)
                 return@intent
 
+            firebaseReporter.log("ReceiveViewModel: manual input submitted input=${s.inputText}")
             val parsed = parseManualInput(s.inputText)
             if (parsed != null) {
+                firebaseReporter.log("ReceiveViewModel: manual input parsed successfully ticket=${parsed.first}")
                 reduce {
                     ReceiveScreenState.QRCodeScanned(
                         ticket = parsed.first,
@@ -250,6 +279,7 @@ class ReceiveViewModel(
                 }
                 postSideEffect(ReceiveScreenEffect.HideKeyboard)
             } else {
+                firebaseReporter.log("ReceiveViewModel: manual input parse failed")
                 reduce {
                     s.copy(
                         inputError = "Invalid format. Please enter: ticket confirmation",
@@ -273,6 +303,11 @@ class ReceiveViewModel(
 
                 if (progress.isConnected && progress.files.isNotEmpty()) {
                     // Check if all files are complete
+                    val completedCount = progress.files.count { file ->
+                        progress.fileProgress[file.id]?.isComplete == true
+                    }
+                    firebaseReporter.log("ReceiveViewModel: progress connected=${progress.isConnected} sender=${progress.senderName} files=${progress.files.size} completed=$completedCount")
+
                     val allFilesComplete =
                         progress.files.all { file ->
                             val fileProgress = progress.fileProgress[file.id]
@@ -281,10 +316,12 @@ class ReceiveViewModel(
 
                     if (allFilesComplete) {
                         // Small delay to ensure UI updates are visible
+                        firebaseReporter.log("ReceiveViewModel: all ${progress.files.size} files complete, saving...")
                         delay(1000)
                         try {
                             val savedFiles = receiveSessionRepo.saveReceivedFiles(session)
                             if (savedFiles.isNotEmpty()) {
+                                firebaseReporter.log("ReceiveViewModel: saved ${savedFiles.size} files successfully")
                                 reduce {
                                     ReceiveScreenState.Success(
                                         session = session,
@@ -292,6 +329,7 @@ class ReceiveViewModel(
                                     )
                                 }
                             } else {
+                                firebaseReporter.recordError("ReceiveViewModel: no files received", null)
                                 reduce {
                                     ReceiveScreenState.Error(
                                         session = session,
@@ -301,6 +339,7 @@ class ReceiveViewModel(
                             }
                         } catch (e: Exception) {
                             Logger.w("Save failed: ${e::class.simpleName} ${e.message}")
+                            firebaseReporter.recordError("ReceiveViewModel: save failed", e)
                             val error =
                                 when {
                                     e.message?.contains("storage", ignoreCase = true) == true ->
@@ -319,6 +358,8 @@ class ReceiveViewModel(
                             }
                         }
                     }
+                } else if (progress.isConnected) {
+                    firebaseReporter.log("ReceiveViewModel: connected to sender=${progress.senderName} waiting for files...")
                 }
             }
         }.launchIn(viewModelScope)

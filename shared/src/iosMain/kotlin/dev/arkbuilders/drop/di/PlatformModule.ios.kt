@@ -11,6 +11,7 @@ import dev.arkbuilders.drop.data.helper.AvatarHelper
 import dev.arkbuilders.drop.data.helper.NetworkStatus
 import dev.arkbuilders.drop.data.helper.PermissionsHelper
 import dev.arkbuilders.drop.data.helper.ResourcesHelper
+import dev.arkbuilders.drop.instrumentation.FirebaseReporter
 import dev.arkbuilders.drop.data.settings.DATASTORE_FILENAME
 import dev.arkbuilders.drop.data.settings.createDataStore
 import kotlinx.cinterop.ExperimentalForeignApi
@@ -28,6 +29,7 @@ actual val platformModule: Module =
         single { NetworkStatus() }
         single { PermissionsHelper() }
         single { ResourcesHelper() }
+        single { FirebaseReporter() }
 
         single<DropDatabase> {
             val dbFilePath = documentDirectory() + "/${DropDatabase.DB_NAME}"

@@ -9,6 +9,7 @@ on:
       # TEMPORARY: Remove after testing
       - 'feature/kmp-ios-impl'
       - 'fix/kmp-ios-impl'
+      - 'fix-and-firebase/kmp-ios-impl'
   workflow_dispatch:
 
 jobs:
